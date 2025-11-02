@@ -11,3 +11,4 @@ Deployment workflow:
 - Preview deploy: npm run cf:deploy or npm run cf:deploy:preview.
 - Production deploy: npm run cf:deploy:prod (targets Pages environment "production").
 Notes (Nov 2 2025): Vite config proxies API calls to Wrangler dev server; Tailwind dark mode via root class toggle; new ordering-focused UI live; keep dist/ out of git; add git init when ready.
+Update (Nov 4 2025): Converted the one-page flow into routed sections (Home, Discover, Cart, Checkout, Orders, Support) with shared MainLayout managing theme/cart state, introduced SiteNav with language toggle, implemented bilingual localization (English/Telugu) across components, and added translation context/hooks. Build still blocked locally by Rollup optional dependency; rerun npm install if needed. Language selector uses EN/TE dropdown pill matching design system.
