@@ -5,7 +5,7 @@ import type { Product } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
 
 type ProductsSectionProps = {
-  sectionRef: RefObject<HTMLElement>;
+  sectionRef?: RefObject<HTMLElement>;
   categories: string[];
   filter: string;
   onFilterChange: (category: string) => void;
