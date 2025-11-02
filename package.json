@@ -8,6 +8,8 @@
     "preview": "vite preview",
     "cf:dev": "npm run build && wrangler pages dev dist",
     "cf:deploy": "npm run build && wrangler pages deploy dist",
+    "cf:deploy:preview": "npm run build && wrangler pages deploy dist",
+    "cf:deploy:prod": "npm run build && wrangler pages deploy dist --branch production",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
