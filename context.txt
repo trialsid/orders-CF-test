@@ -1,0 +1,9 @@
+Project: Order.Ieeja grocery storefront (serving Ieeja town, Gadwal district, Telangana)
+Stack: Cloudflare Pages for static UI + Pages Functions for API endpoints (Node/JavaScript). Wrangler v4 is used for local dev/deploy from Windows PowerShell.
+Structure:
+- public/ houses the front-end (index.html + styles.css + app.js). UI features sticky navigation, hero, category filters, feature cards, responsive cart layout, mobile-first tweaks (full-screen menu, call-to-order FAB).
+- functions/ holds serverless endpoints. products.js returns inventory list with delivery note; order.js validates cart payload and responds with confirmation stub; _worker.js routes /products and /order requests and otherwise serves static assets.
+- Inventory is mock data stored in functions/_inventory.js representing staples/snacks commonly used in rural Telangana households. App fetches /products on load, renders cards, filters items, manages cart state client-side, and POSTs to /order.
+Deployment workflow: `npm run dev` for local testing (wrangler pages dev public) and `npm run deploy` to publish to Cloudflare Pages. Custom domain mapping planned for order.ieeja.com once deployed.
+Current deployment: Cloudflare Pages project `order-ieeja` (live preview https://36531431.order-ieeja.pages.dev, custom domain https://order.ieeja.com). Wrangler v4 deploys static assets plus functions; add `pages_build_output_dir = "./public"` to wrangler.toml to silence future warnings.
+Key future enhancements mentioned: extend checkout to capture customer details, persist orders via D1/KV/queues, expand inventory, add bilingual support.

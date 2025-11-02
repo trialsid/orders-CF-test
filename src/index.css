@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply font-body bg-surface-light text-slate-900 antialiased dark:bg-surface-dark dark:text-slate-100;
+  }
+
+  strong {
+    @apply font-semibold;
+  }
+}
+
+@layer components {
+  .page-shell {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .section {
+    @apply py-16 sm:py-20;
+  }
+
+  .section--muted {
+    @apply bg-white/70 backdrop-blur-sm dark:bg-slate-900/50;
+  }
+
+  .section__intro {
+    @apply mx-auto mb-10 max-w-3xl text-center;
+  }
+
+  .section__intro h2 {
+    @apply font-display text-3xl font-semibold text-emerald-900 dark:text-brand-200 sm:text-4xl;
+  }
+
+  .section__intro p {
+    @apply mt-3 text-base text-slate-600 dark:text-slate-300;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-emerald-200/60 bg-white px-4 py-2 text-sm font-medium text-emerald-900 shadow-sm transition hover:border-emerald-400 hover:text-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-emerald-900/70 dark:bg-slate-900/60 dark:text-emerald-100 dark:hover:border-emerald-600;
+  }
+
+  .chip--active {
+    @apply border-transparent bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-soft dark:from-brand-500 dark:to-brand-700;
+  }
+
+  .status {
+    @apply mt-6 text-sm text-slate-500 dark:text-slate-300;
+  }
+
+  .cart-empty {
+    @apply rounded-2xl border border-dashed border-emerald-300/70 bg-white/70 p-6 text-sm text-slate-500 dark:border-emerald-800/70 dark:bg-slate-900/40 dark:text-slate-300;
+  }
+
+  .quantity-btn {
+    @apply flex h-9 w-9 items-center justify-center rounded-full border border-brand-200 bg-white text-sm font-semibold text-brand-700 transition hover:bg-brand-100 dark:border-brand-800 dark:bg-slate-900 dark:text-brand-200 dark:hover:bg-brand-900/60;
+  }
+
+  .floating-call {
+    @apply fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-900/20 transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 dark:shadow-brand-900/50;
+  }
+}
