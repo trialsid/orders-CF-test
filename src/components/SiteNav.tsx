@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Moon, Sun, Phone, Menu, X, ShoppingCart } from 'lucide-react';
+import { Moon, Sun, Phone, Menu, X, ShoppingCart, ChevronDown } from 'lucide-react';
+import { useTranslations, type Locale } from '../i18n/i18n';
 
 type SiteNavProps = {
   theme: 'light' | 'dark';
@@ -8,22 +9,30 @@ type SiteNavProps = {
   cartCount: number;
 };
 
-const navItems = [
-  { label: 'Home', to: '/' },
-  { label: 'Discover', to: '/discover' },
-  { label: 'Cart', to: '/cart' },
-  { label: 'Checkout', to: '/checkout' },
-  { label: 'Orders', to: '/orders' },
-  { label: 'Support', to: '/support' },
-];
-
 function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const { locale, setLocale, t } = useTranslations();
+
+  const navItems = useMemo(
+    () => [
+      { label: t('nav.home'), to: '/' },
+      { label: t('nav.discover'), to: '/discover' },
+      { label: t('nav.cart'), to: '/cart' },
+      { label: t('nav.checkout'), to: '/checkout' },
+      { label: t('nav.orders'), to: '/orders' },
+      { label: t('nav.support'), to: '/support' },
+    ],
+    [t]
+  );
 
   useEffect(() => {
     setOpen(false);
   }, [location.pathname]);
+
+  const handleLocaleChange = (value: Locale) => {
+    setLocale(value);
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-emerald-100/60 bg-white/90 shadow-sm backdrop-blur dark:border-emerald-900/40 dark:bg-slate-950/80">
@@ -34,7 +43,7 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
           </span>
           <div className="hidden sm:block">
             <p className="font-display text-lg font-semibold text-emerald-900 dark:text-brand-100">Order.Ieeja</p>
-            <p className="text-xs font-medium text-emerald-700/80 dark:text-emerald-200/80">Fresh groceries delivered today</p>
+            <p className="text-xs font-medium text-emerald-700/80 dark:text-emerald-200/80">{t('nav.tagline')}</p>
           </div>
         </Link>
 
@@ -60,7 +69,7 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
           <Link
             to="/cart"
             className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200/70 bg-white text-emerald-700 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
-            aria-label="Open cart"
+            aria-label={t('nav.openCart')}
           >
             <ShoppingCart className="h-5 w-5" />
             {cartCount > 0 && (
@@ -74,23 +83,39 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
             type="button"
             onClick={onToggleTheme}
             className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200/70 bg-white text-emerald-700 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
-            aria-label="Toggle theme"
+            aria-label={t('nav.toggleTheme')}
           >
             {theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </button>
+
+          <label className="sr-only" htmlFor="locale-switcher">
+            {t('nav.language')}
+          </label>
+          <div className="relative hidden md:block">
+            <select
+              id="locale-switcher"
+              value={locale}
+              onChange={(event) => handleLocaleChange(event.target.value as Locale)}
+              className="appearance-none rounded-full border border-emerald-200/70 bg-white px-4 py-2 pr-9 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200 dark:hover:border-emerald-600"
+            >
+              <option value="en">{t('nav.english')}</option>
+              <option value="te">{t('nav.telugu')}</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500 dark:text-emerald-300" />
+          </div>
 
           <a
             className="hidden items-center gap-2 rounded-full border border-brand-500/20 bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 md:inline-flex"
             href="tel:+919876543210"
           >
             <Phone className="h-4 w-4" />
-            Call
+            <span>{t('nav.call')}</span>
           </a>
 
           <button
             type="button"
             className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200/70 bg-white text-emerald-700 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200 md:hidden"
-            aria-label="Toggle menu"
+            aria-label={t('nav.toggleMenu')}
             onClick={() => setOpen((current) => !current)}
           >
             {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -116,11 +141,26 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
                 {item.label}
               </NavLink>
             ))}
+            <div className="flex items-center gap-2 rounded-full border border-emerald-100/60 bg-white/70 px-3 py-2 dark:border-emerald-900/60 dark:bg-slate-900/60">
+              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-200">{t('nav.language')}</span>
+              <div className="relative flex-1">
+                <select
+                  id="locale-switcher-mobile"
+                  value={locale}
+                  onChange={(event) => handleLocaleChange(event.target.value as Locale)}
+                  className="w-full appearance-none rounded-full border border-emerald-200/70 bg-white px-3 py-1.5 pr-8 text-xs font-semibold text-emerald-800 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
+                >
+                  <option value="en">{t('nav.english')}</option>
+                  <option value="te">{t('nav.telugu')}</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500 dark:text-emerald-300" />
+              </div>
+            </div>
             <a
               className="rounded-full px-4 py-2 font-semibold text-emerald-800 hover:bg-emerald-100/80 dark:text-emerald-200 dark:hover:bg-emerald-900/50"
               href="tel:+919876543210"
             >
-              Call the store
+              {t('nav.callToOrder')}
             </a>
           </div>
         </div>

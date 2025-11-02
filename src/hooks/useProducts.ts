@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Product, ProductsResponse } from '../types';
 
-const INITIAL_STATUS = 'Loading fresh items...';
-
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [filter, setFilter] = useState<string>('all');
-  const [statusMessage, setStatusMessage] = useState<string>(INITIAL_STATUS);
   const [storeNote, setStoreNote] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<boolean>(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadProducts() {
-      setStatusMessage(INITIAL_STATUS);
+      setIsLoading(true);
+      setLoadError(false);
       try {
         const response = await fetch('/products');
         if (!response.ok) {
@@ -30,11 +30,12 @@ export function useProducts() {
         setStoreNote(message);
         const uniqueCategories = [...new Set(items.map((item) => item.category))].sort();
         setCategories(uniqueCategories);
-        setStatusMessage(message);
+        setIsLoading(false);
       } catch (error) {
         console.error(error);
         if (!cancelled) {
-          setStatusMessage('Unable to load items right now. Please refresh later.');
+          setLoadError(true);
+          setIsLoading(false);
         }
       }
     }
@@ -55,26 +56,6 @@ export function useProducts() {
 
   const highlights = useMemo(() => products.slice(0, 3), [products]);
 
-  const productsStatusText = useMemo(() => {
-    if (!products.length && statusMessage) {
-      return statusMessage;
-    }
-
-    if (!filteredProducts.length) {
-      return filter === 'all'
-        ? 'No items available right now. Please check back later.'
-        : `We are restocking ${filter.toLowerCase()} soon.`;
-    }
-
-    if (filter === 'all') {
-      const base = `${filteredProducts.length} items available today.`;
-      return storeNote ? `${base} ${storeNote}`.trim() : base;
-    }
-
-    const label = filter.toLowerCase();
-    return `Showing ${filteredProducts.length} ${label} pick(s).`;
-  }, [filter, filteredProducts, products.length, statusMessage, storeNote]);
-
   return {
     products,
     categories,
@@ -82,6 +63,8 @@ export function useProducts() {
     setFilter,
     filteredProducts,
     highlights,
-    productsStatusText,
+    storeNote,
+    isLoading,
+    loadError,
   };
 }

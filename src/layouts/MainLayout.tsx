@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import SiteNav from '../components/SiteNav';
 import Footer from '../components/Footer';
@@ -6,10 +6,19 @@ import FloatingCall from '../components/FloatingCall';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../hooks/useCart';
 import type { OrderPayload, OrderResponse } from '../types';
+import {
+  Locale,
+  SUPPORTED_LOCALES,
+  TRANSLATIONS,
+  TranslationContext,
+  translate,
+  type TranslationTree,
+} from '../i18n/i18n';
 
 export type Theme = 'light' | 'dark';
 
 const THEME_STORAGE_KEY = 'order-ieeja-theme';
+const LOCALE_STORAGE_KEY = 'order-ieeja-locale';
 
 const getPreferredTheme = (): Theme => {
   if (typeof window === 'undefined') {
@@ -20,6 +29,17 @@ const getPreferredTheme = (): Theme => {
     return stored;
   }
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
+
+const getPreferredLocale = (): Locale => {
+  if (typeof window === 'undefined') {
+    return 'en';
+  }
+  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+  if (stored && SUPPORTED_LOCALES.includes(stored as Locale)) {
+    return stored as Locale;
+  }
+  return 'en';
 };
 
 export type ProductsContextValue = ReturnType<typeof useProducts>;
@@ -36,6 +56,7 @@ function MainLayout(): JSX.Element {
   const products = useProducts();
   const cart = useCart();
   const [theme, setTheme] = useState<Theme>(() => getPreferredTheme());
+  const [locale, setLocale] = useState<Locale>(() => getPreferredLocale());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -50,9 +71,23 @@ function MainLayout(): JSX.Element {
     }
   }, [theme]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    document.documentElement.lang = locale;
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+    }
+  }, [locale]);
+
   const toggleTheme = () => {
     setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
   };
+
+  const changeLocale = useCallback((next: Locale) => {
+    setLocale(next);
+  }, []);
 
   const submitOrder = async () => {
     if (!cart.hasItems) {
@@ -105,16 +140,34 @@ function MainLayout(): JSX.Element {
   };
 
   const year = new Date().getFullYear();
+  const dictionary: TranslationTree = TRANSLATIONS[locale];
+
+  const t = useCallback(
+    (path: string, params?: Record<string, string | number | undefined>) => translate(dictionary, path, params),
+    [dictionary]
+  );
+
+  const translationValue = useMemo(
+    () => ({
+      locale,
+      setLocale: changeLocale,
+      t,
+      dictionary,
+    }),
+    [changeLocale, dictionary, locale, t]
+  );
 
   return (
-    <div className="min-h-screen bg-surface-light dark:bg-slate-950">
-      <SiteNav theme={theme} onToggleTheme={toggleTheme} cartCount={cart.cartItems.length} />
-      <main className="pb-16">
-        <Outlet context={outletContext} />
-      </main>
-      <Footer year={year} />
-      <FloatingCall />
-    </div>
+    <TranslationContext.Provider value={translationValue}>
+      <div className="min-h-screen bg-surface-light dark:bg-slate-950">
+        <SiteNav theme={theme} onToggleTheme={toggleTheme} cartCount={cart.cartItems.length} />
+        <main className="pb-16">
+          <Outlet context={outletContext} />
+        </main>
+        <Footer year={year} />
+        <FloatingCall />
+      </div>
+    </TranslationContext.Provider>
   );
 }
 

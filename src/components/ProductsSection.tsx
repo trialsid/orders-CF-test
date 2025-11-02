@@ -3,6 +3,7 @@ import type { RefObject } from 'react';
 import { PlusCircle, PackageOpen } from 'lucide-react';
 import type { Product } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
+import { useTranslations } from '../i18n/i18n';
 
 type ProductsSectionProps = {
   sectionRef?: RefObject<HTMLElement>;
@@ -23,12 +24,14 @@ function ProductsSection({
   statusText,
   onAddToCart,
 }: ProductsSectionProps): JSX.Element {
+  const { t } = useTranslations();
+
   return (
     <section id="products" ref={sectionRef} className="section">
       <div className="page-shell">
         <div className="section__intro">
-          <h2>Build your basket</h2>
-          <p>Select essentials from each category and add them straight to your order summary. We’ll confirm and deliver the same day.</p>
+          <h2>{t('products.title')}</h2>
+          <p>{t('products.description')}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -39,7 +42,7 @@ function ProductsSection({
             aria-selected={filter === 'all'}
             onClick={() => onFilterChange('all')}
           >
-            All items
+            {t('products.filters.all')}
           </button>
           {categories.map((category) => (
             <button
@@ -78,8 +81,9 @@ function ProductsSection({
                   type="button"
                   onClick={() => onAddToCart(product)}
                   className="inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:border-brand-500 hover:text-brand-900 group-hover:shadow-sm dark:border-brand-700/50 dark:bg-slate-900 dark:text-brand-200 dark:hover:border-brand-400"
+                  aria-label={t('products.aria.addToCart', { name: product.name })}
                 >
-                  Add to basket
+                  {t('products.actions.addToCart')}
                   <PlusCircle className="h-4 w-4" />
                 </button>
               </div>

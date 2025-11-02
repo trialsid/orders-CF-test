@@ -1,13 +1,16 @@
 import React from 'react';
 import ContactSection from '../components/ContactSection';
+import { useTranslations } from '../i18n/i18n';
 
 function SupportPage(): JSX.Element {
+  const { t } = useTranslations();
+
   return (
     <>
       <section className="section">
         <div className="page-shell section__intro">
-          <h1>Support</h1>
-          <p>Reach our fulfilment team anytime for slot updates, substitutions, or help with your account.</p>
+          <h1>{t('support.title')}</h1>
+          <p>{t('support.description')}</p>
         </div>
       </section>
       <ContactSection />
