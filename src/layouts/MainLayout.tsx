@@ -3,9 +3,10 @@ import { Outlet } from 'react-router-dom';
 import SiteNav from '../components/SiteNav';
 import Footer from '../components/Footer';
 import FloatingCall from '../components/FloatingCall';
+import Toast, { type ToastMessage } from '../components/Toast';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../hooks/useCart';
-import type { OrderPayload, OrderResponse } from '../types';
+import type { CheckoutFormValues, OrderPayload, OrderResponse } from '../types';
 import {
   Locale,
   SUPPORTED_LOCALES,
@@ -48,7 +49,7 @@ export type CartContextValue = ReturnType<typeof useCart>;
 export type AppOutletContext = {
   products: ProductsContextValue;
   cart: CartContextValue;
-  submitOrder: () => Promise<void>;
+  submitOrder: (details: CheckoutFormValues) => Promise<OrderResponse | undefined>;
   isSubmitting: boolean;
 };
 
@@ -58,6 +59,7 @@ function MainLayout(): JSX.Element {
   const [theme, setTheme] = useState<Theme>(() => getPreferredTheme());
   const [locale, setLocale] = useState<Locale>(() => getPreferredLocale());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -89,12 +91,38 @@ function MainLayout(): JSX.Element {
     setLocale(next);
   }, []);
 
-  const submitOrder = async () => {
+  const dictionary: TranslationTree = useMemo(() => TRANSLATIONS[locale], [locale]);
+
+  const t = useCallback(
+    (path: string, params?: Record<string, string | number | undefined>) => translate(dictionary, path, params),
+    [dictionary]
+  );
+
+  const showToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
+    setToasts((current) => [
+      ...current,
+      { ...toast, id: Date.now() + Math.floor(Math.random() * 1000) },
+    ]);
+  }, []);
+
+  const dismissToast = useCallback((id: number) => {
+    setToasts((current) => current.filter((toast) => toast.id !== id));
+  }, []);
+
+  const submitOrder = async (
+    details: CheckoutFormValues
+  ): Promise<OrderResponse | undefined> => {
     if (!cart.hasItems) {
-      return;
+      showToast({
+        type: 'error',
+        title: t('checkout.toasts.emptyCartTitle'),
+        description: t('checkout.toasts.emptyCartDescription'),
+      });
+      return undefined;
     }
 
     setIsSubmitting(true);
+
     try {
       const orderItems = cart.cartItems.map(({ product, quantity }) => ({
         id: product.id,
@@ -104,10 +132,27 @@ function MainLayout(): JSX.Element {
         price: product.price,
       }));
 
+      const normalize = (value?: string): string | undefined => {
+        if (!value) {
+          return undefined;
+        }
+        const trimmed = value.trim();
+        return trimmed.length ? trimmed : undefined;
+      };
+
       const payload: OrderPayload = {
         items: orderItems,
         customer: {
-          name: 'Walk-in customer',
+          name: normalize(details.name) ?? 'Walk-in customer',
+          phone: normalize(details.phone),
+          address: normalize(details.address),
+        },
+        delivery: {
+          slot: normalize(details.slot),
+          instructions: normalize(details.instructions),
+        },
+        payment: {
+          method: normalize(details.paymentMethod),
         },
       };
 
@@ -119,14 +164,35 @@ function MainLayout(): JSX.Element {
 
       const result = (await response.json()) as OrderResponse;
       if (!response.ok) {
-        throw new Error(result.message || 'Unable to place order right now.');
+        throw new Error(result.error || result.message || t('checkout.toasts.errorDescription'));
       }
 
-      window.alert(result.message ?? 'Order placed.');
       cart.clearCart();
+
+      const title = result.message ?? t('checkout.toasts.successTitle');
+      const description = result.orderId
+        ? t('checkout.toasts.reference', { orderId: result.orderId })
+        : undefined;
+
+      showToast({
+        type: 'success',
+        title,
+        description,
+      });
+
+      return result;
     } catch (error) {
       console.error(error);
-      window.alert('Unable to place order right now. Please call the store.');
+      const fallback = t('checkout.toasts.errorDescription');
+      const message = error instanceof Error ? error.message : fallback;
+
+      showToast({
+        type: 'error',
+        title: t('checkout.toasts.errorTitle'),
+        description: message || fallback,
+      });
+
+      throw error instanceof Error ? error : new Error(message || fallback);
     } finally {
       setIsSubmitting(false);
     }
@@ -140,12 +206,6 @@ function MainLayout(): JSX.Element {
   };
 
   const year = new Date().getFullYear();
-  const dictionary: TranslationTree = TRANSLATIONS[locale];
-
-  const t = useCallback(
-    (path: string, params?: Record<string, string | number | undefined>) => translate(dictionary, path, params),
-    [dictionary]
-  );
 
   const translationValue = useMemo(
     () => ({
@@ -166,6 +226,13 @@ function MainLayout(): JSX.Element {
         </main>
         <Footer year={year} />
         <FloatingCall />
+        {toasts.length > 0 && (
+          <div className="pointer-events-none fixed right-4 top-24 z-50 flex flex-col gap-3">
+            {toasts.map((toast) => (
+              <Toast key={toast.id} toast={toast} onDismiss={dismissToast} />
+            ))}
+          </div>
+        )}
       </div>
     </TranslationContext.Provider>
   );

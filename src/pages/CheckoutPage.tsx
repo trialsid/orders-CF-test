@@ -4,17 +4,18 @@ import { CheckCircle2, ChevronRight } from 'lucide-react';
 import type { AppOutletContext } from '../layouts/MainLayout';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useTranslations } from '../i18n/i18n';
+import type { CheckoutFormValues } from '../types';
 
 type StepKey = 'details' | 'payment' | 'review';
 
-type FormState = {
-  name: string;
-  phone: string;
-  address: string;
-  slot: string;
-  paymentMethod: string;
-  instructions: string;
-};
+const createInitialFormState = (): CheckoutFormValues => ({
+  name: '',
+  phone: '',
+  address: '',
+  slot: '',
+  paymentMethod: '',
+  instructions: '',
+});
 
 function CheckoutPage(): JSX.Element {
   const { cart, submitOrder, isSubmitting } = useOutletContext<AppOutletContext>();
@@ -28,14 +29,7 @@ function CheckoutPage(): JSX.Element {
     [t]
   );
   const [stepIndex, setStepIndex] = useState(0);
-  const [form, setForm] = useState<FormState>({
-    name: '',
-    phone: '',
-    address: '',
-    slot: '',
-    paymentMethod: '',
-    instructions: '',
-  });
+  const [form, setForm] = useState<CheckoutFormValues>(() => createInitialFormState());
 
   const currentStep = steps[stepIndex];
   const canProceed = useMemo(() => {
@@ -56,12 +50,22 @@ function CheckoutPage(): JSX.Element {
     setStepIndex((prev) => Math.max(prev - 1, 0));
   };
 
-  const handleChange = (field: keyof FormState) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (field: keyof CheckoutFormValues) => (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
   const handleSubmit = async () => {
-    await submitOrder();
+    try {
+      const result = await submitOrder(form);
+      if (result) {
+        setForm(() => createInitialFormState());
+        setStepIndex(0);
+      }
+    } catch {
+      // submitOrder surfaces errors via toast notifications.
+    }
   };
 
   return (
@@ -146,25 +150,33 @@ function CheckoutPage(): JSX.Element {
                 <div className="mt-6 space-y-5">
                   <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">
                     {t('checkout.forms.slotLabel')}
-                    <input
-                      type="text"
+                    <select
                       value={form.slot}
                       onChange={handleChange('slot')}
-                      className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950"
-                      placeholder={t('checkout.forms.slotPlaceholder')}
+                      className="mt-2 w-full appearance-none rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950"
                       required
-                    />
+                    >
+                      <option value="" disabled>
+                        {t('checkout.forms.slotPlaceholder')}
+                      </option>
+                      <option value="11:30 AM">11:30 AM</option>
+                      <option value="6:30 PM">6:30 PM</option>
+                    </select>
                   </label>
                   <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">
                     {t('checkout.forms.paymentLabel')}
-                    <input
-                      type="text"
+                    <select
                       value={form.paymentMethod}
                       onChange={handleChange('paymentMethod')}
-                      className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950"
-                      placeholder={t('checkout.forms.paymentPlaceholder')}
+                      className="mt-2 w-full appearance-none rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950"
                       required
-                    />
+                    >
+                      <option value="" disabled>
+                        {t('checkout.forms.paymentPlaceholder')}
+                      </option>
+                      <option value="Cash on delivery">{t('checkout.forms.paymentCashOnDelivery')}</option>
+                      <option value="UPI on delivery">{t('checkout.forms.paymentUpi')}</option>
+                    </select>
                   </label>
                   <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">
                     {t('checkout.forms.instructionsLabel')}

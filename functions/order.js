@@ -1,11 +1,35 @@
 import { INVENTORY_MAP } from "./_inventory";
 
+const DEFAULT_ORDER_STATUS = "pending";
+
+function jsonResponse(payload, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+function getDatabase(env) {
+  return env && typeof env === "object" ? env.ORDERS_DB : undefined;
+}
+
+function normalizeString(value) {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : undefined;
+}
+
 function validateOrder(body) {
   if (!body || typeof body !== "object") {
     return { error: "Invalid request body." };
   }
 
-  const { items = [], customer = {} } = body;
+  const { items = [], customer = {}, delivery = {}, payment = {} } = body;
 
   if (!Array.isArray(items) || items.length === 0) {
     return { error: "Please include at least one item in your order." };
@@ -30,71 +54,209 @@ function validateOrder(body) {
     processed.push({
       id: item.id,
       name: item.name,
+      unit: item.unit,
       quantity: qty,
       unitPrice: item.price,
       lineTotal,
     });
   }
 
+  const customerName = normalizeString(customer.name) ?? "Walk-in customer";
+  const customerPhone = normalizeString(customer.phone);
+  const customerAddress = normalizeString(customer.address);
+  const deliverySlot = normalizeString(delivery.slot);
+  const deliveryInstructions = normalizeString(delivery.instructions);
+  const paymentMethod = normalizeString(payment.method);
+
+  if (!customerPhone) {
+    return { error: "Please include a contact phone number." };
+  }
+
+  const phoneDigits = customerPhone.replace(/\D/g, "");
+  if (phoneDigits.length < 6) {
+    return { error: "Please provide a valid phone number." };
+  }
+
+  if (!customerAddress) {
+    return { error: "Please include a delivery address." };
+  }
+
+  if (!deliverySlot) {
+    return { error: "Please choose a delivery slot." };
+  }
+
+  if (!paymentMethod) {
+    return { error: "Please choose a payment method." };
+  }
+
   return {
     customer: {
-      name: String(customer.name || "Walk-in customer"),
-      phone: customer.phone ? String(customer.phone) : undefined,
+      name: customerName,
+      phone: customerPhone,
+      address: customerAddress,
     },
     items: processed,
     total,
+    delivery: {
+      slot: deliverySlot,
+      instructions: deliveryInstructions,
+    },
+    payment: {
+      method: paymentMethod,
+    },
   };
 }
 
-export async function onRequestPost({ request }) {
+async function persistOrder(env, summary, orderId) {
+  const db = getDatabase(env);
+  if (!db) {
+    return { error: "ORDERS_DB binding is not configured." };
+  }
+
+  const payload = JSON.stringify(summary.items);
+
+  try {
+    await db
+      .prepare(
+        `INSERT INTO orders (
+           id,
+           customer_name,
+           customer_phone,
+           total_amount,
+           currency,
+           status,
+           items_json,
+           customer_address,
+           delivery_slot,
+           payment_method,
+           delivery_instructions
+         )
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .bind(
+        orderId,
+        summary.customer.name,
+        summary.customer.phone ?? null,
+        summary.total,
+        "INR",
+        DEFAULT_ORDER_STATUS,
+        payload,
+        summary.customer.address ?? null,
+        summary.delivery?.slot ?? null,
+        summary.payment?.method ?? null,
+        summary.delivery?.instructions ?? null
+      )
+      .run();
+    return {};
+  } catch (error) {
+    console.error("Failed to persist order", error);
+    return { error: "Unable to save order right now." };
+  }
+}
+
+function parseItems(itemsJson) {
+  if (!itemsJson) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(itemsJson);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error("Failed to parse order items", error);
+    return [];
+  }
+}
+
+export async function onRequestPost({ request, env }) {
   let payload;
   try {
     payload = await request.json();
   } catch (error) {
-    return new Response(JSON.stringify({ error: "Request body must be valid JSON." }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: "Request body must be valid JSON." }, 400);
   }
 
   const result = validateOrder(payload);
   if (result.error) {
-    return new Response(JSON.stringify({ error: result.error }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: result.error }, 400);
   }
 
   const orderId = `ORD-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
-  return new Response(
-    JSON.stringify({
-      message: "Order received! We will call to confirm within 15 minutes.",
-      orderId,
-      summary: result,
-    }),
-    {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
-}
-
-export async function onRequest({ request }) {
-  if (request.method === "POST") {
-    return onRequestPost({ request });
+  const persistResult = await persistOrder(env, result, orderId);
+  if (persistResult.error) {
+    return jsonResponse({ error: persistResult.error }, 500);
   }
 
-  return new Response(
-    JSON.stringify({
-      message: "Send a POST request with your items to place an order.",
-      hint: "See the frontend app for an example payload.",
-    }),
-    {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    }
-  );
+  return jsonResponse({
+    message: "Order received! We will call to confirm within 15 minutes.",
+    orderId,
+    summary: {
+      ...result,
+      status: DEFAULT_ORDER_STATUS,
+    },
+  });
+}
+
+export async function onRequestGet({ request, env }) {
+  const db = getDatabase(env);
+  if (!db) {
+    return jsonResponse({ error: "ORDERS_DB binding is not configured." }, 501);
+  }
+
+  const url = new URL(request.url);
+  const limitParam = Number(url.searchParams.get("limit") ?? "25");
+  const limit = Number.isFinite(limitParam) ? Math.min(Math.max(Math.floor(limitParam), 1), 100) : 25;
+
+  try {
+    const statement = db.prepare(
+      `SELECT id,
+              customer_name,
+              customer_phone,
+              total_amount,
+              currency,
+              status,
+              items_json,
+              created_at,
+              customer_address,
+              delivery_slot,
+              payment_method,
+              delivery_instructions
+       FROM orders
+       ORDER BY datetime(created_at) DESC
+       LIMIT ?`
+    );
+    const { results } = await statement.bind(limit).all();
+
+    const orders = (results ?? []).map((row) => ({
+      id: row.id,
+      customerName: row.customer_name,
+      customerPhone: row.customer_phone ?? undefined,
+      customerAddress: row.customer_address ?? undefined,
+      totalAmount: row.total_amount,
+      currency: row.currency ?? "INR",
+      status: row.status ?? DEFAULT_ORDER_STATUS,
+      items: parseItems(row.items_json),
+      createdAt: row.created_at,
+      deliverySlot: row.delivery_slot ?? undefined,
+      paymentMethod: row.payment_method ?? undefined,
+      deliveryInstructions: row.delivery_instructions ?? undefined,
+    }));
+
+    return jsonResponse({ orders });
+  } catch (error) {
+    console.error("Failed to read orders", error);
+    return jsonResponse({ error: "Unable to load orders right now." }, 500);
+  }
+}
+
+export async function onRequest({ request, env, ctx }) {
+  if (request.method === "POST") {
+    return onRequestPost({ request, env, ctx });
+  }
+
+  if (request.method === "GET") {
+    return onRequestGet({ request, env, ctx });
+  }
+
+  return jsonResponse({ error: "Method not allowed." }, 405);
 }

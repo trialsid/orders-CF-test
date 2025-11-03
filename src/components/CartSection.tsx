@@ -1,5 +1,5 @@
 import React from 'react';
-import { MinusCircle, PlusCircle, CheckCircle2, Truck } from 'lucide-react';
+import { MinusCircle, PlusCircle, ChevronRight, Truck } from 'lucide-react';
 import type { CartEntry } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useTranslations } from '../i18n/i18n';
@@ -83,10 +83,10 @@ function CartSection({ items, total, onUpdateQuantity, onSubmit, isSubmitting, h
                 disabled={!hasItems || isSubmitting}
                 className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-3 text-base font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSubmitting ? t('cart.placingOrder') : t('cart.placeOrder')}
-                {!isSubmitting && <CheckCircle2 className="h-5 w-5" />}
+                {isSubmitting ? t('cart.processingOrder') : t('cart.proceedToCheckout')}
+                {!isSubmitting && <ChevronRight className="h-5 w-5" />}
               </button>
-              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{t('cart.confirmationNote')}</p>
+              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{t('cart.checkoutNote')}</p>
             </div>
           </aside>
         </div>

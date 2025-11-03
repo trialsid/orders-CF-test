@@ -1,14 +1,22 @@
-Project: Order.Ieeja grocery storefront (Cloudflare Pages with Pages Functions).
-Stack: React + Vite frontend rewritten with Tailwind design system (green accents, light/dark theme toggle), lucide-react icons, TypeScript hooks/components, Cloudflare Pages Functions backend.
-Structure:
-- src/: React app with modular components (Header, ProductsSection, CartSection, ContactSection, etc.), typed hooks (useProducts, useCart), Tailwind index.css.
-- public/favicon.svg: custom gradient basket icon.
-- functions/: Cloudflare Pages Functions (_worker.js router, products.js, order.js, _inventory.js).
-- wrangler.toml: name="order-ieeja", compatibility_date="2025-07-18", pages_build_output_dir="dist".
-- package.json scripts: cf:deploy (preview), cf:deploy:prod (production via --branch production), cf:dev (wrangler pages dev dist), typecheck.
-Deployment workflow:
-- Local dev: npm run dev (Vite) + npm run cf:dev (build + wrangler pages dev dist) using proxy in vite.config.js for /products & /order.
-- Preview deploy: npm run cf:deploy or npm run cf:deploy:preview.
-- Production deploy: npm run cf:deploy:prod (targets Pages environment "production").
-Notes (Nov 2 2025): Vite config proxies API calls to Wrangler dev server; Tailwind dark mode via root class toggle; new ordering-focused UI live; keep dist/ out of git; add git init when ready.
-Update (Nov 4 2025): Converted the one-page flow into routed sections (Home, Discover, Cart, Checkout, Orders, Support) with shared MainLayout managing theme/cart state, introduced SiteNav with language toggle, implemented bilingual localization (English/Telugu) across components, and added translation context/hooks. Build still blocked locally by Rollup optional dependency; rerun npm install if needed. Language selector uses EN/TE dropdown pill matching design system.
+Project: Order.Ieeja grocery storefront (Cloudflare Pages + D1).
+Stack: React (Vite) with Tailwind design system (green accents, light/dark theme), lucide-react icons, TypeScript hooks/components, Cloudflare Pages Functions backend, Cloudflare D1 database for orders.
+
+Structure highlights:
+- src/: React app with MainLayout providing theme/locale context, routed pages (Home, Discover, Cart, Checkout, Orders, Support), reusable components (SiteNav, ProductsSection, CartSection, Toast, etc.), hooks (useProducts, useCart, useOrders), utilities (formatCurrency).
+- functions/: Cloudflare Pages Functions (_worker.js router, products.js inventory endpoint, order.js order submission/listing backed by D1).
+- migrations/: Versioned D1 schema migrations (0001_create_orders.sql, 0002_add_order_details.sql) applied locally; remote application pending.
+- wrangler.toml: name="order-ieeja", compatibility_date="2025-07-18", pages_build_output_dir="dist", D1 binding ORDERS_DB -> database_id 0eaea965-4467-4aee-89a9-28aed83e4c79.
+
+Current backend flow:
+- POST /order validates cart payload, requires phone/address/slot/payment, persists to D1 (orders table with customer, delivery, payment fields), returns orderId + summary.
+- GET /order lists recent orders (limit query param), includes structured customer/delivery/payment data used by Orders page.
+
+Frontend state:
+- Cart page CTA navigates to checkout (no direct submission). Checkout collects delivery details in multi-step flow, now using dropdowns for slot (11:30 AM, 6:30 PM) and payment method (Cash on delivery, UPI on delivery).
+- Order submission triggered on checkout confirmation; provides toast feedback (success/error) via new Toast component anchored in MainLayout. Orders page fetches live data and shows customer/delivery/payment details.
+
+Local setup/reminders:
+- Development: npm run dev (Vite) + npm run cf:dev (Wrangler dev). D1 migrations applied locally (0001,0002). Remote migration/app binding not yet applied—hold until ready for deploy.
+- Pending work ideas: redirect to Orders after success, admin/status management, richer Orders UI, inline validation polish, slot/payment option config externalization.
+
+Note: Keep dist/ out of git; Pages binding ORDERS_DB must be added in Cloudflare dashboard before deploy. Context last updated Nov 25, 2025 after checkout dropdown enhancement.
