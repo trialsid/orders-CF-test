@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 export type MobileStickyActionProps = {
   label: string;
@@ -33,7 +33,68 @@ function MobileStickyAction({
   secondaryDisabled = false,
   secondaryButtonClassName,
 }: MobileStickyActionProps): JSX.Element | null {
-  if (hidden) {
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    let blurTimeout: number | undefined;
+
+    const handleFocusIn = (event: FocusEvent) => {
+      const target = event.target as Element | null;
+      if (!target) {
+        return;
+      }
+      const isTextInput =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target.getAttribute('contenteditable') === 'true';
+
+      if (isTextInput) {
+        setKeyboardVisible((prev) => (prev ? prev : true));
+      }
+    };
+
+    const handleFocusOut = () => {
+      if (blurTimeout) {
+        window.clearTimeout(blurTimeout);
+      }
+      blurTimeout = window.setTimeout(() => {
+        setKeyboardVisible((prev) => (prev ? false : prev));
+      }, 200);
+    };
+
+    const viewport = window.visualViewport;
+
+    const handleViewportChange = () => {
+      if (!viewport) {
+        return;
+      }
+      const heightDelta = window.innerHeight - viewport.height;
+      const isKeyboardLikelyOpen = heightDelta > 150;
+      setKeyboardVisible((prev) =>
+        prev === isKeyboardLikelyOpen ? prev : isKeyboardLikelyOpen
+      );
+    };
+
+    window.addEventListener('focusin', handleFocusIn);
+    window.addEventListener('focusout', handleFocusOut);
+    viewport?.addEventListener('resize', handleViewportChange);
+
+    return () => {
+      window.removeEventListener('focusin', handleFocusIn);
+      window.removeEventListener('focusout', handleFocusOut);
+      viewport?.removeEventListener('resize', handleViewportChange);
+      if (blurTimeout) {
+        window.clearTimeout(blurTimeout);
+      }
+    };
+  }, []);
+
+  if (hidden || keyboardVisible) {
     return null;
   }
 

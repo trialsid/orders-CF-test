@@ -11,6 +11,12 @@
     @apply scroll-smooth;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto !important;
+    }
+  }
+
   body {
     @apply font-body bg-surface-light text-slate-900 antialiased dark:bg-surface-dark dark:text-slate-100;
   }

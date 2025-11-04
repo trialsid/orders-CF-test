@@ -7,6 +7,7 @@ import Toast, { type ToastMessage } from '../components/Toast';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../hooks/useCart';
 import type { CheckoutFormValues, OrderPayload, OrderResponse } from '../types';
+import { createEmptyCheckoutForm } from '../utils/checkout';
 import {
   Locale,
   SUPPORTED_LOCALES,
@@ -46,11 +47,19 @@ const getPreferredLocale = (): Locale => {
 export type ProductsContextValue = ReturnType<typeof useProducts>;
 export type CartContextValue = ReturnType<typeof useCart>;
 
+export type CheckoutDraftState = {
+  form: CheckoutFormValues;
+  stepIndex: number;
+};
+
 export type AppOutletContext = {
   products: ProductsContextValue;
   cart: CartContextValue;
   submitOrder: (details: CheckoutFormValues) => Promise<OrderResponse | undefined>;
   isSubmitting: boolean;
+  checkoutDraft: CheckoutDraftState;
+  updateCheckoutDraft: (draft: Partial<CheckoutDraftState>) => void;
+  resetCheckoutDraft: () => void;
 };
 
 function MainLayout(): JSX.Element {
@@ -62,6 +71,21 @@ function MainLayout(): JSX.Element {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const mainRef = useRef<HTMLElement | null>(null);
+  const [checkoutDraft, setCheckoutDraft] = useState<CheckoutDraftState>(() => ({
+    form: createEmptyCheckoutForm(),
+    stepIndex: 0,
+  }));
+
+  const updateCheckoutDraft = useCallback((draft: Partial<CheckoutDraftState>) => {
+    setCheckoutDraft((current) => ({
+      form: draft.form ?? current.form,
+      stepIndex: typeof draft.stepIndex === 'number' ? draft.stepIndex : current.stepIndex,
+    }));
+  }, []);
+
+  const resetCheckoutDraft = useCallback(() => {
+    setCheckoutDraft({ form: createEmptyCheckoutForm(), stepIndex: 0 });
+  }, []);
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -196,6 +220,7 @@ function MainLayout(): JSX.Element {
       }
 
       cart.clearCart();
+      resetCheckoutDraft();
 
       const title = result.message ?? t('checkout.toasts.successTitle');
       const description = result.orderId
@@ -231,6 +256,9 @@ function MainLayout(): JSX.Element {
     cart,
     submitOrder,
     isSubmitting,
+    checkoutDraft,
+    updateCheckoutDraft,
+    resetCheckoutDraft,
   };
 
   const year = new Date().getFullYear();
