@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import SiteNav from '../components/SiteNav';
 import Footer from '../components/Footer';
 import FloatingCall from '../components/FloatingCall';
@@ -56,10 +56,12 @@ export type AppOutletContext = {
 function MainLayout(): JSX.Element {
   const products = useProducts();
   const cart = useCart();
+  const location = useLocation();
   const [theme, setTheme] = useState<Theme>(() => getPreferredTheme());
   const [locale, setLocale] = useState<Locale>(() => getPreferredLocale());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const mainRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -108,6 +110,32 @@ function MainLayout(): JSX.Element {
   const dismissToast = useCallback((id: number) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const mainElement = mainRef.current;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const behavior: ScrollBehavior = prefersReducedMotion ? 'auto' : 'smooth';
+
+    window.scrollTo({ top: 0, left: 0, behavior });
+
+    if (!mainElement) {
+      return;
+    }
+
+    const focusMain = () => {
+      mainElement.focus({ preventScroll: true });
+    };
+
+    if (prefersReducedMotion) {
+      focusMain();
+    } else {
+      window.requestAnimationFrame(() => focusMain());
+    }
+  }, [location.pathname]);
 
   const submitOrder = async (
     details: CheckoutFormValues
@@ -221,7 +249,12 @@ function MainLayout(): JSX.Element {
     <TranslationContext.Provider value={translationValue}>
       <div className="min-h-screen bg-surface-light dark:bg-slate-950">
         <SiteNav theme={theme} onToggleTheme={toggleTheme} cartCount={cart.cartItems.length} />
-        <main className="pb-16">
+        <main
+          id="main-content"
+          ref={mainRef}
+          tabIndex={-1}
+          className="pb-16 focus:outline-none"
+        >
           <Outlet context={outletContext} />
         </main>
         <Footer year={year} />

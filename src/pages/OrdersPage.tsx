@@ -2,6 +2,7 @@ import React from 'react';
 import { useOrders } from '../hooks/useOrders';
 import { useTranslations } from '../i18n/i18n';
 import { formatCurrency } from '../utils/formatCurrency';
+import PageSection from '../components/PageSection';
 
 const STATUS_BADGE_STYLES: Record<string, string> = {
   pending: 'bg-amber-500/10 text-amber-700 dark:text-amber-200',
@@ -28,23 +29,22 @@ function OrdersPage(): JSX.Element {
   const hasOrders = status === 'success' && orders.length > 0;
 
   return (
-    <section className="section">
-      <div className="page-shell space-y-10">
-        <header className="section__intro">
-          <h1>{t('orders.title')}</h1>
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="text-sm text-slate-600 dark:text-slate-300">{t('orders.description')}</p>
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
-              onClick={refresh}
-              disabled={isLoading}
-            >
-              {isLoading ? t('orders.loading') : t('orders.refresh')}
-            </button>
-          </div>
-        </header>
-
+    <PageSection
+      title={t('orders.title')}
+      description={t('orders.description')}
+      introClassName="text-left sm:text-center"
+      spacing="compact"
+      actions={
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
+          onClick={refresh}
+          disabled={isLoading}
+        >
+          {isLoading ? t('orders.loading') : t('orders.refresh')}
+        </button>
+      }
+    >
         {isLoading && (
           <div className="rounded-3xl border border-dashed border-emerald-200/60 bg-white/80 p-6 text-sm text-slate-600 dark:border-emerald-900/60 dark:bg-slate-900/60 dark:text-slate-300">
             {t('orders.loading')}
@@ -144,8 +144,7 @@ function OrdersPage(): JSX.Element {
             })}
           </div>
         )}
-      </div>
-    </section>
+    </PageSection>
   );
 }
 

@@ -2,7 +2,7 @@ Project: Order.Ieeja grocery storefront (Cloudflare Pages + D1).
 Stack: React (Vite) with Tailwind design system (green accents, light/dark theme), lucide-react icons, TypeScript hooks/components, Cloudflare Pages Functions backend, Cloudflare D1 database for orders.
 
 Structure highlights:
-- src/: React app with MainLayout providing theme/locale context, routed pages (Home, Discover, Cart, Checkout, Orders, Support), reusable components (SiteNav, ProductsSection, CartSection, Toast, etc.), hooks (useProducts, useCart, useOrders), utilities (formatCurrency).
+- src/: React app with MainLayout providing theme/locale context, routed pages (Home, Discover, Product detail, Cart, Checkout, Orders, Support), reusable components (SiteNav, ProductsSection, CartSection, Toast, etc.), hooks (useProducts, useCart, useOrders), utilities (formatCurrency).
 - functions/: Cloudflare Pages Functions (_worker.js router, products.js inventory endpoint, order.js order submission/listing backed by D1).
 - migrations/: Versioned D1 schema migrations (0001_create_orders.sql, 0002_add_order_details.sql) applied locally; remote application pending.
 - wrangler.toml: name="order-ieeja", compatibility_date="2025-07-18", pages_build_output_dir="dist", D1 binding ORDERS_DB -> database_id 0eaea965-4467-4aee-89a9-28aed83e4c79.
@@ -12,11 +12,14 @@ Current backend flow:
 - GET /order lists recent orders (limit query param), includes structured customer/delivery/payment data used by Orders page.
 
 Frontend state:
-- Cart page CTA navigates to checkout (no direct submission). Checkout collects delivery details in multi-step flow, now using dropdowns for slot (11:30 AM, 6:30 PM) and payment method (Cash on delivery, UPI on delivery).
-- Order submission triggered on checkout confirmation; provides toast feedback (success/error) via new Toast component anchored in MainLayout. Orders page fetches live data and shows customer/delivery/payment details.
+- Mobile sticky CTAs use two-tier lime/amber info chips with dual-action pills, unified across cart, checkout, and discover flows (including mobile back button support in checkout CTA).
+- Discover page features compact mobile product cards with icon-only add control that expands to a unified “− badge +” pill once items are added; desktop retains full text buttons. Layout tightened for smaller vertical footprint.
+- Cart page mirrors the new quantity control styling (gradient count pill, matching plus/minus pills) and routes to checkout with the refreshed CTA experience. Checkout retains multi-step flow with slimmer spacing, dropdowns for slot (11:30 AM, 6:30 PM) and payment method (Cash on delivery, UPI on delivery), and sticky CTA now offering back/continue on mobile.
+- Order submission triggered on checkout confirmation; provides toast feedback (success/error) via Toast component anchored in MainLayout. Orders page fetches live data and shows customer/delivery/payment details.
 
 Local setup/reminders:
 - Development: npm run dev (Vite) + npm run cf:dev (Wrangler dev). D1 migrations applied locally (0001,0002). Remote migration/app binding not yet applied—hold until ready for deploy.
-- Pending work ideas: redirect to Orders after success, admin/status management, richer Orders UI, inline validation polish, slot/payment option config externalization.
+- npm run build currently fails in this environment due to missing optional dependency `@rollup/rollup-linux-x64-gnu`; reinstall dependencies if local build is needed.
+- Pending work ideas: redirect to Orders after success, admin/status management, richer Orders UI, inline validation polish, slot/payment option config externalization, PWA/service worker manifest when ready.
 
-Note: Keep dist/ out of git; Pages binding ORDERS_DB must be added in Cloudflare dashboard before deploy. Context last updated Nov 25, 2025 after checkout dropdown enhancement.
+Note: Keep dist/ out of git; Pages binding ORDERS_DB must be added in Cloudflare dashboard before deploy. Context last updated Nov 26, 2025 after mobile UX overhaul and product detail page addition.

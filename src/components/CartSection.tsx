@@ -1,8 +1,10 @@
 import React from 'react';
-import { MinusCircle, PlusCircle, ChevronRight, Truck } from 'lucide-react';
+import { Minus, Plus, ChevronRight, Truck } from 'lucide-react';
 import type { CartEntry } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useTranslations } from '../i18n/i18n';
+import PageSection from './PageSection';
+import MobileStickyAction from './MobileStickyAction';
 
 type CartSectionProps = {
   items: CartEntry[];
@@ -15,21 +17,27 @@ type CartSectionProps = {
 
 function CartSection({ items, total, onUpdateQuantity, onSubmit, isSubmitting, hasItems }: CartSectionProps): JSX.Element {
   const { t } = useTranslations();
+  const totalQuantity = items.reduce((sum, entry) => sum + entry.quantity, 0);
 
   return (
-    <section id="cart" className="section bg-surface-light dark:bg-slate-950">
-      <div className="page-shell">
-        <div className="section__intro">
-          <h2>{t('cart.title')}</h2>
-          <p>{t('cart.description')}</p>
-        </div>
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <>
+      <PageSection
+        id="cart"
+        title={t('cart.title')}
+        description={t('cart.description')}
+        className="bg-surface-light pb-28 dark:bg-slate-950 md:pb-16"
+        introClassName="text-left sm:text-center"
+        headingLevel={1}
+        spacing="none"
+        contentClassName="space-y-10"
+      >
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
           <div className="space-y-4">
             {items.length ? (
               items.map(({ product, quantity }) => (
                 <div
                   key={product.id}
-                  className="flex flex-wrap items-center justify-between gap-6 rounded-3xl border border-emerald-100/70 bg-white/90 p-5 shadow-md shadow-brand-900/10 dark:border-emerald-900/60 dark:bg-slate-900/70"
+                  className="flex flex-col gap-4 rounded-3xl border border-emerald-100/70 bg-white/95 p-5 shadow-md shadow-brand-900/10 dark:border-emerald-900/60 dark:bg-slate-900/70 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-6"
                 >
                   <div className="min-w-[200px] flex-1">
                     <h4 className="font-display text-lg font-semibold text-emerald-900 dark:text-brand-100">{product.name}</h4>
@@ -37,26 +45,30 @@ function CartSection({ items, total, onUpdateQuantity, onSubmit, isSubmitting, h
                       {product.unit} • {product.category}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between gap-4 sm:justify-center">
                     <button
                       type="button"
                       onClick={() => onUpdateQuantity(product.id, -1)}
-                      className="quantity-btn"
+                      className="inline-flex items-center justify-center rounded-full bg-emerald-100 px-5 py-2 text-base font-semibold text-brand-700 shadow-soft transition hover:bg-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:bg-brand-900/40 dark:text-brand-100 dark:hover:bg-brand-900/60"
                       aria-label={t('cart.aria.decrease', { name: product.name })}
                     >
-                      <MinusCircle className="h-4 w-4" />
+                      <Minus className="h-4 w-4" />
                     </button>
-                    <span className="text-base font-semibold text-emerald-900 dark:text-brand-200">{quantity}</span>
+                    <span className="inline-flex min-w-[2.5rem] items-center justify-center rounded-full bg-gradient-to-r from-lime-100 via-yellow-50 to-amber-100 px-3 py-1 text-base font-semibold text-amber-900 shadow-sm shadow-amber-200/60 dark:from-amber-700 dark:via-amber-600 dark:to-amber-700 dark:text-amber-50 dark:shadow-amber-950/40">
+                      {quantity}
+                    </span>
                     <button
                       type="button"
                       onClick={() => onUpdateQuantity(product.id, 1)}
-                      className="quantity-btn"
+                      className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2 text-base font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
                       aria-label={t('cart.aria.increase', { name: product.name })}
                     >
-                      <PlusCircle className="h-4 w-4" />
+                      <Plus className="h-4 w-4" />
                     </button>
                   </div>
-                  <p className="text-lg font-semibold text-brand-700 dark:text-brand-300">{formatCurrency(product.price * quantity)}</p>
+                  <p className="text-lg font-semibold text-brand-700 dark:text-brand-300 sm:text-right">
+                    {formatCurrency(product.price * quantity)}
+                  </p>
                 </div>
               ))
             ) : (
@@ -81,7 +93,7 @@ function CartSection({ items, total, onUpdateQuantity, onSubmit, isSubmitting, h
                 type="button"
                 onClick={onSubmit}
                 disabled={!hasItems || isSubmitting}
-                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-3 text-base font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-6 hidden w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-60 sm:px-6 sm:py-3 sm:text-base md:inline-flex"
               >
                 {isSubmitting ? t('cart.processingOrder') : t('cart.proceedToCheckout')}
                 {!isSubmitting && <ChevronRight className="h-5 w-5" />}
@@ -90,8 +102,18 @@ function CartSection({ items, total, onUpdateQuantity, onSubmit, isSubmitting, h
             </div>
           </aside>
         </div>
-      </div>
-    </section>
+      </PageSection>
+
+      <MobileStickyAction
+        hidden={!hasItems}
+        onClick={onSubmit}
+        disabled={!hasItems || isSubmitting}
+        label={isSubmitting ? t('cart.processingOrder') : t('cart.proceedToCheckout')}
+        icon={!isSubmitting ? <ChevronRight className="h-5 w-5" /> : undefined}
+        helperText={t('cart.stickySummary', { count: totalQuantity, total: formatCurrency(total) })}
+        badge={totalQuantity > 0 ? totalQuantity : undefined}
+      />
+    </>
   );
 }
 

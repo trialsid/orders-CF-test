@@ -1,6 +1,7 @@
 import React from 'react';
 import type { RefObject } from 'react';
-import { PlusCircle, PackageOpen } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, Minus, PackageOpen } from 'lucide-react';
 import type { Product } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useTranslations } from '../i18n/i18n';
@@ -13,6 +14,8 @@ type ProductsSectionProps = {
   products: Product[];
   statusText: string;
   onAddToCart: (product: Product) => void;
+  getQuantity?: (productId: string) => number;
+  onUpdateQuantity?: (productId: string, delta: number) => void;
 };
 
 function ProductsSection({
@@ -23,8 +26,12 @@ function ProductsSection({
   products,
   statusText,
   onAddToCart,
+  getQuantity,
+  onUpdateQuantity,
 }: ProductsSectionProps): JSX.Element {
   const { t } = useTranslations();
+  const resolveQuantity = getQuantity ?? (() => 0);
+  const canAdjustQuantity = typeof onUpdateQuantity === 'function';
 
   return (
     <section id="products" ref={sectionRef} className="section">
@@ -34,7 +41,7 @@ function ProductsSection({
           <p>{t('products.description')}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 sm:flex-wrap sm:gap-3">
           <button
             type="button"
             className={`chip ${filter === 'all' ? 'chip--active' : ''}`}
@@ -58,37 +65,111 @@ function ProductsSection({
           ))}
         </div>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {products.map((product) => (
-            <article
-              key={product.id}
-              className="group flex h-full flex-col justify-between rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-lg shadow-brand-900/10 transition hover:-translate-y-1 hover:shadow-xl dark:border-emerald-900/60 dark:bg-slate-900/70"
-            >
-              <div className="flex flex-col gap-3">
-                <span className="inline-flex w-fit items-center gap-2 rounded-full bg-brand-500/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-brand-700 dark:text-brand-300">
+        <div className="mt-5 grid gap-3.5 sm:mt-8 sm:grid-cols-2 xl:grid-cols-3">
+          {products.map((product) => {
+            const quantity = resolveQuantity(product.id);
+            const handleIncrease = () => {
+              if (canAdjustQuantity && quantity > 0) {
+                onUpdateQuantity?.(product.id, 1);
+                return;
+              }
+              onAddToCart(product);
+            };
+            const handleDecrease = () => {
+              if (!canAdjustQuantity || quantity <= 0) {
+                return;
+              }
+              onUpdateQuantity?.(product.id, -1);
+            };
+
+            return (
+              <article
+                key={product.id}
+                className="group flex h-full flex-col justify-between rounded-3xl border border-emerald-100/70 bg-white/95 p-3 shadow-md shadow-brand-900/10 transition hover:-translate-y-1 hover:shadow-lg dark:border-emerald-900/60 dark:bg-slate-900/70 sm:p-6"
+              >
+                <div className="flex flex-col gap-1.5 sm:gap-2">
+                <span className="hidden w-fit items-center gap-2 rounded-full bg-brand-500/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-brand-700 dark:text-brand-300 sm:inline-flex">
                   <PackageOpen className="h-3.5 w-3.5" />
                   {product.category}
                 </span>
-                <h3 className="font-display text-xl font-semibold text-emerald-900 dark:text-brand-100">{product.name}</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-300">{product.description}</p>
+                <span className="text-xs font-semibold uppercase tracking-wide text-brand-600 sm:hidden">
+                  {product.category}
+                </span>
+                <Link
+                  to={`/products/${product.id}`}
+                  className="font-display text-lg font-semibold text-emerald-900 transition hover:text-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:text-brand-100 sm:text-xl"
+                  aria-label={product.name}
+                >
+                  {product.name}
+                </Link>
+                <div className="flex items-baseline justify-between gap-2 sm:hidden">
+                  <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    {product.unit}
+                  </span>
+                  <span className="text-base font-semibold text-brand-700">
+                    {formatCurrency(product.price)}
+                  </span>
+                </div>
+                <p className="hidden text-sm text-slate-600 dark:text-slate-300 sm:block">{product.description}</p>
               </div>
-              <div className="mt-6 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-300">{product.unit}</p>
+              <div className="mt-3 flex items-center gap-3 sm:mt-6 sm:flex-row sm:items-center sm:justify-between">
+                <div className="hidden sm:block">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-300">
+                    {product.unit}
+                  </p>
                   <p className="text-lg font-semibold text-brand-700 dark:text-brand-300">{formatCurrency(product.price)}</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onAddToCart(product)}
-                  className="inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:border-brand-500 hover:text-brand-900 group-hover:shadow-sm dark:border-brand-700/50 dark:bg-slate-900 dark:text-brand-200 dark:hover:border-brand-400"
-                  aria-label={t('products.aria.addToCart', { name: product.name })}
-                >
-                  {t('products.actions.addToCart')}
-                  <PlusCircle className="h-4 w-4" />
-                </button>
+                <div className="flex w-full items-center justify-end sm:w-auto sm:justify-start">
+                  <button
+                    type="button"
+                    onClick={() => onAddToCart(product)}
+                    className="hidden items-center justify-center gap-2 rounded-full border border-brand-500/40 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:border-brand-500 hover:text-brand-900 group-hover:shadow-sm dark:border-brand-700/50 dark:bg-slate-900 dark:text-brand-200 dark:hover:border-brand-400 sm:inline-flex sm:py-2.5"
+                    aria-label={t('products.aria.addToCart', { name: product.name })}
+                  >
+                    {t('products.actions.addToCart')}
+                    <Plus className="h-4 w-4" />
+                  </button>
+
+                  <div className="inline-flex w-full items-end justify-end sm:hidden">
+                    {quantity > 0 && canAdjustQuantity ? (
+                      <div className="flex w-full items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={handleDecrease}
+                          className="inline-flex items-center justify-center rounded-full bg-emerald-100 px-5 py-2 text-base font-semibold text-brand-700 shadow-soft transition hover:bg-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:bg-brand-900/40 dark:text-brand-100 dark:hover:bg-brand-900/60"
+                          aria-label={t('cart.aria.decrease', { name: product.name })}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+                        <span className="inline-flex min-w-[2.5rem] items-center justify-center rounded-full bg-gradient-to-r from-lime-100 via-yellow-50 to-amber-100 px-3 py-1 text-base font-semibold text-amber-900 shadow-sm shadow-amber-200/60 dark:from-amber-700 dark:via-amber-600 dark:to-amber-700 dark:text-amber-50 dark:shadow-amber-950/40">
+                          {quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleIncrease}
+                          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2 text-base font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                          aria-label={t('cart.aria.increase', { name: product.name })}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleIncrease}
+                        className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2 text-base font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                        aria-label={t('products.aria.addToCart', { name: product.name })}
+                        title={t('products.actions.addToCart')}
+                      >
+                        <Plus className="h-5 w-5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </article>
-          ))}
+          );
+          })}
         </div>
 
         <p className="status">{statusText}</p>

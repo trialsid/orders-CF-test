@@ -17,6 +17,7 @@ const translations = {
       orders: 'Orders',
       support: 'Support',
       call: 'Call',
+      skipToContent: 'Skip to main content',
       toggleMenu: 'Toggle menu',
       openCart: 'Open cart',
       toggleTheme: 'Toggle theme',
@@ -69,6 +70,18 @@ const translations = {
       },
       actions: {
         addToCart: 'Add to basket',
+        viewCart: 'View cart',
+      },
+      stickySummary: '{{count}} item(s) in basket • {{total}}',
+      detail: {
+        goBack: 'Go back',
+        missing: 'We couldn’t find this product. It may be unavailable right now.',
+        backToDiscover: 'Browse all products',
+        about: 'About this item',
+        details: 'Product info',
+        unit: 'Unit',
+        price: 'Price',
+        viewCart: 'View cart',
       },
       status: {
         loading: 'Loading fresh items...',
@@ -95,6 +108,7 @@ const translations = {
       processingOrder: 'Processing order…',
       checkoutNote:
         'You’ll add delivery details and confirm payment at checkout before we submit your order to the team.',
+      stickySummary: '{{count}} item(s) • {{total}}',
       aria: {
         decrease: 'Decrease {{name}}',
         increase: 'Increase {{name}}',
@@ -149,6 +163,7 @@ const translations = {
         callout:
           'Need to make a phone order instead? Call {{phone}} and mention your basket items.',
       },
+      stickySummary: 'Step {{step}} of {{total}} • {{totalAmount}}',
       toasts: {
         successTitle: 'Order placed',
         reference: 'Order ID: {{orderId}}',
@@ -223,6 +238,7 @@ const translations = {
       orders: 'ఆర్డర్లు',
       support: 'సపోర్ట్',
       call: 'కాల్',
+      skipToContent: 'ప్రధాన అంశాలకు వెళ్లండి',
       toggleMenu: 'మెను మార్చండి',
       openCart: 'కార్ట్ తెరవండి',
       toggleTheme: 'థీమ్ మార్చండి',
@@ -278,6 +294,18 @@ const translations = {
       },
       actions: {
         addToCart: 'కార్ట్‌లో జోడించండి',
+        viewCart: 'కార్ట్ చూడండి',
+      },
+      stickySummary: '{{count}} వస్తువులు కార్ట్‌లో ఉన్నాయి • {{total}}',
+      detail: {
+        goBack: 'తిరిగి వెళ్ళండి',
+        missing: 'ఈ ఉత్పత్తి లభ్యం కాలేదు. కొంతసేపటికి మళ్లీ ప్రయత్నించండి.',
+        backToDiscover: 'అన్ని ఉత్పత్తులు చూడండి',
+        about: 'ఈ ఉత్పత్తి గురించి',
+        details: 'ఉత్పత్తి వివరాలు',
+        unit: 'యూనిట్',
+        price: 'ధర',
+        viewCart: 'కార్ట్ చూడండి',
       },
       status: {
         loading: 'తాజా వస్తువులు లోడ్ అవుతున్నాయి...',
@@ -304,6 +332,7 @@ const translations = {
       processingOrder: 'ఆర్డర్ ప్రాసెస్ అవుతోంది…',
       checkoutNote:
         'చెక్కౌట్‌లో డెలివరీ వివరాలు, చెల్లింపు విధానాన్ని నిర్ధారించిన తర్వాతే మా టీమ్‌కు ఆర్డర్ పంపబడుతుంది.',
+      stickySummary: '{{count}} వస్తువులు • {{total}}',
       aria: {
         decrease: '{{name}} పరిమాణం తగ్గించండి',
         increase: '{{name}} పరిమాణం పెంచండి',
@@ -357,6 +386,7 @@ const translations = {
         submitting: 'సబ్మిట్ చేస్తున్నాం…',
         callout: 'ఫోన్ ద్వారా ఆర్డర్ చేయాలా? {{phone}} కి కాల్ చేసి మీ కార్ట్‌లో ఉన్న వస్తువులు చెప్పండి.',
       },
+      stickySummary: 'దశ {{step}} / {{total}} • {{totalAmount}}',
       toasts: {
         successTitle: 'ఆర్డర్ నమోదైంది',
         reference: 'ఆర్డర్ ID: {{orderId}}',

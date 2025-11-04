@@ -6,7 +6,11 @@ function FloatingCall(): JSX.Element {
   const { t } = useTranslations();
 
   return (
-    <a className="floating-call" href="tel:+919876543210" aria-label={t('floatingCall.aria')}>
+    <a
+      className="floating-call hidden sm:inline-flex"
+      href="tel:+919876543210"
+      aria-label={t('floatingCall.aria')}
+    >
       <PhoneCall className="h-4 w-4" />
       {t('floatingCall.label')}
     </a>

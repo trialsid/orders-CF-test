@@ -18,6 +18,30 @@
   strong {
     @apply font-semibold;
   }
+
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 60;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.25rem;
+    border-radius: 9999px;
+    background-image: linear-gradient(to right, #047857, #059669);
+    color: #f8fafc;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: top 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 10px 25px -10px rgba(6, 95, 70, 0.4);
+  }
+
+  .skip-link:focus,
+  .skip-link:focus-visible {
+    top: 1rem;
+  }
 }
 
 @layer components {
@@ -26,7 +50,7 @@
   }
 
   .section {
-    @apply py-16 sm:py-20;
+    @apply py-8 sm:py-20;
   }
 
   .section--muted {
@@ -34,15 +58,15 @@
   }
 
   .section__intro {
-    @apply mx-auto mb-10 max-w-3xl text-center;
+    @apply mx-auto mb-8 max-w-3xl text-center sm:mb-10;
   }
 
   .section__intro h2 {
-    @apply font-display text-3xl font-semibold text-emerald-900 dark:text-brand-200 sm:text-4xl;
+    @apply font-display text-2xl font-semibold text-emerald-900 dark:text-brand-200 sm:text-4xl;
   }
 
   .section__intro p {
-    @apply mt-3 text-base text-slate-600 dark:text-slate-300;
+    @apply mt-3 text-sm text-slate-600 dark:text-slate-300 sm:text-base;
   }
 
   .chip {
@@ -62,7 +86,7 @@
   }
 
   .quantity-btn {
-    @apply flex h-9 w-9 items-center justify-center rounded-full border border-brand-200 bg-white text-sm font-semibold text-brand-700 transition hover:bg-brand-100 dark:border-brand-800 dark:bg-slate-900 dark:text-brand-200 dark:hover:bg-brand-900/60;
+    @apply flex h-10 w-10 items-center justify-center rounded-full border border-brand-200 bg-white text-sm font-semibold text-brand-700 transition hover:bg-brand-100 dark:border-brand-800 dark:bg-slate-900 dark:text-brand-200 dark:hover:bg-brand-900/60 sm:h-9 sm:w-9;
   }
 
   .floating-call {

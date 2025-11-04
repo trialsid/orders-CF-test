@@ -1,12 +1,16 @@
 import React, { useMemo, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { ShoppingCart } from 'lucide-react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import ProductsSection from '../components/ProductsSection';
 import type { AppOutletContext } from '../layouts/MainLayout';
 import { useTranslations } from '../i18n/i18n';
+import { formatCurrency } from '../utils/formatCurrency';
+import MobileStickyAction from '../components/MobileStickyAction';
 
 function DiscoverPage(): JSX.Element {
   const sectionRef = useRef<HTMLElement | null>(null);
   const { products, cart } = useOutletContext<AppOutletContext>();
+  const navigate = useNavigate();
   const { t } = useTranslations();
 
   const statusText = useMemo(() => {
@@ -45,16 +49,44 @@ function DiscoverPage(): JSX.Element {
     products.setFilter(category);
   };
 
+  const totalQuantity = cart.cartItems.reduce((sum, entry) => sum + entry.quantity, 0);
+  const cartTotal = cart.cartTotal;
+  const quantityById = useMemo(() => {
+    const map = new Map<string, number>();
+    cart.cartItems.forEach(({ product, quantity }) => {
+      map.set(product.id, quantity);
+    });
+    return map;
+  }, [cart.cartItems]);
+  const handleGoToCart = () => {
+    navigate('/cart');
+  };
+
   return (
-    <ProductsSection
-      sectionRef={sectionRef}
-      categories={products.categories}
-      filter={products.filter}
-      onFilterChange={handleFilterChange}
-      products={products.filteredProducts}
-      statusText={statusText}
-      onAddToCart={cart.addItem}
-    />
+    <>
+      <ProductsSection
+        sectionRef={sectionRef}
+        categories={products.categories}
+        filter={products.filter}
+        onFilterChange={handleFilterChange}
+        products={products.filteredProducts}
+        statusText={statusText}
+        onAddToCart={cart.addItem}
+        onUpdateQuantity={cart.updateQuantity}
+        getQuantity={(productId) => quantityById.get(productId) ?? 0}
+      />
+      <MobileStickyAction
+        hidden={!cart.hasItems}
+        onClick={handleGoToCart}
+        label={t('products.actions.viewCart')}
+        icon={<ShoppingCart className="h-5 w-5" />}
+        helperText={t('products.stickySummary', {
+          count: totalQuantity,
+          total: formatCurrency(cartTotal),
+        })}
+        badge={totalQuantity > 0 ? totalQuantity : undefined}
+      />
+    </>
   );
 }
 

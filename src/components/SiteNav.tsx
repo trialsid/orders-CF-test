@@ -35,8 +35,11 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-emerald-100/60 bg-white/90 shadow-sm backdrop-blur dark:border-emerald-900/40 dark:bg-slate-950/80">
-      <div className="page-shell flex items-center justify-between gap-4 py-4">
+    <header className="relative sticky top-0 z-40 border-b border-emerald-100/60 bg-white/90 shadow-sm backdrop-blur dark:border-emerald-900/40 dark:bg-slate-950/80">
+      <a href="#main-content" className="skip-link">
+        {t('nav.skipToContent')}
+      </a>
+      <div className="page-shell flex items-center justify-between gap-3 py-3 sm:gap-4 sm:py-4">
         <Link to="/" className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-brand-500 to-brand-600 text-base font-semibold text-white">
             OI
@@ -124,14 +127,14 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
       </div>
 
       {open && (
-        <div className="page-shell pb-4 md:hidden">
-          <div className="flex flex-col gap-2 rounded-2xl border border-emerald-100/60 bg-white/90 p-4 text-sm shadow-sm dark:border-emerald-900/60 dark:bg-slate-900/80">
+        <div className="absolute inset-x-0 top-full z-50 px-4 pb-6 md:hidden">
+          <div className="flex max-h-[calc(100vh-6rem)] flex-col gap-3 overflow-y-auto rounded-3xl border border-emerald-100/60 bg-white/95 p-5 text-base shadow-lg shadow-emerald-200/40 backdrop-blur dark:border-emerald-900/60 dark:bg-slate-950/85 dark:text-emerald-100">
             {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `rounded-full px-4 py-2 font-semibold ${
+                  `rounded-full px-5 py-3 font-semibold ${
                     isActive
                       ? 'bg-brand-500 text-white'
                       : 'text-emerald-800 hover:bg-emerald-100/80 dark:text-emerald-200 dark:hover:bg-emerald-900/60'
@@ -141,23 +144,23 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
                 {item.label}
               </NavLink>
             ))}
-            <div className="flex items-center gap-2 rounded-full border border-emerald-100/60 bg-white/70 px-3 py-2 dark:border-emerald-900/60 dark:bg-slate-900/60">
-              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-200">{t('nav.language')}</span>
+            <div className="flex items-center gap-2 rounded-2xl border border-emerald-100/60 bg-white/70 px-4 py-3 text-sm dark:border-emerald-900/60 dark:bg-slate-900/60">
+              <span className="font-semibold text-emerald-700 dark:text-emerald-200">{t('nav.language')}</span>
               <div className="relative flex-1">
                 <select
                   id="locale-switcher-mobile"
                   value={locale}
                   onChange={(event) => handleLocaleChange(event.target.value as Locale)}
-                  className="w-full appearance-none rounded-full border border-emerald-200/70 bg-white px-3 py-1.5 pr-8 text-xs font-semibold text-emerald-800 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
+                  className="w-full appearance-none rounded-full border border-emerald-200/70 bg-white px-3 py-2 pr-10 text-sm font-semibold text-emerald-800 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
                 >
                   <option value="en">{t('nav.english')}</option>
                   <option value="te">{t('nav.telugu')}</option>
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500 dark:text-emerald-300" />
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500 dark:text-emerald-300" />
               </div>
             </div>
             <a
-              className="rounded-full px-4 py-2 font-semibold text-emerald-800 hover:bg-emerald-100/80 dark:text-emerald-200 dark:hover:bg-emerald-900/50"
+              className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-3 font-semibold text-white shadow-sm shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-700"
               href="tel:+919876543210"
             >
               {t('nav.callToOrder')}

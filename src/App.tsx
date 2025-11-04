@@ -7,6 +7,7 @@ import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrdersPage from './pages/OrdersPage';
 import SupportPage from './pages/SupportPage';
+import ProductDetailPage from './pages/ProductDetailPage';
 
 function App(): JSX.Element {
   return (
@@ -15,6 +16,7 @@ function App(): JSX.Element {
         <Route element={<MainLayout />}>
           <Route index element={<HomePage />} />
           <Route path="discover" element={<DiscoverPage />} />
+          <Route path="products/:productId" element={<ProductDetailPage />} />
           <Route path="cart" element={<CartPage />} />
           <Route path="checkout" element={<CheckoutPage />} />
           <Route path="orders" element={<OrdersPage />} />
