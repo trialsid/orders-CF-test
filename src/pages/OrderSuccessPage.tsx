@@ -1,15 +1,28 @@
-import React from 'react';
-import { Navigate, Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react';
+import { Navigate, Link, useLocation, useOutletContext } from 'react-router-dom';
 import { CheckCircle2, ArrowRight, ShoppingBag, ClipboardList } from 'lucide-react';
 import PageSection from '../components/PageSection';
 import { useTranslations } from '../i18n/i18n';
 import { formatCurrency } from '../utils/formatCurrency';
 import type { OrderResponse } from '../types';
+import type { AppOutletContext } from '../layouts/MainLayout';
 
 function OrderSuccessPage(): JSX.Element {
   const location = useLocation();
   const state = location.state as { order?: OrderResponse } | null;
   const { t } = useTranslations();
+  const { cart, resetCheckoutDraft } = useOutletContext<AppOutletContext>();
+  const clearCartRef = useRef(cart.clearCart);
+
+  useEffect(() => {
+    clearCartRef.current = cart.clearCart;
+  }, [cart]);
+
+  useEffect(() => {
+    clearCartRef.current();
+    resetCheckoutDraft();
+  }, [resetCheckoutDraft]);
+
   const order = state?.order;
 
   if (!order) {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Clock3, Wallet } from 'lucide-react';
 import { useOrders } from '../hooks/useOrders';
 import { useTranslations } from '../i18n/i18n';
 import { formatCurrency } from '../utils/formatCurrency';
@@ -81,12 +82,12 @@ function OrdersPage(): JSX.Element {
                 ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(orderDate)
                 : '';
               const summary = formatItemsSummary(order.items);
+              const slotDetail = order.deliverySlot;
+              const paymentDetail = order.paymentMethod;
               const detailLines = [
                 order.customerName ? t('orders.customerLine', { name: order.customerName }) : null,
                 order.customerPhone ? t('orders.customerPhone', { phone: order.customerPhone }) : null,
                 order.customerAddress ? t('orders.customerAddress', { address: order.customerAddress }) : null,
-                order.deliverySlot ? t('orders.deliverySlot', { slot: order.deliverySlot }) : null,
-                order.paymentMethod ? t('orders.paymentMethod', { method: order.paymentMethod }) : null,
                 order.deliveryInstructions
                   ? t('orders.deliveryInstructions', { instructions: order.deliveryInstructions })
                   : null,
@@ -110,6 +111,23 @@ function OrdersPage(): JSX.Element {
                       {statusLabel}
                     </span>
                   </header>
+
+                  {(slotDetail || paymentDetail) && (
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                      {slotDetail && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/70 px-3 py-1 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
+                          <Clock3 className="h-3.5 w-3.5" />
+                          {slotDetail}
+                        </span>
+                      )}
+                      {paymentDetail && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-100/50 px-3 py-1 text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+                          <Wallet className="h-3.5 w-3.5" />
+                          {paymentDetail}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   <div className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
                     {summary && <p>{summary}</p>}

@@ -23,4 +23,4 @@ Local setup/reminders:
 - npm run build currently fails in this environment due to missing optional dependency `@rollup/rollup-linux-x64-gnu`; reinstall dependencies if a local build is needed.
 - Pending work ideas: richer Orders UI with status management, externalized slot/payment config, PWA/service worker manifest when ready.
 
-Note: Keep dist/ out of git; Pages binding ORDERS_DB must be added in Cloudflare dashboard before deploy. Context last updated Nov 27, 2025 after checkout persistence improvements, sticky CTA keyboard handling, and dedicated success route.
+Note: Keep dist/ out of git; Pages binding ORDERS_DB must be added in Cloudflare dashboard before deploy. Context last updated Nov 27, 2025 after checkout persistence improvements, sticky CTA keyboard handling, dedicated success route, stricter client validation/quantity caps matching the D1 worker, and reduced-motion/focus refinements.

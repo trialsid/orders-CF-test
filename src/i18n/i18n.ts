@@ -140,6 +140,11 @@ const translations = {
         instructionsPlaceholder: 'Ring the doorbell twice',
         requiredMessage: 'This field is required.',
       },
+      validation: {
+        invalidPhone: 'Enter a valid phone number with at least 6 digits.',
+        quantityLimit: 'You can only add up to {{limit}} of each item. Adjust your basket before submitting.',
+        fixErrors: 'Please fix the highlighted fields before continuing.',
+      },
       review: {
         deliveryTitle: 'Delivery summary',
         basketTitle: 'Your basket',
@@ -376,6 +381,11 @@ const translations = {
         instructionsLabel: 'డెలివరీ సూచనలు (ఐచ్చికం)',
         instructionsPlaceholder: 'దయచేసి రెండు సార్లు డోర్‌బెల్ మోగించండి',
         requiredMessage: 'ఈ వివరాన్ని తప్పనిసరిగా నింపండి.',
+      },
+      validation: {
+        invalidPhone: 'కనీసం 6 అంకెలు ఉన్న సరైన ఫోన్ నంబర్‌ని నమోదు చేయండి.',
+        quantityLimit: 'ప్రతి వస్తువును గరిష్ఠంగా {{limit}} వరకు మాత్రమే జోడించవచ్చు. ఆర్డర్ సమర్పించే ముందు కార్ట్‌ను సవరించండి.',
+        fixErrors: 'దయచేసి హైలైట్ అయిన ఫీల్డులను సరిచేసి కొనసాగండి.',
       },
       review: {
         deliveryTitle: 'డెలివరీ సారాంశం',

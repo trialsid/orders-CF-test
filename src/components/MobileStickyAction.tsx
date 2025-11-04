@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 export type MobileStickyActionProps = {
   label: string;
@@ -34,6 +34,7 @@ function MobileStickyAction({
   secondaryButtonClassName,
 }: MobileStickyActionProps): JSX.Element | null {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const lastFocusedElementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -54,6 +55,9 @@ function MobileStickyAction({
         target.getAttribute('contenteditable') === 'true';
 
       if (isTextInput) {
+        if (target instanceof HTMLElement) {
+          lastFocusedElementRef.current = target;
+        }
         setKeyboardVisible((prev) => (prev ? prev : true));
       }
     };
@@ -78,6 +82,12 @@ function MobileStickyAction({
       setKeyboardVisible((prev) =>
         prev === isKeyboardLikelyOpen ? prev : isKeyboardLikelyOpen
       );
+      if (isKeyboardLikelyOpen) {
+        const active = document.activeElement;
+        if (active instanceof HTMLElement) {
+          lastFocusedElementRef.current = active;
+        }
+      }
     };
 
     window.addEventListener('focusin', handleFocusIn);
@@ -93,6 +103,25 @@ function MobileStickyAction({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (keyboardVisible) {
+      return;
+    }
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const activeElement = document.activeElement as HTMLElement | null;
+    if (activeElement && activeElement !== document.body) {
+      return;
+    }
+    const target = lastFocusedElementRef.current;
+    if (target && target.isConnected) {
+      window.requestAnimationFrame(() => {
+        target.focus({ preventScroll: true });
+      });
+    }
+  }, [keyboardVisible]);
 
   if (hidden || keyboardVisible) {
     return null;

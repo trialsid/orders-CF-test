@@ -7,7 +7,12 @@ import type { AppOutletContext } from '../layouts/MainLayout';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useTranslations } from '../i18n/i18n';
 import type { CheckoutFormValues, OrderResponse } from '../types';
-import { createEmptyCheckoutForm } from '../utils/checkout';
+import {
+  createEmptyCheckoutForm,
+  prepareOrderPayload,
+  type CheckoutFieldErrors,
+  validateCheckoutFields,
+} from '../utils/checkout';
 
 type StepKey = 'details' | 'payment' | 'review';
 
@@ -50,6 +55,7 @@ function CheckoutPage(): JSX.Element {
   const [stepIndex, setStepIndex] = useState(checkoutDraft.stepIndex);
   const [form, setForm] = useState<CheckoutFormValues>(() => checkoutDraft.form);
   const [touched, setTouched] = useState<TouchedState>(() => createInitialTouchedState());
+  const [errors, setErrors] = useState<CheckoutFieldErrors>({});
   const stepHeadingsRef = useRef<Record<StepKey, HTMLHeadingElement | null>>({
     details: null,
     payment: null,
@@ -72,50 +78,131 @@ function CheckoutPage(): JSX.Element {
 
   const handleBlur = (field: keyof CheckoutFormValues) => () => {
     setTouched((prev) => ({ ...prev, [field]: true }));
+    const { fieldErrors } = validateCheckoutFields(form);
+    const fieldError = fieldErrors[field];
+    setErrors((prev) => {
+      if (!fieldError && !prev[field]) {
+        return prev;
+      }
+      if (!fieldError && prev[field]) {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      }
+      if (fieldError === prev[field]) {
+        return prev;
+      }
+      return { ...prev, [field]: fieldError };
+    });
   };
 
   const handleChange = (field: keyof CheckoutFormValues) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    setForm((prev) => {
-      const next = { ...prev, [field]: event.target.value };
-      updateCheckoutDraft({ form: next });
-      return next;
+    const nextValue = event.target.value;
+    const nextForm: CheckoutFormValues = { ...form, [field]: nextValue };
+
+    setForm(nextForm);
+    updateCheckoutDraft({ form: nextForm });
+
+    setErrors((prev) => {
+      if (!prev[field]) {
+        return prev;
+      }
+      const { fieldErrors } = validateCheckoutFields(nextForm);
+      const nextCode = fieldErrors[field];
+      if (!nextCode && prev[field]) {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      }
+      if (nextCode === prev[field]) {
+        return prev;
+      }
+      return { ...prev, [field]: nextCode };
     });
+  };
+
+  const commitStepIndex = (nextIndex: number) => {
+    setStepIndex(nextIndex);
+    updateCheckoutDraft({ stepIndex: nextIndex });
   };
 
   const nextStep = () => {
-    setStepIndex((prev) => {
-      const next = Math.min(prev + 1, steps.length - 1);
-      updateCheckoutDraft({ stepIndex: next });
-      return next;
-    });
+    const next = Math.min(stepIndex + 1, steps.length - 1);
+    if (next !== stepIndex) {
+      commitStepIndex(next);
+    }
   };
 
   const previousStep = () => {
-    setStepIndex((prev) => {
-      const next = Math.max(prev - 1, 0);
-      updateCheckoutDraft({ stepIndex: next });
-      return next;
-    });
+    const next = Math.max(stepIndex - 1, 0);
+    if (next !== stepIndex) {
+      commitStepIndex(next);
+    }
   };
 
   const handleStepSelect = (index: number) => {
     if (index > stepIndex) {
       return;
     }
-    setStepIndex(index);
-    updateCheckoutDraft({ stepIndex: index });
+    commitStepIndex(index);
+  };
+
+  const focusField = (field: keyof CheckoutFormValues) => {
+    const node = fieldRefs.current[field];
+    if (!node) {
+      return;
+    }
+    const prefersReducedMotion =
+      typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    node.scrollIntoView({ block: 'center', behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+    window.requestAnimationFrame(() => {
+      if ('focus' in node && typeof (node as HTMLElement).focus === 'function') {
+        (node as HTMLElement).focus({ preventScroll: true });
+      }
+    });
   };
 
   const handleSubmit = async () => {
+    const prepared = prepareOrderPayload(form, cart.cartItems);
+
+    if (!prepared.ok) {
+      const fieldErrors = prepared.fieldErrors ?? {};
+      const invalidFields = Object.keys(fieldErrors) as Array<keyof CheckoutFormValues>;
+      if (invalidFields.length > 0) {
+        setTouched((prev) => {
+          const next = { ...prev };
+          invalidFields.forEach((field) => {
+            next[field] = true;
+          });
+          return next;
+        });
+        setErrors((prev) => {
+          const next = { ...prev };
+          invalidFields.forEach((field) => {
+            const code = fieldErrors[field];
+            if (code) {
+              next[field] = code;
+            } else if (next[field]) {
+              delete next[field];
+            }
+          });
+          return next;
+        });
+        focusField(invalidFields[0]);
+      }
+      return;
+    }
+
     try {
-      const result = await submitOrder(form);
+      const result = await submitOrder(prepared.normalizedForm);
       if (result) {
         const clearedForm = createEmptyCheckoutForm();
         setForm(clearedForm);
         setStepIndex(0);
         setTouched(createInitialTouchedState());
+        setErrors({});
         resetCheckoutDraft();
         navigate('/checkout/success', { state: { order: result } });
       }
@@ -134,30 +221,30 @@ function CheckoutPage(): JSX.Element {
 
   const handlePrimaryAction = () => {
     if (!isReviewStep) {
+      const { fieldErrors } = validateCheckoutFields(form);
       const requiredFields = REQUIRED_FIELDS[currentStep.key];
-      const missingFields = requiredFields.filter((field) => !form[field].trim());
-      if (missingFields.length > 0) {
+      const invalidFields = requiredFields.filter((field) => fieldErrors[field]);
+      if (invalidFields.length > 0) {
         setTouched((prev) => {
           const next = { ...prev };
-          missingFields.forEach((field) => {
+          invalidFields.forEach((field) => {
             next[field] = true;
           });
           return next;
         });
-
-        const firstMissing = missingFields[0];
-        const node = fieldRefs.current[firstMissing];
-        if (node) {
-          const prefersReducedMotion =
-            typeof window !== 'undefined' &&
-            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-          node.scrollIntoView({ block: 'center', behavior: prefersReducedMotion ? 'auto' : 'smooth' });
-          window.requestAnimationFrame(() => {
-            if ('focus' in node && typeof (node as HTMLElement).focus === 'function') {
-              (node as HTMLElement).focus({ preventScroll: true });
+        setErrors((prev) => {
+          const next = { ...prev };
+          requiredFields.forEach((field) => {
+            const code = fieldErrors[field];
+            if (code) {
+              next[field] = code;
+            } else if (next[field]) {
+              delete next[field];
             }
           });
-        }
+          return next;
+        });
+        focusField(invalidFields[0]);
         return;
       }
     }
@@ -168,6 +255,22 @@ function CheckoutPage(): JSX.Element {
     }
     nextStep();
   };
+
+  const resolveErrorMessage = (code?: CheckoutFieldErrors[keyof CheckoutFormValues]) => {
+    if (!code) {
+      return undefined;
+    }
+    if (code === 'invalidPhone') {
+      return t('checkout.validation.invalidPhone');
+    }
+    return t('checkout.forms.requiredMessage');
+  };
+
+  const nameError = touched.name ? resolveErrorMessage(errors.name) : undefined;
+  const phoneError = touched.phone ? resolveErrorMessage(errors.phone) : undefined;
+  const addressError = touched.address ? resolveErrorMessage(errors.address) : undefined;
+  const slotError = touched.slot ? resolveErrorMessage(errors.slot) : undefined;
+  const paymentError = touched.paymentMethod ? resolveErrorMessage(errors.paymentMethod) : undefined;
 
   useEffect(() => {
     setForm((current) => (current === checkoutDraft.form ? current : checkoutDraft.form));
@@ -219,16 +322,16 @@ function CheckoutPage(): JSX.Element {
             onBlur={handleBlur('name')}
             autoComplete="name"
             className={`mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950 ${
-              touched.name && !form.name.trim() ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600' : 'border-emerald-200'
+              nameError
+                ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600'
+                : 'border-emerald-200'
             }`}
             placeholder={t('checkout.forms.namePlaceholder')}
             required
-            aria-invalid={touched.name && !form.name.trim()}
+            aria-invalid={Boolean(nameError)}
           />
-          {touched.name && !form.name.trim() && (
-            <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">
-              {t('checkout.forms.requiredMessage')}
-            </p>
+          {nameError && (
+            <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">{nameError}</p>
           )}
         </label>
         <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">
@@ -242,16 +345,16 @@ function CheckoutPage(): JSX.Element {
             autoComplete="tel"
             inputMode="tel"
             className={`mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950 ${
-              touched.phone && !form.phone.trim() ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600' : 'border-emerald-200'
+              phoneError
+                ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600'
+                : 'border-emerald-200'
             }`}
             placeholder={t('checkout.forms.phonePlaceholder')}
             required
-            aria-invalid={touched.phone && !form.phone.trim()}
+            aria-invalid={Boolean(phoneError)}
           />
-          {touched.phone && !form.phone.trim() && (
-            <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">
-              {t('checkout.forms.requiredMessage')}
-            </p>
+          {phoneError && (
+            <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">{phoneError}</p>
           )}
         </label>
         <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">
@@ -263,17 +366,17 @@ function CheckoutPage(): JSX.Element {
             onBlur={handleBlur('address')}
             autoComplete="street-address"
             className={`mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950 ${
-              touched.address && !form.address.trim() ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600' : 'border-emerald-200'
+              addressError
+                ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600'
+                : 'border-emerald-200'
             }`}
             rows={3}
             placeholder={t('checkout.forms.addressPlaceholder')}
             required
-            aria-invalid={touched.address && !form.address.trim()}
+            aria-invalid={Boolean(addressError)}
           />
-          {touched.address && !form.address.trim() && (
-            <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">
-              {t('checkout.forms.requiredMessage')}
-            </p>
+          {addressError && (
+            <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">{addressError}</p>
           )}
         </label>
       </div>
@@ -299,10 +402,12 @@ function CheckoutPage(): JSX.Element {
             onBlur={handleBlur('slot')}
             autoComplete="off"
             className={`mt-2 w-full appearance-none rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950 ${
-              touched.slot && !form.slot.trim() ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600' : 'border-emerald-200'
+              slotError
+                ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600'
+                : 'border-emerald-200'
             }`}
             required
-            aria-invalid={touched.slot && !form.slot.trim()}
+            aria-invalid={Boolean(slotError)}
           >
             <option value="" disabled>
               {t('checkout.forms.slotPlaceholder')}
@@ -310,10 +415,8 @@ function CheckoutPage(): JSX.Element {
             <option value="11:30 AM">11:30 AM</option>
             <option value="6:30 PM">6:30 PM</option>
           </select>
-          {touched.slot && !form.slot.trim() && (
-            <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">
-              {t('checkout.forms.requiredMessage')}
-            </p>
+          {slotError && (
+            <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">{slotError}</p>
           )}
         </label>
         <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">
@@ -325,10 +428,12 @@ function CheckoutPage(): JSX.Element {
             onBlur={handleBlur('paymentMethod')}
             autoComplete="off"
             className={`mt-2 w-full appearance-none rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950 ${
-              touched.paymentMethod && !form.paymentMethod.trim() ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600' : 'border-emerald-200'
+              paymentError
+                ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600'
+                : 'border-emerald-200'
             }`}
             required
-            aria-invalid={touched.paymentMethod && !form.paymentMethod.trim()}
+            aria-invalid={Boolean(paymentError)}
           >
             <option value="" disabled>
               {t('checkout.forms.paymentPlaceholder')}
@@ -336,10 +441,8 @@ function CheckoutPage(): JSX.Element {
             <option value="Cash on delivery">{t('checkout.forms.paymentCashOnDelivery')}</option>
             <option value="UPI on delivery">{t('checkout.forms.paymentUpi')}</option>
           </select>
-          {touched.paymentMethod && !form.paymentMethod.trim() && (
-            <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">
-              {t('checkout.forms.requiredMessage')}
-            </p>
+          {paymentError && (
+            <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">{paymentError}</p>
           )}
         </label>
         <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">

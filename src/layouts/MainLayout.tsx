@@ -6,8 +6,8 @@ import FloatingCall from '../components/FloatingCall';
 import Toast, { type ToastMessage } from '../components/Toast';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../hooks/useCart';
-import type { CheckoutFormValues, OrderPayload, OrderResponse } from '../types';
-import { createEmptyCheckoutForm } from '../utils/checkout';
+import type { CheckoutFormValues, OrderResponse } from '../types';
+import { createEmptyCheckoutForm, prepareOrderPayload, MAX_ITEM_QUANTITY } from '../utils/checkout';
 import {
   Locale,
   SUPPORTED_LOCALES,
@@ -173,41 +173,49 @@ function MainLayout(): JSX.Element {
       return undefined;
     }
 
+    const prepared = prepareOrderPayload(details, cart.cartItems);
+    if (!prepared.ok) {
+      if (prepared.cartError === 'quantityLimit') {
+        showToast({
+          type: 'error',
+          title: t('checkout.toasts.errorTitle'),
+          description: t('checkout.validation.quantityLimit', { limit: MAX_ITEM_QUANTITY }),
+        });
+        return undefined;
+      }
+
+      if (prepared.cartError === 'empty') {
+        showToast({
+          type: 'error',
+          title: t('checkout.toasts.emptyCartTitle'),
+          description: t('checkout.toasts.emptyCartDescription'),
+        });
+        return undefined;
+      }
+
+      if (prepared.fieldErrors) {
+        showToast({
+          type: 'error',
+          title: t('checkout.toasts.errorTitle'),
+          description: t('checkout.validation.fixErrors'),
+        });
+        return undefined;
+      }
+    }
+
+    const payload = prepared.ok ? prepared.payload : undefined;
+    if (!payload) {
+      showToast({
+        type: 'error',
+        title: t('checkout.toasts.errorTitle'),
+        description: t('checkout.toasts.errorDescription'),
+      });
+      return undefined;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const orderItems = cart.cartItems.map(({ product, quantity }) => ({
-        id: product.id,
-        name: product.name,
-        quantity,
-        unit: product.unit,
-        price: product.price,
-      }));
-
-      const normalize = (value?: string): string | undefined => {
-        if (!value) {
-          return undefined;
-        }
-        const trimmed = value.trim();
-        return trimmed.length ? trimmed : undefined;
-      };
-
-      const payload: OrderPayload = {
-        items: orderItems,
-        customer: {
-          name: normalize(details.name) ?? 'Walk-in customer',
-          phone: normalize(details.phone),
-          address: normalize(details.address),
-        },
-        delivery: {
-          slot: normalize(details.slot),
-          instructions: normalize(details.instructions),
-        },
-        payment: {
-          method: normalize(details.paymentMethod),
-        },
-      };
-
       const response = await fetch('/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
