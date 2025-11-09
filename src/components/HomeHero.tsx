@@ -80,7 +80,7 @@ function HomeHero({ highlights, onBrowse }: HomeHeroProps): JSX.Element {
                         <Sparkles className="h-3.5 w-3.5 text-brand-500" />
                         {item.name}
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-300">{item.unit}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-300">{item.department || item.category}</p>
                     </div>
                     <span className="text-sm font-semibold text-brand-700 dark:text-brand-300">{formatCurrency(item.price)}</span>
                   </li>

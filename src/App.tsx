@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/HomePage';
-import DiscoverPage from './pages/DiscoverPage';
+import BrowsePage from './pages/BrowsePage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrdersPage from './pages/OrdersPage';
@@ -16,7 +16,8 @@ function App(): JSX.Element {
       <Routes>
         <Route element={<MainLayout />}>
           <Route index element={<HomePage />} />
-          <Route path="discover" element={<DiscoverPage />} />
+          <Route path="browse" element={<BrowsePage />} />
+          <Route path="discover" element={<Navigate to="/browse" replace />} />
           <Route path="products/:productId" element={<ProductDetailPage />} />
           <Route path="cart" element={<CartPage />} />
           <Route path="checkout" element={<CheckoutPage />} />

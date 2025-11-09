@@ -93,7 +93,7 @@ function OrderSuccessPage(): JSX.Element {
                   <div>
                     <p className="font-semibold">{item.name}</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {item.quantity} × {item.unit}
+                      {item.quantity} × {formatCurrency(item.unitPrice)}
                     </p>
                   </div>
                   <span className="font-semibold">{formatCurrency(item.lineTotal)}</span>
@@ -122,7 +122,7 @@ function OrderSuccessPage(): JSX.Element {
             <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            to="/discover"
+            to="/browse"
             className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-200/70 bg-white px-5 py-3 text-sm font-semibold text-emerald-800 transition hover:border-emerald-400 hover:text-emerald-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
           >
             <ShoppingBag className="h-4 w-4" />

@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Product, ProductsResponse } from '../types';
 
+const getDepartmentLabel = (product: Product): string => {
+  const department = product.department?.trim();
+  if (department) {
+    return department;
+  }
+  const category = product.category?.trim();
+  return category || 'Other';
+};
+
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<string[]>([]);
   const [filter, setFilter] = useState<string>('all');
   const [storeNote, setStoreNote] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -28,8 +37,8 @@ export function useProducts() {
         setProducts(items);
         const message = (data.message ?? '').trim();
         setStoreNote(message);
-        const uniqueCategories = [...new Set(items.map((item) => item.category))].sort();
-        setCategories(uniqueCategories);
+        const uniqueDepartments = [...new Set(items.map((item) => getDepartmentLabel(item)))].sort();
+        setDepartments(uniqueDepartments);
         setIsLoading(false);
       } catch (error) {
         console.error(error);
@@ -51,14 +60,14 @@ export function useProducts() {
     if (filter === 'all') {
       return products;
     }
-    return products.filter((product) => product.category === filter);
+    return products.filter((product) => getDepartmentLabel(product) === filter);
   }, [products, filter]);
 
   const highlights = useMemo(() => products.slice(0, 3), [products]);
 
   return {
     products,
-    categories,
+    departments,
     filter,
     setFilter,
     filteredProducts,

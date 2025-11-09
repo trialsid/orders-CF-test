@@ -54,7 +54,6 @@ function validateOrder(body) {
     processed.push({
       id: item.id,
       name: item.name,
-      unit: item.unit,
       quantity: qty,
       unitPrice: item.price,
       lineTotal,

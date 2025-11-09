@@ -1,0 +1,2802 @@
+[
+  {
+    "id": "8908014029005",
+    "name": "Priya Gold Oil 800ml",
+    "description": "Oil, Sugar & Masalas • Oil & Ghee",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Oil & Ghee",
+    "price": 115.5,
+    "mrp": 160,
+    "rawSellingPrice": 115.33
+  },
+  {
+    "id": "PACS0024",
+    "name": "Bellam (Selam) 1kg",
+    "description": "Oil, Sugar & Masalas • Sugar & Gud",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Sugar & Gud",
+    "price": 53,
+    "mrp": 60,
+    "rawSellingPrice": 53
+  },
+  {
+    "id": "PACS0002",
+    "name": "Kandi Dal (Tiger) 1kg",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 101.5,
+    "mrp": 171,
+    "rawSellingPrice": 101.57
+  },
+  {
+    "id": "PACS0014",
+    "name": "Sugar 1kg",
+    "description": "Oil, Sugar & Masalas • Sugar & Gud",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Sugar & Gud",
+    "price": 46,
+    "mrp": 50,
+    "rawSellingPrice": 46
+  },
+  {
+    "id": "PACS0008",
+    "name": "Goduma Pindi (Minar) 1kg",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 40,
+    "mrp": 46,
+    "rawSellingPrice": 39.84
+  },
+  {
+    "id": "8906035030055",
+    "name": "Freedom Sunflower Oil Pouch 1L",
+    "description": "Oil, Sugar & Masalas • Oil & Ghee",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Oil & Ghee",
+    "price": 148.5,
+    "mrp": 173,
+    "rawSellingPrice": 148.42
+  },
+  {
+    "id": "8909106040663",
+    "name": "Surf Excel Detergent Bar 150g",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 19,
+    "mrp": 20,
+    "rawSellingPrice": 19
+  },
+  {
+    "id": "PACS0025",
+    "name": "Bellam (Selam) 500g",
+    "description": "Oil, Sugar & Masalas • Sugar & Gud",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Sugar & Gud",
+    "price": 28,
+    "mrp": 30,
+    "rawSellingPrice": 28
+  },
+  {
+    "id": "PACS1040",
+    "name": "Elaichi 10g",
+    "description": "Rice, Atta & Dals • Dry Fruits",
+    "department": "Rice, Atta & Dals",
+    "category": "Dry Fruits",
+    "price": 40,
+    "mrp": 50,
+    "rawSellingPrice": 40
+  },
+  {
+    "id": "8901287100013",
+    "name": "Mysore Sandal Soap 75g",
+    "description": "Personal Care • Soaps & Body Wash",
+    "department": "Personal Care",
+    "category": "Soaps & Body Wash",
+    "price": 39.5,
+    "mrp": 41,
+    "rawSellingPrice": 39.52
+  },
+  {
+    "id": "PACS0094",
+    "name": "Chintha Pandu 250g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 39,
+    "mrp": 41,
+    "rawSellingPrice": 39.14
+  },
+  {
+    "id": "PACS1340",
+    "name": "Carry Bag",
+    "description": "Stationery • Student Stationery & Toys",
+    "department": "Stationery",
+    "category": "Student Stationery & Toys",
+    "price": 5,
+    "mrp": 5,
+    "rawSellingPrice": 5
+  },
+  {
+    "id": "PACS0553",
+    "name": "Jeera 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 20,
+    "mrp": 30,
+    "rawSellingPrice": 20
+  },
+  {
+    "id": "PACS0152",
+    "name": "Ground Nuts (Buddalu) 500g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 58,
+    "mrp": 75,
+    "rawSellingPrice": 58
+  },
+  {
+    "id": "PACS0557",
+    "name": "Jeera 100g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 37,
+    "mrp": 50,
+    "rawSellingPrice": 37
+  },
+  {
+    "id": "PACS0153",
+    "name": "Ground Nuts (Buddalu) 250g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 30,
+    "mrp": 48,
+    "rawSellingPrice": 30
+  },
+  {
+    "id": "PACS0012",
+    "name": "Maida Pindi (999) 500g",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 22,
+    "mrp": 24,
+    "rawSellingPrice": 21.94
+  },
+  {
+    "id": "8901030865169",
+    "name": "Surf Excel Detergent Bar 250g",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 32,
+    "mrp": 33,
+    "rawSellingPrice": 32
+  },
+  {
+    "id": "PACS0015",
+    "name": "Sugar 500g",
+    "description": "Oil, Sugar & Masalas • Sugar & Gud",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Sugar & Gud",
+    "price": 24,
+    "mrp": 25,
+    "rawSellingPrice": 24
+  },
+  {
+    "id": "PACS0551",
+    "name": "Avalu 100g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 16,
+    "mrp": 25,
+    "rawSellingPrice": 16
+  },
+  {
+    "id": "PACS0009",
+    "name": "Goduma Pindi (Minar) 500g",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 20,
+    "mrp": 24,
+    "rawSellingPrice": 20.2
+  },
+  {
+    "id": "PACS0194",
+    "name": "Yellipayalu (Garlic) 250g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 25,
+    "mrp": 50,
+    "rawSellingPrice": 25
+  },
+  {
+    "id": "PACS0284",
+    "name": "Muthyam Minapagundlu 250g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 33,
+    "mrp": 40,
+    "rawSellingPrice": 33
+  },
+  {
+    "id": "8901725016838",
+    "name": "Aashirvaad Chakki Atta 1kg",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 64,
+    "mrp": 73,
+    "rawSellingPrice": 64
+  },
+  {
+    "id": "8909106047198",
+    "name": "Surf Excel Detergent Bar 88g",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "PACS0151",
+    "name": "Ground Nuts (Buddalu) 1kg",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 116,
+    "mrp": 150,
+    "rawSellingPrice": 116
+  },
+  {
+    "id": "8901030024432",
+    "name": "Masala Murkulu 200g",
+    "description": "Packaged Foods & Dry Fruits • Namkeen, Chips & Savory",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Namkeen, Chips & Savory",
+    "price": 45,
+    "mrp": 60,
+    "rawSellingPrice": 45
+  },
+  {
+    "id": "8901399000591",
+    "name": "Santoor Sandal & Turmeric Soap 100g",
+    "description": "Personal Care • Soaps & Body Wash",
+    "department": "Personal Care",
+    "category": "Soaps & Body Wash",
+    "price": 38.5,
+    "mrp": 40,
+    "rawSellingPrice": 38.38
+  },
+  {
+    "id": "8909106047082",
+    "name": "Sunsilk Black Shine Shampoo 6ml",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 1,
+    "mrp": 1,
+    "rawSellingPrice": 1
+  },
+  {
+    "id": "PACS0679",
+    "name": "Avalu 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 8,
+    "mrp": 10,
+    "rawSellingPrice": 8
+  },
+  {
+    "id": "8901725123123",
+    "name": "Aashirvad Salt 1kg",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 24,
+    "mrp": 30,
+    "rawSellingPrice": 24
+  },
+  {
+    "id": "8909106028616",
+    "name": "Clinc Plus Shampoo 3.4ml",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 0.5,
+    "mrp": 1,
+    "rawSellingPrice": 0.5
+  },
+  {
+    "id": "8901399007811",
+    "name": "Santoor 4N X 41g",
+    "description": "Personal Care • Soaps & Body Wash",
+    "department": "Personal Care",
+    "category": "Soaps & Body Wash",
+    "price": 39,
+    "mrp": 40,
+    "rawSellingPrice": 38.98
+  },
+  {
+    "id": "PACS0888",
+    "name": "Lavangalu 20g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 22,
+    "mrp": 25,
+    "rawSellingPrice": 21.88
+  },
+  {
+    "id": "8908008381201",
+    "name": "Ruby Dishwash Powder 275g",
+    "description": "Home Care • House & Kitchen Cleaning",
+    "department": "Home Care",
+    "category": "House & Kitchen Cleaning",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "PACS0129",
+    "name": "Almond (Badam) 50g",
+    "description": "Rice, Atta & Dals • Dry Fruits",
+    "department": "Rice, Atta & Dals",
+    "category": "Dry Fruits",
+    "price": 41.5,
+    "mrp": 50,
+    "rawSellingPrice": 41.5
+  },
+  {
+    "id": "PACS0080",
+    "name": "Almond (Badam) 100g",
+    "description": "Rice, Atta & Dals • Dry Fruits",
+    "department": "Rice, Atta & Dals",
+    "category": "Dry Fruits",
+    "price": 82.5,
+    "mrp": 100,
+    "rawSellingPrice": 82.63
+  },
+  {
+    "id": "PACS0030",
+    "name": "Putnalu 250g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 28,
+    "mrp": 41,
+    "rawSellingPrice": 28.01
+  },
+  {
+    "id": "PACS0123",
+    "name": "Sompu Mouth Fresh 50g",
+    "description": "Rice, Atta & Dals • Dry Fruits",
+    "department": "Rice, Atta & Dals",
+    "category": "Dry Fruits",
+    "price": 18,
+    "mrp": 30,
+    "rawSellingPrice": 18
+  },
+  {
+    "id": "PACS0283",
+    "name": "Muthyam Minapagundlu 500g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 64,
+    "mrp": 75,
+    "rawSellingPrice": 64
+  },
+  {
+    "id": "8901440023135",
+    "name": "Eastern Turmeric Powder 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 15,
+    "mrp": 20,
+    "rawSellingPrice": 15
+  },
+  {
+    "id": "8901207046445",
+    "name": "Dabur Red Pastee 37g",
+    "description": "Personal Care • Dental Care",
+    "department": "Personal Care",
+    "category": "Dental Care",
+    "price": 19,
+    "mrp": 20,
+    "rawSellingPrice": 18.78
+  },
+  {
+    "id": "PACS0016",
+    "name": "Sugar 2kg",
+    "description": "Oil, Sugar & Masalas • Sugar & Gud",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Sugar & Gud",
+    "price": 89,
+    "mrp": 100,
+    "rawSellingPrice": 89
+  },
+  {
+    "id": "PACS0018",
+    "name": "Kandi Dal (Tiger) 2kg",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 203.5,
+    "mrp": 294,
+    "rawSellingPrice": 203.28
+  },
+  {
+    "id": "PACS0145",
+    "name": "Shanaga Pindi (Besan Pindi) 500g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 43,
+    "mrp": 50,
+    "rawSellingPrice": 43
+  },
+  {
+    "id": "PACS0867",
+    "name": "Vadiyalu (Color Songalu) 200g",
+    "description": "Packaged Foods & Dry Fruits • Noodles, Pasta & Instant Foods",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Noodles, Pasta & Instant Foods",
+    "price": 15,
+    "mrp": 20,
+    "rawSellingPrice": 15
+  },
+  {
+    "id": "PACS0045",
+    "name": "Upma (Goduma) Rawa 1kg",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 40,
+    "mrp": 50,
+    "rawSellingPrice": 40
+  },
+  {
+    "id": "PACS0859",
+    "name": "Gadwal Osmania Biscuits",
+    "description": "Packaged Foods & Dry Fruits • Biscuits",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Biscuits",
+    "price": 29,
+    "mrp": 52,
+    "rawSellingPrice": 29
+  },
+  {
+    "id": "PACS1422",
+    "name": "Yellipayalu 500g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 50,
+    "mrp": 73,
+    "rawSellingPrice": 49.98
+  },
+  {
+    "id": "PACS0263",
+    "name": "Sonti 20g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 13,
+    "mrp": 20,
+    "rawSellingPrice": 13
+  },
+  {
+    "id": "8902979011884",
+    "name": "Chik Shampoo Strong & Black Rs.0.5",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 0.5,
+    "mrp": 1,
+    "rawSellingPrice": 0.5
+  },
+  {
+    "id": "PACS0146",
+    "name": "Shanaga Pindi (Besan Pindi) 250g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 23,
+    "mrp": 25,
+    "rawSellingPrice": 23
+  },
+  {
+    "id": "PACS0003",
+    "name": "Kandi Dal (Tiger) 500g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 52,
+    "mrp": 87,
+    "rawSellingPrice": 52.04
+  },
+  {
+    "id": "PACS0126",
+    "name": "Godambi / Cashews 50g",
+    "description": "Rice, Atta & Dals • Dry Fruits",
+    "department": "Rice, Atta & Dals",
+    "category": "Dry Fruits",
+    "price": 49,
+    "mrp": 60,
+    "rawSellingPrice": 48.92
+  },
+  {
+    "id": "PACS0046",
+    "name": "Upma (Goduma) Rawa 500g",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 21,
+    "mrp": 25,
+    "rawSellingPrice": 20.76
+  },
+  {
+    "id": "4902430839787",
+    "name": "Rin Bar 145g",
+    "description": "Personal Care • Soaps & Body Wash",
+    "department": "Personal Care",
+    "category": "Soaps & Body Wash",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "8901725110611",
+    "name": "Aashirvaad Crystal Salt 1kg",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 20,
+    "mrp": 22,
+    "rawSellingPrice": 20
+  },
+  {
+    "id": "8901030737091",
+    "name": "Rin Powder 500g",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 50,
+    "mrp": 52,
+    "rawSellingPrice": 50
+  },
+  {
+    "id": "PACS0137",
+    "name": "Raisins (Draksha) 50g",
+    "description": "Rice, Atta & Dals • Dry Fruits",
+    "department": "Rice, Atta & Dals",
+    "category": "Dry Fruits",
+    "price": 26,
+    "mrp": 34,
+    "rawSellingPrice": 25.78
+  },
+  {
+    "id": "8902979002035",
+    "name": "Chik Shampoo Sachet Black & Thick 5.4ml",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 1,
+    "mrp": 1,
+    "rawSellingPrice": 1
+  },
+  {
+    "id": "PACS0027",
+    "name": "Pesulu (Green Grams) 250g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 28,
+    "mrp": 30,
+    "rawSellingPrice": 28
+  },
+  {
+    "id": "8906013200043",
+    "name": "Dilbahar Masala 20g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 12,
+    "mrp": 20,
+    "rawSellingPrice": 12.03
+  },
+  {
+    "id": "PACS0973",
+    "name": "Dhaniyalu 100g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 15,
+    "mrp": 30,
+    "rawSellingPrice": 15
+  },
+  {
+    "id": "PACS0026",
+    "name": "Pesulu (Green Grams) 500g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 55,
+    "mrp": 60,
+    "rawSellingPrice": 55
+  },
+  {
+    "id": "8906009079363",
+    "name": "Unibic Fruit & Nut Cookies 37.5g",
+    "description": "Packaged Foods & Dry Fruits • Biscuits",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Biscuits",
+    "price": 9,
+    "mrp": 10,
+    "rawSellingPrice": 9
+  },
+  {
+    "id": "8909106053618",
+    "name": "Close Up Tooth Paste",
+    "description": "Personal Care • Dental Care",
+    "department": "Personal Care",
+    "category": "Dental Care",
+    "price": 19,
+    "mrp": 20,
+    "rawSellingPrice": 19
+  },
+  {
+    "id": "8901088047142",
+    "name": "Parachute Coconut Oil 250ml",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 159,
+    "mrp": 162,
+    "rawSellingPrice": 159
+  },
+  {
+    "id": "8906042370007",
+    "name": "Matha Ragi Flour 500g",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 35,
+    "mrp": 60,
+    "rawSellingPrice": 35
+  },
+  {
+    "id": "PACS1022",
+    "name": "Putnalu 150g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 16.5,
+    "mrp": 20,
+    "rawSellingPrice": 16.7
+  },
+  {
+    "id": "8901287101010",
+    "name": "Mysore Sandal Gold Soap 125g",
+    "description": "Personal Care • Soaps & Body Wash",
+    "department": "Personal Care",
+    "category": "Soaps & Body Wash",
+    "price": 82,
+    "mrp": 90,
+    "rawSellingPrice": 82
+  },
+  {
+    "id": "PACS0039",
+    "name": "Dried Coconut 250g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 95.5,
+    "mrp": 115,
+    "rawSellingPrice": 95.64
+  },
+  {
+    "id": "PACS0011",
+    "name": "Maida Pindi (999) 1kg",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 41.5,
+    "mrp": 45,
+    "rawSellingPrice": 41.4
+  },
+  {
+    "id": "8901088050586",
+    "name": "Parachute Coconut Oil 175ml",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 112,
+    "mrp": 115,
+    "rawSellingPrice": 112
+  },
+  {
+    "id": "8901440023142",
+    "name": "Eastern Turmeric Powder 100g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 25,
+    "mrp": 40,
+    "rawSellingPrice": 25
+  },
+  {
+    "id": "PACS1235",
+    "name": "Vadiyalu (Beera) 200g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 15,
+    "mrp": 20,
+    "rawSellingPrice": 15
+  },
+  {
+    "id": "PACS0591",
+    "name": "First Choice Basmathi Rice 500g",
+    "description": "Rice, Atta & Dals • Rice & Rice Products",
+    "department": "Rice, Atta & Dals",
+    "category": "Rice & Rice Products",
+    "price": 50,
+    "mrp": 89,
+    "rawSellingPrice": 50.06
+  },
+  {
+    "id": "PACS0474",
+    "name": "Vaamu 50g",
+    "description": "Packaged Foods & Dry Fruits • Jams, Sauces & Pickles",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Jams, Sauces & Pickles",
+    "price": 20,
+    "mrp": 35,
+    "rawSellingPrice": 20
+  },
+  {
+    "id": "8908006849147",
+    "name": "Priya Gold Oil 398g",
+    "description": "Oil, Sugar & Masalas • Oil & Ghee",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Oil & Ghee",
+    "price": 61.5,
+    "mrp": 105,
+    "rawSellingPrice": 61.73
+  },
+  {
+    "id": "BN14308",
+    "name": "Crush Chakki 200g",
+    "description": "Packaged Foods & Dry Fruits • Namkeen, Chips & Savory",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Namkeen, Chips & Savory",
+    "price": 45,
+    "mrp": 62,
+    "rawSellingPrice": 45
+  },
+  {
+    "id": "PACS0125",
+    "name": "Godambi / Cashews 100g",
+    "description": "Rice, Atta & Dals • Dry Fruits",
+    "department": "Rice, Atta & Dals",
+    "category": "Dry Fruits",
+    "price": 93,
+    "mrp": 110,
+    "rawSellingPrice": 93.08
+  },
+  {
+    "id": "9985327545063",
+    "name": "Deccan Ginger Garlic Jar 180g",
+    "description": "Packaged Foods & Dry Fruits • Jams, Sauces & Pickles",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Jams, Sauces & Pickles",
+    "price": 20,
+    "mrp": 26,
+    "rawSellingPrice": 20
+  },
+  {
+    "id": "PACS0029",
+    "name": "Putnalu 500g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 54,
+    "mrp": 77,
+    "rawSellingPrice": 54
+  },
+  {
+    "id": "103854720",
+    "name": "Palli Chakki 200g 1+1",
+    "description": "Packaged Foods & Dry Fruits • Namkeen, Chips & Savory",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Namkeen, Chips & Savory",
+    "price": 45,
+    "mrp": 70,
+    "rawSellingPrice": 45
+  },
+  {
+    "id": "8909106013070",
+    "name": "Clinic Plus Strong Health Shampoo 6ml",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 1,
+    "mrp": 1,
+    "rawSellingPrice": 1
+  },
+  {
+    "id": "89002940",
+    "name": "Parachute Coconut Oil Bottle 100ml",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 63.5,
+    "mrp": 65,
+    "rawSellingPrice": 63.25
+  },
+  {
+    "id": "PACS0445",
+    "name": "Pista Salted 50g",
+    "description": "Rice, Atta & Dals • Dry Fruits",
+    "department": "Rice, Atta & Dals",
+    "category": "Dry Fruits",
+    "price": 63,
+    "mrp": 75,
+    "rawSellingPrice": 63
+  },
+  {
+    "id": "8909106031227",
+    "name": "Rin Detergent Bar 230g",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 19.5,
+    "mrp": 20,
+    "rawSellingPrice": 19.27
+  },
+  {
+    "id": "8901242293101",
+    "name": "Bambino Turmeric Powder 100g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 29,
+    "mrp": 36,
+    "rawSellingPrice": 29
+  },
+  {
+    "id": "8909081005091",
+    "name": "Sunfeast Moms Magic Rich",
+    "description": "Packaged Foods & Dry Fruits • Biscuits",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Biscuits",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "103854723671",
+    "name": "Orange Goli 100g",
+    "description": "Packaged Foods & Dry Fruits • Namkeen, Chips & Savory",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Namkeen, Chips & Savory",
+    "price": 15,
+    "mrp": 20,
+    "rawSellingPrice": 15
+  },
+  {
+    "id": "PACS0692",
+    "name": "Goduma Pindi (Minar) 2kg",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 79,
+    "mrp": 81,
+    "rawSellingPrice": 78.75
+  },
+  {
+    "id": "BN001495",
+    "name": "Ragi Chakki 200g",
+    "description": "Packaged Foods & Dry Fruits • Namkeen, Chips & Savory",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Namkeen, Chips & Savory",
+    "price": 45,
+    "mrp": 68,
+    "rawSellingPrice": 45
+  },
+  {
+    "id": "8906183710410",
+    "name": "555 Monkey Steel Scrubber",
+    "description": "Home Care • House & Kitchen Cleaning",
+    "department": "Home Care",
+    "category": "House & Kitchen Cleaning",
+    "price": 10,
+    "mrp": 15,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "8901725003852",
+    "name": "Sunfeast Dark Fantasy Bourbon Biscuit",
+    "description": "Packaged Foods & Dry Fruits • Biscuits",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Biscuits",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "8901725000622",
+    "name": "Moms Magic 5",
+    "description": "Packaged Foods & Dry Fruits • Biscuits",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Biscuits",
+    "price": 5,
+    "mrp": 5,
+    "rawSellingPrice": 5
+  },
+  {
+    "id": "8904132976238",
+    "name": "Campa Energy Drink",
+    "description": "Beverages • Juices & Fruit Drinks",
+    "department": "Beverages",
+    "category": "Juices & Fruit Drinks",
+    "price": 9,
+    "mrp": 10,
+    "rawSellingPrice": 9
+  },
+  {
+    "id": "PACS0042",
+    "name": "Vadiyalu (Alphabets) 200g",
+    "description": "Packaged Foods & Dry Fruits • Noodles, Pasta & Instant Foods",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Noodles, Pasta & Instant Foods",
+    "price": 15,
+    "mrp": 20,
+    "rawSellingPrice": 14.97
+  },
+  {
+    "id": "8902979027014",
+    "name": "Karthika Shampoo Rs.1",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 1,
+    "mrp": 1,
+    "rawSellingPrice": 1
+  },
+  {
+    "id": "8909106053649",
+    "name": "Close Up Tooth Pastee 90g",
+    "description": "Personal Care • Dental Care",
+    "department": "Personal Care",
+    "category": "Dental Care",
+    "price": 64.5,
+    "mrp": 66,
+    "rawSellingPrice": 64.29
+  },
+  {
+    "id": "PACS0264",
+    "name": "Miriyalu 20g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 20,
+    "mrp": 25,
+    "rawSellingPrice": 20
+  },
+  {
+    "id": "8901063139329",
+    "name": "Britannia Bourbon 50g",
+    "description": "Packaged Foods & Dry Fruits • Biscuits",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Biscuits",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "PACS0463",
+    "name": "Bhatiji Special Masala 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 65,
+    "mrp": 100,
+    "rawSellingPrice": 65
+  },
+  {
+    "id": "8901314717429",
+    "name": "Colgate Dental Cream Tooth Pastee 38g",
+    "description": "Personal Care • Dental Care",
+    "department": "Personal Care",
+    "category": "Dental Care",
+    "price": 19,
+    "mrp": 20,
+    "rawSellingPrice": 19
+  },
+  {
+    "id": "PACS0467",
+    "name": "First Choice Basmathi Rice 1kg",
+    "description": "Rice, Atta & Dals • Rice & Rice Products",
+    "department": "Rice, Atta & Dals",
+    "category": "Rice & Rice Products",
+    "price": 99,
+    "mrp": 162,
+    "rawSellingPrice": 99
+  },
+  {
+    "id": "8901052021482",
+    "name": "Gemini Tea Powder 100g",
+    "description": "Beverages • Tea & Coffee",
+    "department": "Beverages",
+    "category": "Tea & Coffee",
+    "price": 59,
+    "mrp": 60,
+    "rawSellingPrice": 59
+  },
+  {
+    "id": "103854725",
+    "name": "Til Chakki 100g",
+    "description": "Packaged Foods & Dry Fruits • Namkeen, Chips & Savory",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Namkeen, Chips & Savory",
+    "price": 25,
+    "mrp": 40,
+    "rawSellingPrice": 25
+  },
+  {
+    "id": "PACS0801",
+    "name": "Vadiyalu (Yellow Songalu) Big 200g",
+    "description": "Packaged Foods & Dry Fruits • Noodles, Pasta & Instant Foods",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Noodles, Pasta & Instant Foods",
+    "price": 15,
+    "mrp": 20,
+    "rawSellingPrice": 15
+  },
+  {
+    "id": "8909081001123",
+    "name": "Bounce Orange 24.8g",
+    "description": "Packaged Foods & Dry Fruits • Biscuits",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Biscuits",
+    "price": 5,
+    "mrp": 5,
+    "rawSellingPrice": 5
+  },
+  {
+    "id": "8901023028502",
+    "name": "Godrej Cinthol 40g",
+    "description": "Personal Care • Soaps & Body Wash",
+    "department": "Personal Care",
+    "category": "Soaps & Body Wash",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "PACS1063",
+    "name": "Pop Dinusulu 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 15,
+    "mrp": 25,
+    "rawSellingPrice": 15
+  },
+  {
+    "id": "8901287100419",
+    "name": "Mysore Sandal Soap 150g",
+    "description": "Personal Care • Soaps & Body Wash",
+    "department": "Personal Care",
+    "category": "Soaps & Body Wash",
+    "price": 78,
+    "mrp": 82,
+    "rawSellingPrice": 78
+  },
+  {
+    "id": "8901725121648",
+    "name": "Aashirvaad Multigrain Atta 1kg",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 77,
+    "mrp": 83,
+    "rawSellingPrice": 77
+  },
+  {
+    "id": "8909106004528",
+    "name": "Vim Bar",
+    "description": "Home Care • House & Kitchen Cleaning",
+    "department": "Home Care",
+    "category": "House & Kitchen Cleaning",
+    "price": 5,
+    "mrp": 5,
+    "rawSellingPrice": 5
+  },
+  {
+    "id": "PACS1107",
+    "name": "Popu Dinusulu 100g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 30.5,
+    "mrp": 40,
+    "rawSellingPrice": 30.34
+  },
+  {
+    "id": "8901725015886",
+    "name": "Sunfeast Dark Fantasy Biscuit Chocofills 20g",
+    "description": "Packaged Foods & Dry Fruits • Biscuits",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Biscuits",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "PACS0282",
+    "name": "Muthyam Minapagundlu 1kg",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 128,
+    "mrp": 150,
+    "rawSellingPrice": 128
+  },
+  {
+    "id": "8901030752407",
+    "name": "Rin Powder 1kg",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 94,
+    "mrp": 100,
+    "rawSellingPrice": 94
+  },
+  {
+    "id": "8901725125349",
+    "name": "Aashirvaad Turmeric Powder 100g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 28,
+    "mrp": 40,
+    "rawSellingPrice": 28
+  },
+  {
+    "id": "PACS1021",
+    "name": "Dried Coconut 150g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 58,
+    "mrp": 77,
+    "rawSellingPrice": 58
+  },
+  {
+    "id": "7622202332142",
+    "name": "Cadbury Gems",
+    "description": "Packaged Foods & Dry Fruits • Chocolates & Toffees",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Chocolates & Toffees",
+    "price": 5,
+    "mrp": 5,
+    "rawSellingPrice": 5
+  },
+  {
+    "id": "PACS0173",
+    "name": "White Nuvvulu 250g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 38.5,
+    "mrp": 55,
+    "rawSellingPrice": 38.7
+  },
+  {
+    "id": "PACS0136",
+    "name": "Raisins (Draksha) 100g",
+    "description": "Rice, Atta & Dals • Dry Fruits",
+    "department": "Rice, Atta & Dals",
+    "category": "Dry Fruits",
+    "price": 53.5,
+    "mrp": 78,
+    "rawSellingPrice": 53.56
+  },
+  {
+    "id": "8901207046438",
+    "name": "Dabur Red Paste 20g",
+    "description": "Personal Care • Dental Care",
+    "department": "Personal Care",
+    "category": "Dental Care",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 9.94
+  },
+  {
+    "id": "8901030959097",
+    "name": "Dove Hairfall Rescue 6ml",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 2,
+    "mrp": 2,
+    "rawSellingPrice": 2
+  },
+  {
+    "id": "PACS0673",
+    "name": "Chekka 20g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 10,
+    "mrp": 19,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "PACS0190",
+    "name": "Red Sugar 500g",
+    "description": "Oil, Sugar & Masalas • Sugar & Gud",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Sugar & Gud",
+    "price": 29,
+    "mrp": 30,
+    "rawSellingPrice": 29
+  },
+  {
+    "id": "8901063367173",
+    "name": "50-50 Maska Chaska 38g",
+    "description": "Packaged Foods & Dry Fruits • Biscuits",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Biscuits",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "8901063012868",
+    "name": "Britannia Milk Bikis 66g",
+    "description": "Packaged Foods & Dry Fruits • Biscuits",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Biscuits",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 9.75
+  },
+  {
+    "id": "8904477301702",
+    "name": "Turmeric Powder 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 17,
+    "mrp": 18,
+    "rawSellingPrice": 17
+  },
+  {
+    "id": "89014043847",
+    "name": "Til Chakki 200g",
+    "description": "Packaged Foods & Dry Fruits • Namkeen, Chips & Savory",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Namkeen, Chips & Savory",
+    "price": 45,
+    "mrp": 70,
+    "rawSellingPrice": 45
+  },
+  {
+    "id": "PACS0860",
+    "name": "Good Day Match Box",
+    "description": "Home Care • Pooja Needs",
+    "department": "Home Care",
+    "category": "Pooja Needs",
+    "price": 9,
+    "mrp": 10,
+    "rawSellingPrice": 9
+  },
+  {
+    "id": "PACS0288",
+    "name": "Gasalu 20g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 33,
+    "mrp": 40,
+    "rawSellingPrice": 33
+  },
+  {
+    "id": "806005648",
+    "name": "Vijaya Laxmi Appalam 100g",
+    "description": "Packaged Foods & Dry Fruits • Noodles, Pasta & Instant Foods",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Noodles, Pasta & Instant Foods",
+    "price": 10,
+    "mrp": 18,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "PACS0270",
+    "name": "Lalitha Idly Rawa 1kg",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 40,
+    "mrp": 45,
+    "rawSellingPrice": 40
+  },
+  {
+    "id": "8909106040694",
+    "name": "Surf Excel Bar Value Pack 4x200g",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 123.5,
+    "mrp": 128,
+    "rawSellingPrice": 123.73
+  },
+  {
+    "id": "PACS0079",
+    "name": "Almond (Badam) 250g",
+    "description": "Rice, Atta & Dals • Dry Fruits",
+    "department": "Rice, Atta & Dals",
+    "category": "Dry Fruits",
+    "price": 217.5,
+    "mrp": 250,
+    "rawSellingPrice": 217.71
+  },
+  {
+    "id": "PACS0121",
+    "name": "Maha Laxmi Penda Colour",
+    "description": "Home Care • House & Kitchen Cleaning",
+    "department": "Home Care",
+    "category": "House & Kitchen Cleaning",
+    "price": 4,
+    "mrp": 6,
+    "rawSellingPrice": 4
+  },
+  {
+    "id": "8901207027253",
+    "name": "Dabur Red Toothpaste 100g",
+    "description": "Personal Care • Dental Care",
+    "department": "Personal Care",
+    "category": "Dental Care",
+    "price": 71,
+    "mrp": 78,
+    "rawSellingPrice": 70.89
+  },
+  {
+    "id": "PACS0795",
+    "name": "Pumpkeen Seeds 50g",
+    "description": "Rice, Atta & Dals • Dry Fruits",
+    "department": "Rice, Atta & Dals",
+    "category": "Dry Fruits",
+    "price": 28,
+    "mrp": 40,
+    "rawSellingPrice": 28
+  },
+  {
+    "id": "PACS0096",
+    "name": "Dhaniyalu 250g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 35,
+    "mrp": 40,
+    "rawSellingPrice": 35
+  },
+  {
+    "id": "PACS0013",
+    "name": "Maida Pindi (999) 250g",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 12,
+    "mrp": 16,
+    "rawSellingPrice": 11.93
+  },
+  {
+    "id": "PACS0044",
+    "name": "Shanagalu (Chana Dal) 250g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 22.5,
+    "mrp": 25,
+    "rawSellingPrice": 22.68
+  },
+  {
+    "id": "8901088000451",
+    "name": "Parachute Coconut Hair Oil 500ml",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 294,
+    "mrp": 300,
+    "rawSellingPrice": 294
+  },
+  {
+    "id": "PACS0900",
+    "name": "Ayyappa Agarbatthi 200g",
+    "description": "Home Care • Pooja Needs",
+    "department": "Home Care",
+    "category": "Pooja Needs",
+    "price": 31.5,
+    "mrp": 45,
+    "rawSellingPrice": 31.65
+  },
+  {
+    "id": "PACS0144",
+    "name": "Shanaga Pindi (Besan Pindi) 1kg",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 85,
+    "mrp": 100,
+    "rawSellingPrice": 85
+  },
+  {
+    "id": "8901030959103",
+    "name": "Dove Daily Shine 6ml",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 2,
+    "mrp": 2,
+    "rawSellingPrice": 2
+  },
+  {
+    "id": "8902102163930",
+    "name": "Exo Dish Wash Soap 140g",
+    "description": "Home Care • House & Kitchen Cleaning",
+    "department": "Home Care",
+    "category": "House & Kitchen Cleaning",
+    "price": 9.5,
+    "mrp": 10,
+    "rawSellingPrice": 9.72
+  },
+  {
+    "id": "8906170470365",
+    "name": "Annapurna Salt",
+    "description": "Personal Care • Soaps & Body Wash",
+    "department": "Personal Care",
+    "category": "Soaps & Body Wash",
+    "price": 20,
+    "mrp": 25,
+    "rawSellingPrice": 20
+  },
+  {
+    "id": "8908008381263",
+    "name": "Varsha Detergent Blue Soap 250g",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 20,
+    "mrp": 26,
+    "rawSellingPrice": 20
+  },
+  {
+    "id": "8850006958254",
+    "name": "Colgate Active Salt Tooth Pastee 34g",
+    "description": "Personal Care • Dental Care",
+    "department": "Personal Care",
+    "category": "Dental Care",
+    "price": 19,
+    "mrp": 20,
+    "rawSellingPrice": 19
+  },
+  {
+    "id": "8902979024433",
+    "name": "Meera Coconut Oil 250ml",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 120.5,
+    "mrp": 147,
+    "rawSellingPrice": 120.57
+  },
+  {
+    "id": "8909106030565",
+    "name": "Fair Lovely Glow Lovely",
+    "description": "Personal Care • Skin Care",
+    "department": "Personal Care",
+    "category": "Skin Care",
+    "price": 9,
+    "mrp": 10,
+    "rawSellingPrice": 9
+  },
+  {
+    "id": "PACS0268",
+    "name": "Pesulu (Green Grams) 1kg",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 110,
+    "mrp": 130,
+    "rawSellingPrice": 110
+  },
+  {
+    "id": "PACS0507",
+    "name": "Lepakshi Lalitha Jeera 40g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 22,
+    "mrp": 48,
+    "rawSellingPrice": 22.22
+  },
+  {
+    "id": "8906025286240",
+    "name": "Savaal Big Bar 400g",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 19,
+    "mrp": 20,
+    "rawSellingPrice": 19
+  },
+  {
+    "id": "8909106025196",
+    "name": "Ponds Talcum Powder18g",
+    "description": "Personal Care • Deos, Talcs & Perfumes",
+    "department": "Personal Care",
+    "category": "Deos, Talcs & Perfumes",
+    "price": 9,
+    "mrp": 10,
+    "rawSellingPrice": 9
+  },
+  {
+    "id": "PACS1074",
+    "name": "Vijaya Lakshmi Kesari Rawa 1kg",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 57,
+    "mrp": 69,
+    "rawSellingPrice": 57
+  },
+  {
+    "id": "PACS0414",
+    "name": "Brown Chana (Pappu Shanga) 500g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 46,
+    "mrp": 50,
+    "rawSellingPrice": 46.14
+  },
+  {
+    "id": "PACS0117",
+    "name": "Kandi Dal 1kg",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 103,
+    "mrp": 130,
+    "rawSellingPrice": 103
+  },
+  {
+    "id": "PACS0174",
+    "name": "White Nuvvulu 100g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 21,
+    "mrp": 23,
+    "rawSellingPrice": 21
+  },
+  {
+    "id": "8908008381072",
+    "name": "Ruby Detergent Soap 150g",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 11,
+    "mrp": 12,
+    "rawSellingPrice": 11
+  },
+  {
+    "id": "8901314765352",
+    "name": "Colgate Dental Cream Toothpaste 100g",
+    "description": "Personal Care • Dental Care",
+    "department": "Personal Care",
+    "category": "Dental Care",
+    "price": 71.5,
+    "mrp": 76,
+    "rawSellingPrice": 71.61
+  },
+  {
+    "id": "8901399006715",
+    "name": "Santoor Soap 4 N (75g Each)",
+    "description": "Personal Care • Soaps & Body Wash",
+    "department": "Personal Care",
+    "category": "Soaps & Body Wash",
+    "price": 107,
+    "mrp": 110,
+    "rawSellingPrice": 107
+  },
+  {
+    "id": "PACS0271",
+    "name": "Lalitha Idly Rawa 500g",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 21,
+    "mrp": 23,
+    "rawSellingPrice": 21
+  },
+  {
+    "id": "8908008381232",
+    "name": "Varsha Detergent Bar 140g",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "8909106057432",
+    "name": "Surexcel Quick Wash Detergent Powder 500g",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 99,
+    "mrp": 103,
+    "rawSellingPrice": 99
+  },
+  {
+    "id": "8909106010789",
+    "name": "Ponds Magic Powder 19g",
+    "description": "Personal Care • Deos, Talcs & Perfumes",
+    "department": "Personal Care",
+    "category": "Deos, Talcs & Perfumes",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "PACS0186",
+    "name": "Ragulu 1kg",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 59,
+    "mrp": 80,
+    "rawSellingPrice": 59
+  },
+  {
+    "id": "PACS0233",
+    "name": "Pista Salted 100g",
+    "description": "Rice, Atta & Dals • Dry Fruits",
+    "department": "Rice, Atta & Dals",
+    "category": "Dry Fruits",
+    "price": 123.5,
+    "mrp": 130,
+    "rawSellingPrice": 123.5
+  },
+  {
+    "id": "9885327545028",
+    "name": "Deccan Ginger Garlic Pastee 500g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 38,
+    "mrp": 76,
+    "rawSellingPrice": 38.03
+  },
+  {
+    "id": "PACS1344",
+    "name": "Colour Sompu 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 10,
+    "mrp": 20,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "8909106053632",
+    "name": "Close Up Tooth Pastee 17g",
+    "description": "Personal Care • Dental Care",
+    "department": "Personal Care",
+    "category": "Dental Care",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "8901023003622",
+    "name": "Godrej Cinthol 4N x 75g",
+    "description": "Personal Care • Soaps & Body Wash",
+    "department": "Personal Care",
+    "category": "Soaps & Body Wash",
+    "price": 97,
+    "mrp": 100,
+    "rawSellingPrice": 97
+  },
+  {
+    "id": "8901287100211",
+    "name": "Mysore Sandal Soap 125g",
+    "description": "Personal Care • Soaps & Body Wash",
+    "department": "Personal Care",
+    "category": "Soaps & Body Wash",
+    "price": 66,
+    "mrp": 69,
+    "rawSellingPrice": 65.94
+  },
+  {
+    "id": "PACS0167",
+    "name": "Brown Chana (Pappu Shanga) 250g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 24,
+    "mrp": 26,
+    "rawSellingPrice": 23.9
+  },
+  {
+    "id": "PACS0181",
+    "name": "Mittikilu 250g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 27,
+    "mrp": 35,
+    "rawSellingPrice": 27
+  },
+  {
+    "id": "8901052021383",
+    "name": "Gemini Tea Powder 250g",
+    "description": "Beverages • Tea & Coffee",
+    "department": "Beverages",
+    "category": "Tea & Coffee",
+    "price": 142,
+    "mrp": 145,
+    "rawSellingPrice": 142
+  },
+  {
+    "id": "8906092340388",
+    "name": "Tulasi Deepam Oil Pouch 1L",
+    "description": "Home Care • Pooja Needs",
+    "department": "Home Care",
+    "category": "Pooja Needs",
+    "price": 146.5,
+    "mrp": 200,
+    "rawSellingPrice": 146.72
+  },
+  {
+    "id": "PACS0699",
+    "name": "Sri Venkateswara Black Stone Agarbatti 200g",
+    "description": "Home Care • Pooja Needs",
+    "department": "Home Care",
+    "category": "Pooja Needs",
+    "price": 45,
+    "mrp": 65,
+    "rawSellingPrice": 45
+  },
+  {
+    "id": "8902979026239",
+    "name": "Meera Coconut Oil 175ml",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 92.5,
+    "mrp": 104,
+    "rawSellingPrice": 92.52
+  },
+  {
+    "id": "PACS0028",
+    "name": "Putnalu 1kg",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 108,
+    "mrp": 150,
+    "rawSellingPrice": 107.85
+  },
+  {
+    "id": "8901764072277",
+    "name": "Kinley Soda 750ml",
+    "description": "Beverages • Juices & Fruit Drinks",
+    "department": "Beverages",
+    "category": "Juices & Fruit Drinks",
+    "price": 20,
+    "mrp": 20,
+    "rawSellingPrice": 20
+  },
+  {
+    "id": "8901052021598",
+    "name": "Gemini Tea Powder 50g",
+    "description": "Beverages • Tea & Coffee",
+    "department": "Beverages",
+    "category": "Tea & Coffee",
+    "price": 29,
+    "mrp": 30,
+    "rawSellingPrice": 29
+  },
+  {
+    "id": "8901396152002",
+    "name": "Harpic Toilet Cleaner 200ml",
+    "description": "Home Care • House & Kitchen Cleaning",
+    "department": "Home Care",
+    "category": "House & Kitchen Cleaning",
+    "price": 45,
+    "mrp": 46,
+    "rawSellingPrice": 45
+  },
+  {
+    "id": "PACS0462",
+    "name": "Lalitha Jeera 20g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 8,
+    "mrp": 25,
+    "rawSellingPrice": 8.23
+  },
+  {
+    "id": "8901023017445",
+    "name": "Godrej Cinthol 150g",
+    "description": "Personal Care • Soaps & Body Wash",
+    "department": "Personal Care",
+    "category": "Soaps & Body Wash",
+    "price": 57,
+    "mrp": 59,
+    "rawSellingPrice": 57.2
+  },
+  {
+    "id": "8904289701202",
+    "name": "Peni Rawa (Gajraj) 500g",
+    "description": "Rice, Atta & Dals • Atta & Flours",
+    "department": "Rice, Atta & Dals",
+    "category": "Atta & Flours",
+    "price": 29,
+    "mrp": 37,
+    "rawSellingPrice": 29
+  },
+  {
+    "id": "8901396315100",
+    "name": "Dettol Original Soap 40g",
+    "description": "Personal Care • Soaps & Body Wash",
+    "department": "Personal Care",
+    "category": "Soaps & Body Wash",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "8901030641657",
+    "name": "Wheel Lemon & Jasmin Powder 500g",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 35,
+    "mrp": 38,
+    "rawSellingPrice": 35
+  },
+  {
+    "id": "8906035030826",
+    "name": "Freedom Rice Bran Oil 1L",
+    "description": "Oil, Sugar & Masalas • Oil & Ghee",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Oil & Ghee",
+    "price": 156,
+    "mrp": 184,
+    "rawSellingPrice": 156
+  },
+  {
+    "id": "PACS0189",
+    "name": "Red Sugar 1kg",
+    "description": "Oil, Sugar & Masalas • Sugar & Gud",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Sugar & Gud",
+    "price": 57,
+    "mrp": 60,
+    "rawSellingPrice": 56.88
+  },
+  {
+    "id": "8902979026925",
+    "name": "Spinz Bb Face Powder 10g",
+    "description": "Personal Care • Deos, Talcs & Perfumes",
+    "department": "Personal Care",
+    "category": "Deos, Talcs & Perfumes",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "PACS1547",
+    "name": "Pesara Byallu 250g",
+    "description": "Rice, Atta & Dals • Dals & Pulses",
+    "department": "Rice, Atta & Dals",
+    "category": "Dals & Pulses",
+    "price": 30,
+    "mrp": 40,
+    "rawSellingPrice": 30
+  },
+  {
+    "id": "PACS0104",
+    "name": "Cotton Vothulu (small)",
+    "description": "Home Care • Pooja Needs",
+    "department": "Home Care",
+    "category": "Pooja Needs",
+    "price": 12,
+    "mrp": 20,
+    "rawSellingPrice": 12
+  },
+  {
+    "id": "8901719122910",
+    "name": "Parle Rusk 182g",
+    "description": "Packaged Foods & Dry Fruits • Bakery",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Bakery",
+    "price": 34,
+    "mrp": 35,
+    "rawSellingPrice": 34
+  },
+  {
+    "id": "PACS0794",
+    "name": "Pumpkeen Seeds 100g",
+    "description": "Rice, Atta & Dals • Dry Fruits",
+    "department": "Rice, Atta & Dals",
+    "category": "Dry Fruits",
+    "price": 55,
+    "mrp": 65,
+    "rawSellingPrice": 55
+  },
+  {
+    "id": "PACS0862",
+    "name": "Rose Chikky 200g",
+    "description": "Packaged Foods & Dry Fruits • Indian Sweets",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Indian Sweets",
+    "price": 42,
+    "mrp": 48,
+    "rawSellingPrice": 42
+  },
+  {
+    "id": "8902979001045",
+    "name": "Meera Coconut Oil 100ml",
+    "description": "Personal Care • Hair Care",
+    "department": "Personal Care",
+    "category": "Hair Care",
+    "price": 38,
+    "mrp": 45,
+    "rawSellingPrice": 38
+  },
+  {
+    "id": "8901399015342",
+    "name": "Santoor Lime Fresh Skin 42g",
+    "description": "Personal Care • Soaps & Body Wash",
+    "department": "Personal Care",
+    "category": "Soaps & Body Wash",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "8909106006485",
+    "name": "Surf Excel Quick Wash 500g",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 97.5,
+    "mrp": 102,
+    "rawSellingPrice": 97.34
+  },
+  {
+    "id": "8906170470280",
+    "name": "Annapurna Crystal Salt 1kg",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 19,
+    "mrp": 22,
+    "rawSellingPrice": 18.99
+  },
+  {
+    "id": "8908008381010",
+    "name": "Varsha Detergent Cake 190g",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 13,
+    "mrp": 15,
+    "rawSellingPrice": 13
+  },
+  {
+    "id": "PACS1337",
+    "name": "Biryani Leaf 20g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 8,
+    "mrp": 14,
+    "rawSellingPrice": 7.89
+  },
+  {
+    "id": "8908006849093",
+    "name": "Priya Gold Refined Sunflower Oil 1L",
+    "description": "Oil, Sugar & Masalas • Oil & Ghee",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Oil & Ghee",
+    "price": 146,
+    "mrp": 174,
+    "rawSellingPrice": 146.15
+  },
+  {
+    "id": "PACS1023",
+    "name": "365 Ayyappa Vothulu White",
+    "description": "Home Care • Pooja Needs",
+    "department": "Home Care",
+    "category": "Pooja Needs",
+    "price": 7,
+    "mrp": 15,
+    "rawSellingPrice": 7
+  },
+  {
+    "id": "8906092341316",
+    "name": "Tulasi Deepam Oil 400ml",
+    "description": "Home Care • Pooja Needs",
+    "department": "Home Care",
+    "category": "Pooja Needs",
+    "price": 68,
+    "mrp": 98,
+    "rawSellingPrice": 68
+  },
+  {
+    "id": "PACS0889",
+    "name": "Milmaker 200g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 20,
+    "mrp": 25,
+    "rawSellingPrice": 20
+  },
+  {
+    "id": "PACS1428",
+    "name": "Nitya Pooja Brand Oil 400ml",
+    "description": "Oil, Sugar & Masalas • Oil & Ghee",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Oil & Ghee",
+    "price": 62,
+    "mrp": 99,
+    "rawSellingPrice": 62
+  },
+  {
+    "id": "8909106006478",
+    "name": "Surf Excel Quick Wash 1kg",
+    "description": "Home Care • Laundry",
+    "department": "Home Care",
+    "category": "Laundry",
+    "price": 197,
+    "mrp": 206,
+    "rawSellingPrice": 196.94
+  },
+  {
+    "id": "8906021123112",
+    "name": "Aachi Turmeric Powder 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 13,
+    "mrp": 21,
+    "rawSellingPrice": 13
+  },
+  {
+    "id": "8901751803143",
+    "name": "Cycle Om Shanthi Jasmine Oil 200ml",
+    "description": "Home Care • Pooja Needs",
+    "department": "Home Care",
+    "category": "Pooja Needs",
+    "price": 46,
+    "mrp": 55,
+    "rawSellingPrice": 46
+  },
+  {
+    "id": "8904043901015",
+    "name": "Tata Salt 1kg",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 28,
+    "mrp": 30,
+    "rawSellingPrice": 28
+  },
+  {
+    "id": "8901042970158",
+    "name": "Mtr Sambar Powder 8g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 5,
+    "mrp": 5,
+    "rawSellingPrice": 5
+  },
+  {
+    "id": "PACS0289",
+    "name": "Gasalu 10g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 20,
+    "mrp": 26,
+    "rawSellingPrice": 20
+  },
+  {
+    "id": "PACS0868",
+    "name": "White Tiffin Plates Set",
+    "description": "Restaurant Supplies & Houseware • Paper Goods & Disposables",
+    "department": "Restaurant Supplies & Houseware",
+    "category": "Paper Goods & Disposables",
+    "price": 17,
+    "mrp": 20,
+    "rawSellingPrice": 17
+  },
+  {
+    "id": "8906035030918",
+    "name": "Freedom Groundnut Oil Pouch 1L",
+    "description": "Oil, Sugar & Masalas • Oil & Ghee",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Oil & Ghee",
+    "price": 160,
+    "mrp": 206,
+    "rawSellingPrice": 160.05
+  },
+  {
+    "id": "8901725125332",
+    "name": "Aashirvaad Turmeric Powder 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 14,
+    "mrp": 20,
+    "rawSellingPrice": 14
+  },
+  {
+    "id": "8908003198057",
+    "name": "Sunjyothi Refined Sunflower Oil 1L",
+    "description": "Oil, Sugar & Masalas • Oil & Ghee",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Oil & Ghee",
+    "price": 148.5,
+    "mrp": 177,
+    "rawSellingPrice": 148.44
+  },
+  {
+    "id": "PACS0191",
+    "name": "Red Sugar 250g",
+    "description": "Oil, Sugar & Masalas • Sugar & Gud",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Sugar & Gud",
+    "price": 15,
+    "mrp": 21,
+    "rawSellingPrice": 15
+  },
+  {
+    "id": "8906042370021",
+    "name": "Turmeric Powder 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 15,
+    "mrp": 20,
+    "rawSellingPrice": 15
+  },
+  {
+    "id": "PACS1090",
+    "name": "Mixing Sompu 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 10,
+    "mrp": 15,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "PACS0572",
+    "name": "Avalu 250g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 35,
+    "mrp": 50,
+    "rawSellingPrice": 35
+  },
+  {
+    "id": "8909106018372",
+    "name": "Boost 22g",
+    "description": "Beverages • Health Drinks",
+    "department": "Beverages",
+    "category": "Health Drinks",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "PACS0552",
+    "name": "Jeera 250g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 97.5,
+    "mrp": 110,
+    "rawSellingPrice": 97.49
+  },
+  {
+    "id": "8901725008840",
+    "name": "Aashirvaad Jeera 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 25,
+    "mrp": 38,
+    "rawSellingPrice": 25
+  },
+  {
+    "id": "8901042954721",
+    "name": "MTR Sambar Masala 100g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 71.5,
+    "mrp": 83,
+    "rawSellingPrice": 71.26
+  },
+  {
+    "id": "PACS0718",
+    "name": "Acchu Bellam 500g",
+    "description": "Oil, Sugar & Masalas • Sugar & Gud",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Sugar & Gud",
+    "price": 33.5,
+    "mrp": 38,
+    "rawSellingPrice": 33.65
+  },
+  {
+    "id": "8906006430419",
+    "name": "All Out Ultra Liquid 45ml",
+    "description": "Home Care • Home Utilities",
+    "department": "Home Care",
+    "category": "Home Utilities",
+    "price": 79,
+    "mrp": 85,
+    "rawSellingPrice": 79.02
+  },
+  {
+    "id": "8901440023159",
+    "name": "Eastern Turmeric Powder 200g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 51.5,
+    "mrp": 79,
+    "rawSellingPrice": 51.28
+  },
+  {
+    "id": "8901042971049",
+    "name": "MTR Sambar Powder 15g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "PACS0541",
+    "name": "Red Chilli Powder 500g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 92,
+    "mrp": 150,
+    "rawSellingPrice": 92
+  },
+  {
+    "id": "8901440202042",
+    "name": "Eastern Meat Masala 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 35,
+    "mrp": 43,
+    "rawSellingPrice": 35
+  },
+  {
+    "id": "8908003198101",
+    "name": "Lion Brand Grount Nut Oil 1L",
+    "description": "Oil, Sugar & Masalas • Oil & Ghee",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Oil & Ghee",
+    "price": 158,
+    "mrp": 180,
+    "rawSellingPrice": 158
+  },
+  {
+    "id": "PACS0554",
+    "name": "Sabja Seeds 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 23,
+    "mrp": 30,
+    "rawSellingPrice": 23
+  },
+  {
+    "id": "8906042370229",
+    "name": "Matha Coriander Powder 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 10,
+    "mrp": 18,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "PACS0717",
+    "name": "Acchu Bellam 1kg",
+    "description": "Oil, Sugar & Masalas • Sugar & Gud",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Sugar & Gud",
+    "price": 64.5,
+    "mrp": 71,
+    "rawSellingPrice": 64.63
+  },
+  {
+    "id": "8901042970493",
+    "name": "MTR Puligore Powder 27g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 10,
+    "mrp": 10,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "8901774001632",
+    "name": "Badshah Chicken Masala 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 44,
+    "mrp": 48,
+    "rawSellingPrice": 44.14
+  },
+  {
+    "id": "8906010366889",
+    "name": "GRB Ghee 100ml",
+    "description": "Oil, Sugar & Masalas • Oil & Ghee",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Oil & Ghee",
+    "price": 98,
+    "mrp": 103,
+    "rawSellingPrice": 98.12
+  },
+  {
+    "id": "PACS0636",
+    "name": "Lavangalu 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 50,
+    "mrp": 56,
+    "rawSellingPrice": 50
+  },
+  {
+    "id": "PACS0940",
+    "name": "Lalitha Sonti 10g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 10,
+    "mrp": 15,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "8901242228202",
+    "name": "Bambino Chiken Masala",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 28,
+    "mrp": 38,
+    "rawSellingPrice": 28
+  },
+  {
+    "id": "8901774001625",
+    "name": "Badshah Motton Masala 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 45,
+    "mrp": 49,
+    "rawSellingPrice": 44.86
+  },
+  {
+    "id": "8906042370236",
+    "name": "Matha Coriander Powder 100g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 19,
+    "mrp": 35,
+    "rawSellingPrice": 19
+  },
+  {
+    "id": "PACS0706",
+    "name": "Biryani Leaf 10g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 4,
+    "mrp": 10,
+    "rawSellingPrice": 4
+  },
+  {
+    "id": "8906010360054",
+    "name": "Grb Ghee Bottle 50ml",
+    "description": "Oil, Sugar & Masalas • Oil & Ghee",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Oil & Ghee",
+    "price": 52,
+    "mrp": 55,
+    "rawSellingPrice": 52.14
+  },
+  {
+    "id": "8906021123129",
+    "name": "Aachi Turmeric Powder 100g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 25,
+    "mrp": 42,
+    "rawSellingPrice": 25
+  },
+  {
+    "id": "PACS0245",
+    "name": "Napthalene Balls",
+    "description": "Home Care • Air & Car Fresheners",
+    "department": "Home Care",
+    "category": "Air & Car Fresheners",
+    "price": 26,
+    "mrp": 40,
+    "rawSellingPrice": 26
+  },
+  {
+    "id": "PACS1445",
+    "name": "Kobbera Powder 100g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 47.5,
+    "mrp": 75,
+    "rawSellingPrice": 47.46
+  },
+  {
+    "id": "PACS0544",
+    "name": "Dried Karjuram 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 20,
+    "mrp": 30,
+    "rawSellingPrice": 20
+  },
+  {
+    "id": "8901287308211",
+    "name": "Mysore Sandal Baby Powder 100g",
+    "description": "Personal Care • Bar Soap",
+    "department": "Personal Care",
+    "category": "Bar Soap",
+    "price": 45,
+    "mrp": 50,
+    "rawSellingPrice": 45
+  },
+  {
+    "id": "PACS0942",
+    "name": "Vicks Babyrub 10ml",
+    "description": "Health & OTC • Balms & Sprays",
+    "department": "Health & OTC",
+    "category": "Balms & Sprays",
+    "price": 48,
+    "mrp": 55,
+    "rawSellingPrice": 48
+  },
+  {
+    "id": "PACS1324",
+    "name": "Chia Seeds 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 11,
+    "mrp": 25,
+    "rawSellingPrice": 11
+  },
+  {
+    "id": "PACS0038",
+    "name": "Dried Coconut 500g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 190,
+    "mrp": 210,
+    "rawSellingPrice": 190
+  },
+  {
+    "id": "PACS0542",
+    "name": "Red Chilli Powder 250g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 48,
+    "mrp": 75,
+    "rawSellingPrice": 48
+  },
+  {
+    "id": "8901440201052",
+    "name": "Eastern Chicken Masala 50g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 33,
+    "mrp": 47,
+    "rawSellingPrice": 33
+  },
+  {
+    "id": "PACS0464",
+    "name": "Sonti 10g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 10,
+    "mrp": 16,
+    "rawSellingPrice": 10
+  },
+  {
+    "id": "4987176332592",
+    "name": "Gillette Guard Shaves Razor",
+    "description": "Personal Care • Shaving Needs",
+    "department": "Personal Care",
+    "category": "Shaving Needs",
+    "price": 25,
+    "mrp": 28,
+    "rawSellingPrice": 25
+  },
+  {
+    "id": "PACS0276",
+    "name": "Shah Jeera 20g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 19,
+    "mrp": 25,
+    "rawSellingPrice": 19
+  },
+  {
+    "id": "PACS0875",
+    "name": "Okkalu 20g",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 18,
+    "mrp": 26,
+    "rawSellingPrice": 18
+  },
+  {
+    "id": "PACS1356",
+    "name": "Red Chilli Powder 1kg",
+    "description": "Oil, Sugar & Masalas • Masala Spices & Ingredients",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Masala Spices & Ingredients",
+    "price": 180,
+    "mrp": 193,
+    "rawSellingPrice": 180
+  },
+  {
+    "id": "PACS1587",
+    "name": "Nitya Pooja Oil 900ml",
+    "description": "Oil, Sugar & Masalas • Oil & Ghee",
+    "department": "Oil, Sugar & Masalas",
+    "category": "Oil & Ghee",
+    "price": 140.5,
+    "mrp": 179,
+    "rawSellingPrice": 140.61
+  },
+  {
+    "id": "8901012166635",
+    "name": "Stayfree Secure Cottony Soft Sanitary Napkin 6N",
+    "description": "Personal Care • Sanitary Needs",
+    "department": "Personal Care",
+    "category": "Sanitary Needs",
+    "price": 38.5,
+    "mrp": 43,
+    "rawSellingPrice": 38.43
+  },
+  {
+    "id": "8901242509301",
+    "name": "Bambino Gulab Jamun 120g",
+    "description": "Packaged Foods & Dry Fruits • Indian Sweets",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Indian Sweets",
+    "price": 36,
+    "mrp": 40,
+    "rawSellingPrice": 36
+  },
+  {
+    "id": "PACS1456",
+    "name": "Swami Rangoli 1kg",
+    "description": "Restaurant Supplies & Houseware • Houseware",
+    "department": "Restaurant Supplies & Houseware",
+    "category": "Houseware",
+    "price": 14,
+    "mrp": 20,
+    "rawSellingPrice": 14
+  },
+  {
+    "id": "PACS1586",
+    "name": "Milton Gas Lighter",
+    "description": "Restaurant Supplies & Houseware • Kitchen & Tableware",
+    "department": "Restaurant Supplies & Houseware",
+    "category": "Kitchen & Tableware",
+    "price": 110,
+    "mrp": 290,
+    "rawSellingPrice": 110
+  },
+  {
+    "id": "8901242103509",
+    "name": "Bambino Soya Mini Chunks 220g",
+    "description": "Packaged Foods & Dry Fruits • Namkeen, Chips & Savory",
+    "department": "Packaged Foods & Dry Fruits",
+    "category": "Namkeen, Chips & Savory",
+    "price": 50,
+    "mrp": 60,
+    "rawSellingPrice": 50
+  },
+  {
+    "id": "PACS1731",
+    "name": "Dairy Small Cone Vanilla 50ml",
+    "description": "Dairy, Fresh & Frozen • Dairy",
+    "department": "Dairy, Fresh & Frozen",
+    "category": "Dairy",
+    "price": 11,
+    "mrp": 12,
+    "rawSellingPrice": 11
+  },
+  {
+    "id": "PACS1164",
+    "name": "ClassPlus Long Note Books",
+    "description": "Stationery • Books & Notebooks",
+    "department": "Stationery",
+    "category": "Books & Notebooks",
+    "price": 15,
+    "mrp": 30,
+    "rawSellingPrice": 15
+  },
+  {
+    "id": "8906086207185",
+    "name": "Hugs Push Up The Cone Choco",
+    "description": "Personal Care • Baby Care",
+    "department": "Personal Care",
+    "category": "Baby Care",
+    "price": 5,
+    "mrp": 5,
+    "rawSellingPrice": 5
+  },
+  {
+    "id": "9666297973",
+    "name": "Subha Deepam Pooja Oil 1L",
+    "description": "Home Care • Other Pooja Needs",
+    "department": "Home Care",
+    "category": "Other Pooja Needs",
+    "price": 130.5,
+    "mrp": 160,
+    "rawSellingPrice": 130.38
+  },
+  {
+    "id": "8901399006180",
+    "name": "Santoor Beauty Talc Powder 150g",
+    "description": "Personal Care • Powder Soap",
+    "department": "Personal Care",
+    "category": "Powder Soap",
+    "price": 95,
+    "mrp": 99,
+    "rawSellingPrice": 95
+  },
+  {
+    "id": "PACS0620",
+    "name": "Bath Scrubber Big",
+    "description": "Home Care • Bath Needs",
+    "department": "Home Care",
+    "category": "Bath Needs",
+    "price": 33,
+    "mrp": 40,
+    "rawSellingPrice": 33
+  },
+  {
+    "id": "8906114800715",
+    "name": "Spicelite Resq Mosquito Killer Racket Bat",
+    "description": "Home Care • Lighting",
+    "department": "Home Care",
+    "category": "Lighting",
+    "price": 495,
+    "mrp": 599,
+    "rawSellingPrice": 495
+  },
+  {
+    "id": "8903754000994",
+    "name": "Tata Coconut Water 200ml",
+    "description": "Beverages • Fruit Drinks",
+    "department": "Beverages",
+    "category": "Fruit Drinks",
+    "price": 42,
+    "mrp": 50,
+    "rawSellingPrice": 41.8
+  },
+  {
+    "id": "8906008200256",
+    "name": "Tender Flow Premium Smooth Nipple",
+    "description": "Personal Care • Baby Needs",
+    "department": "Personal Care",
+    "category": "Baby Needs",
+    "price": 15,
+    "mrp": 20,
+    "rawSellingPrice": 15
+  },
+  {
+    "id": "8906717700284",
+    "name": "Maha Natraj Saffron",
+    "description": "Beverages • Brown & Health Drinks",
+    "department": "Beverages",
+    "category": "Brown & Health Drinks",
+    "price": 120,
+    "mrp": 350,
+    "rawSellingPrice": 120
+  },
+  {
+    "id": "PACS0703",
+    "name": "Jain Brother Multipurpose Oil",
+    "description": "Home Care • Machine",
+    "department": "Home Care",
+    "category": "Machine",
+    "price": 15,
+    "mrp": 20,
+    "rawSellingPrice": 15
+  },
+  {
+    "id": "8908001158022",
+    "name": "White Tone Face Powder 70g",
+    "description": "Personal Care • Facial Wipes",
+    "department": "Personal Care",
+    "category": "Facial Wipes",
+    "price": 110,
+    "mrp": 115,
+    "rawSellingPrice": 110
+  },
+  {
+    "id": "PACS0618",
+    "name": "Gift Cover Bhary",
+    "description": "Home Care • Friendly Care",
+    "department": "Home Care",
+    "category": "Friendly Care",
+    "price": 8,
+    "mrp": 10,
+    "rawSellingPrice": 8
+  }
+]

@@ -7,7 +7,7 @@ import { useTranslations } from '../i18n/i18n';
 import { formatCurrency } from '../utils/formatCurrency';
 import MobileStickyAction from '../components/MobileStickyAction';
 
-function DiscoverPage(): JSX.Element {
+function BrowsePage(): JSX.Element {
   const sectionRef = useRef<HTMLElement | null>(null);
   const { products, cart } = useOutletContext<AppOutletContext>();
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ function DiscoverPage(): JSX.Element {
       if (products.filter === 'all') {
         return t('products.status.emptyAll');
       }
-      return t('products.status.emptyFilter', { category: products.filter.toLowerCase() });
+      return t('products.status.emptyFilter', { department: products.filter });
     }
 
     if (products.filter === 'all') {
@@ -39,14 +39,14 @@ function DiscoverPage(): JSX.Element {
       return t('products.status.availableAll', { count });
     }
 
-    return t('products.status.availableCategory', {
+    return t('products.status.availableDepartment', {
       count,
-      category: products.filter.toLowerCase(),
+      department: products.filter,
     });
   }, [products.filter, products.filteredProducts.length, products.isLoading, products.loadError, products.storeNote, t]);
 
-  const handleFilterChange = (category: string) => {
-    products.setFilter(category);
+  const handleFilterChange = (department: string) => {
+    products.setFilter(department);
   };
 
   const totalQuantity = cart.cartItems.reduce((sum, entry) => sum + entry.quantity, 0);
@@ -66,7 +66,7 @@ function DiscoverPage(): JSX.Element {
     <>
       <ProductsSection
         sectionRef={sectionRef}
-        categories={products.categories}
+        departments={products.departments}
         filter={products.filter}
         onFilterChange={handleFilterChange}
         products={products.filteredProducts}
@@ -90,4 +90,4 @@ function DiscoverPage(): JSX.Element {
   );
 }
 
-export default DiscoverPage;
+export default BrowsePage;

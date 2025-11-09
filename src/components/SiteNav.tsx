@@ -17,7 +17,7 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
   const navItems = useMemo(
     () => [
       { label: t('nav.home'), to: '/' },
-      { label: t('nav.discover'), to: '/discover' },
+      { label: t('nav.discover'), to: '/browse' },
       { label: t('nav.cart'), to: '/cart' },
       { label: t('nav.checkout'), to: '/checkout' },
       { label: t('nav.orders'), to: '/orders' },

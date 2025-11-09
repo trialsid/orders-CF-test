@@ -2,9 +2,11 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  unit: string;
   price: number;
   category: string;
+  department: string;
+  mrp: number;
+  rawSellingPrice: number;
 }
 
 export interface ProductsResponse {
@@ -16,7 +18,6 @@ export interface OrderItem {
   id: string;
   name: string;
   quantity: number;
-  unit: string;
   price: number;
 }
 
@@ -67,7 +68,6 @@ export interface CartEntry {
 export interface SubmittedOrderItem {
   id: string;
   name: string;
-  unit: string;
   quantity: number;
   unitPrice: number;
   lineTotal: number;

@@ -132,7 +132,6 @@ export function prepareOrderPayload(
       id: entry.product.id,
       name: entry.product.name,
       quantity,
-      unit: entry.product.unit,
       price: entry.product.price,
     });
   }

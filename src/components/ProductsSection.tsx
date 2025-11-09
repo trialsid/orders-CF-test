@@ -8,9 +8,9 @@ import { useTranslations } from '../i18n/i18n';
 
 type ProductsSectionProps = {
   sectionRef?: RefObject<HTMLElement>;
-  categories: string[];
+  departments: string[];
   filter: string;
-  onFilterChange: (category: string) => void;
+  onFilterChange: (department: string) => void;
   products: Product[];
   statusText: string;
   onAddToCart: (product: Product) => void;
@@ -20,7 +20,7 @@ type ProductsSectionProps = {
 
 function ProductsSection({
   sectionRef,
-  categories,
+  departments,
   filter,
   onFilterChange,
   products,
@@ -51,16 +51,16 @@ function ProductsSection({
           >
             {t('products.filters.all')}
           </button>
-          {categories.map((category) => (
+          {departments.map((department) => (
             <button
-              key={category}
+              key={department}
               type="button"
-              className={`chip ${filter === category ? 'chip--active' : ''}`}
+              className={`chip ${filter === department ? 'chip--active' : ''}`}
               role="tab"
-              aria-selected={filter === category}
-              onClick={() => onFilterChange(category)}
+              aria-selected={filter === department}
+              onClick={() => onFilterChange(department)}
             >
-              {category}
+              {department}
             </button>
           ))}
         </div>
@@ -81,6 +81,7 @@ function ProductsSection({
               }
               onUpdateQuantity?.(product.id, -1);
             };
+            const chipLabel = product.category || product.department || 'Essentials';
 
             return (
               <article
@@ -90,11 +91,9 @@ function ProductsSection({
                 <div className="flex flex-col gap-1.5 sm:gap-2">
                 <span className="hidden w-fit items-center gap-2 rounded-full bg-brand-500/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-brand-700 dark:text-brand-300 sm:inline-flex">
                   <PackageOpen className="h-3.5 w-3.5" />
-                  {product.category}
+                  {chipLabel}
                 </span>
-                <span className="text-xs font-semibold uppercase tracking-wide text-brand-600 sm:hidden">
-                  {product.category}
-                </span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-brand-600 sm:hidden">{chipLabel}</span>
                 <Link
                   to={`/products/${product.id}`}
                   className="font-display text-lg font-semibold text-emerald-900 transition hover:text-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:text-brand-100 sm:text-xl"
@@ -104,31 +103,54 @@ function ProductsSection({
                 </Link>
                 <div className="flex items-baseline justify-between gap-2 sm:hidden">
                   <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    {product.unit}
+                    {t('products.labels.mrp', { price: formatCurrency(product.mrp) })}
                   </span>
                   <span className="text-base font-semibold text-brand-700">
                     {formatCurrency(product.price)}
                   </span>
                 </div>
-                <p className="hidden text-sm text-slate-600 dark:text-slate-300 sm:block">{product.description}</p>
               </div>
               <div className="mt-3 flex items-center gap-3 sm:mt-6 sm:flex-row sm:items-center sm:justify-between">
                 <div className="hidden sm:block">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-300">
-                    {product.unit}
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                    {t('products.labels.mrp', { price: formatCurrency(product.mrp) })}
                   </p>
                   <p className="text-lg font-semibold text-brand-700 dark:text-brand-300">{formatCurrency(product.price)}</p>
                 </div>
                 <div className="flex w-full items-center justify-end sm:w-auto sm:justify-start">
-                  <button
-                    type="button"
-                    onClick={() => onAddToCart(product)}
-                    className="hidden items-center justify-center gap-2 rounded-full border border-brand-500/40 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:border-brand-500 hover:text-brand-900 group-hover:shadow-sm dark:border-brand-700/50 dark:bg-slate-900 dark:text-brand-200 dark:hover:border-brand-400 sm:inline-flex sm:py-2.5"
-                    aria-label={t('products.aria.addToCart', { name: product.name })}
-                  >
-                    {t('products.actions.addToCart')}
-                    <Plus className="h-4 w-4" />
-                  </button>
+                  {quantity > 0 && canAdjustQuantity ? (
+                    <div className="hidden items-center gap-2 sm:flex">
+                      <button
+                        type="button"
+                        onClick={handleDecrease}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white text-brand-700 shadow-soft transition hover:border-emerald-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-brand-200"
+                        aria-label={t('cart.aria.decrease', { name: product.name })}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <span className="inline-flex min-w-[2.5rem] items-center justify-center rounded-full bg-gradient-to-r from-lime-100 via-yellow-50 to-amber-100 px-3 py-1 text-base font-semibold text-amber-900 shadow-sm shadow-amber-200/60 dark:from-amber-700 dark:via-amber-600 dark:to-amber-700 dark:text-amber-50 dark:shadow-amber-950/40">
+                        {quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleIncrease}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                        aria-label={t('cart.aria.increase', { name: product.name })}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onAddToCart(product)}
+                      className="hidden items-center justify-center gap-2 rounded-full border border-brand-500/40 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:border-brand-500 hover:text-brand-900 group-hover:shadow-sm dark:border-brand-700/50 dark:bg-slate-900 dark:text-brand-200 dark:hover:border-brand-400 sm:inline-flex sm:py-2.5"
+                      aria-label={t('products.aria.addToCart', { name: product.name })}
+                    >
+                      {t('products.actions.addToCart')}
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  )}
 
                   <div className="inline-flex w-full items-end justify-end sm:hidden">
                     {quantity > 0 && canAdjustQuantity ? (

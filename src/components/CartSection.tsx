@@ -34,17 +34,18 @@ function CartSection({ items, total, onUpdateQuantity, onSubmit, isSubmitting, h
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
           <div className="space-y-4">
             {items.length ? (
-              items.map(({ product, quantity }) => (
-                <div
-                  key={product.id}
-                  className="flex flex-col gap-4 rounded-3xl border border-emerald-100/70 bg-white/95 p-5 shadow-md shadow-brand-900/10 dark:border-emerald-900/60 dark:bg-slate-900/70 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-6"
-                >
-                  <div className="min-w-[200px] flex-1">
-                    <h4 className="font-display text-lg font-semibold text-emerald-900 dark:text-brand-100">{product.name}</h4>
-                    <p className="text-sm text-slate-500 dark:text-slate-300">
-                      {product.unit} • {product.category}
-                    </p>
-                  </div>
+              items.map(({ product, quantity }) => {
+                const meta = product.department ? `${product.department} • ${product.category}` : product.category;
+
+                return (
+                  <div
+                    key={product.id}
+                    className="flex flex-col gap-4 rounded-3xl border border-emerald-100/70 bg-white/95 p-5 shadow-md shadow-brand-900/10 dark:border-emerald-900/60 dark:bg-slate-900/70 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-6"
+                  >
+                    <div className="min-w-[200px] flex-1">
+                      <h4 className="font-display text-lg font-semibold text-emerald-900 dark:text-brand-100">{product.name}</h4>
+                      <p className="text-sm text-slate-500 dark:text-slate-300">{meta}</p>
+                    </div>
                   <div className="flex items-center justify-between gap-4 sm:justify-center">
                     <button
                       type="button"
@@ -70,7 +71,8 @@ function CartSection({ items, total, onUpdateQuantity, onSubmit, isSubmitting, h
                     {formatCurrency(product.price * quantity)}
                   </p>
                 </div>
-              ))
+              );
+              })
             ) : (
               <div className="cart-empty">{t('cart.empty')}</div>
             )}

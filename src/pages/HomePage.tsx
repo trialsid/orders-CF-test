@@ -10,7 +10,7 @@ function HomePage(): JSX.Element {
   const { products } = useOutletContext<AppOutletContext>();
 
   const handleBrowse = () => {
-    navigate('/discover');
+    navigate('/browse');
   };
 
   return (

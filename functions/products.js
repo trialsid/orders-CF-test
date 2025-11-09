@@ -3,7 +3,7 @@ import { INVENTORY } from "./_inventory";
 export async function onRequest() {
   return new Response(
     JSON.stringify({
-      message: "Free delivery within Ieeja town for orders above ₹499.",
+      message: "Free delivery within Ieeja town on baskets above ₹299. ₹15 delivery fee for smaller orders (₹100 minimum order).",
       items: INVENTORY
     }),
     {

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
-import { ArrowLeft, PackageOpen, PlusCircle, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, PackageOpen, PlusCircle, ShoppingCart, Minus } from 'lucide-react';
 import type { AppOutletContext } from '../layouts/MainLayout';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useTranslations } from '../i18n/i18n';
@@ -17,10 +17,34 @@ function ProductDetailPage(): JSX.Element {
     [productId, products.products]
   );
 
-  const handleAddToCart = () => {
-    if (product) {
-      cart.addItem(product);
+  const quantity = useMemo(() => {
+    if (!product) {
+      return 0;
     }
+    const entry = cart.cartItems.find((item) => item.product.id === product.id);
+    return entry?.quantity ?? 0;
+  }, [cart.cartItems, product]);
+
+  const handleIncrease = () => {
+    if (!product) {
+      return;
+    }
+    if (quantity > 0) {
+      cart.updateQuantity(product.id, 1);
+      return;
+    }
+    cart.addItem(product);
+  };
+
+  const handleDecrease = () => {
+    if (!product || quantity <= 0) {
+      return;
+    }
+    cart.updateQuantity(product.id, -1);
+  };
+
+  const handleAddToCart = () => {
+    handleIncrease();
   };
 
   if (products.isLoading) {
@@ -47,7 +71,7 @@ function ProductDetailPage(): JSX.Element {
           </button>
           <p>{t('products.detail.missing')}</p>
           <Link
-            to="/discover"
+            to="/browse"
             className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700"
           >
             <ShoppingCart className="h-4 w-4" />
@@ -97,12 +121,20 @@ function ProductDetailPage(): JSX.Element {
               </h3>
               <dl className="mt-3 grid gap-3 text-sm text-slate-600 dark:text-slate-300 sm:grid-cols-2">
                 <div className="flex items-center justify-between rounded-2xl border border-emerald-100/70 bg-white/80 px-4 py-3 dark:border-emerald-900/60 dark:bg-slate-900/60">
-                  <dt className="font-medium text-emerald-900 dark:text-emerald-100">{t('products.detail.unit')}</dt>
-                  <dd>{product.unit}</dd>
+                  <dt className="font-medium text-emerald-900 dark:text-emerald-100">{t('products.detail.department')}</dt>
+                  <dd>{product.department || t('products.detail.unknown')}</dd>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl border border-emerald-100/70 bg-white/80 px-4 py-3 dark:border-emerald-900/60 dark:bg-slate-900/60">
+                  <dt className="font-medium text-emerald-900 dark:text-emerald-100">{t('products.detail.category')}</dt>
+                  <dd>{product.category}</dd>
                 </div>
                 <div className="flex items-center justify-between rounded-2xl border border-emerald-100/70 bg-white/80 px-4 py-3 dark:border-emerald-900/60 dark:bg-slate-900/60">
                   <dt className="font-medium text-emerald-900 dark:text-emerald-100">{t('products.detail.price')}</dt>
                   <dd>{formatCurrency(product.price)}</dd>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl border border-emerald-100/70 bg-white/80 px-4 py-3 dark:border-emerald-900/60 dark:bg-slate-900/60">
+                  <dt className="font-medium text-emerald-900 dark:text-emerald-100">{t('products.detail.mrp')}</dt>
+                  <dd>{formatCurrency(product.mrp)}</dd>
                 </div>
               </dl>
             </section>
@@ -116,17 +148,41 @@ function ProductDetailPage(): JSX.Element {
 
           <aside className="flex flex-col gap-6 rounded-3xl border border-brand-500/20 bg-gradient-to-br from-white via-white to-brand-50/60 p-6 shadow-xl shadow-brand-900/10 dark:border-brand-700/30 dark:from-slate-900 dark:via-slate-900 dark:to-brand-900/20">
             <div>
-              <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{product.unit}</span>
+              <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                {t('products.detail.mrpLabel', { price: formatCurrency(product.mrp) })}
+              </span>
               <p className="mt-2 text-3xl font-semibold text-emerald-900 dark:text-brand-100">{formatCurrency(product.price)}</p>
             </div>
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 sm:px-6 sm:py-3 sm:text-base"
-            >
-              {t('products.actions.addToCart')}
-              <PlusCircle className="h-5 w-5" />
-            </button>
+            {quantity > 0 ? (
+              <div className="inline-flex w-full items-center justify-between rounded-full bg-gradient-to-r from-lime-100 via-yellow-50 to-amber-100 px-4 py-2 shadow-sm dark:from-amber-800/60 dark:via-amber-700/50 dark:to-amber-800/60">
+                <button
+                  type="button"
+                  onClick={handleDecrease}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-brand-700 shadow-soft transition hover:bg-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:bg-slate-900 dark:text-brand-100"
+                  aria-label={t('cart.aria.decrease', { name: product.name })}
+                >
+                  <Minus className="h-5 w-5" />
+                </button>
+                <span className="text-2xl font-semibold text-amber-900 dark:text-amber-50">{quantity}</span>
+                <button
+                  type="button"
+                  onClick={handleIncrease}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                  aria-label={t('cart.aria.increase', { name: product.name })}
+                >
+                  <PlusCircle className="h-5 w-5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 sm:px-6 sm:py-3 sm:text-base"
+              >
+                {t('products.actions.addToCart')}
+                <PlusCircle className="h-5 w-5" />
+              </button>
+            )}
             <Link
               to="/cart"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-200/70 bg-white px-6 py-3 text-sm font-semibold text-emerald-800 transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
