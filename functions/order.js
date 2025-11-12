@@ -1,6 +1,11 @@
 import { INVENTORY_MAP } from "./_inventory";
 
 const DEFAULT_ORDER_STATUS = "pending";
+const ALLOWED_ORDER_STATUSES = new Set(["pending", "confirmed", "outForDelivery", "delivered", "cancelled"]);
+const STATUS_ALIASES = {
+  "out_for_delivery": "outForDelivery",
+  outfordelivery: "outForDelivery",
+};
 
 function jsonResponse(payload, status = 200) {
   return new Response(JSON.stringify(payload), {
@@ -166,6 +171,45 @@ function parseItems(itemsJson) {
   }
 }
 
+function normalizeStatusInput(status) {
+  if (typeof status !== "string") {
+    return undefined;
+  }
+  const trimmed = status.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (ALLOWED_ORDER_STATUSES.has(trimmed)) {
+    return trimmed;
+  }
+
+  const alias = STATUS_ALIASES[trimmed.toLowerCase()];
+  if (alias && ALLOWED_ORDER_STATUSES.has(alias)) {
+    return alias;
+  }
+
+  return undefined;
+}
+
+async function updateOrderStatus(env, orderId, nextStatus) {
+  const db = getDatabase(env);
+  if (!db) {
+    return { error: "ORDERS_DB binding is not configured." };
+  }
+
+  try {
+    const result = await db.prepare("UPDATE orders SET status = ? WHERE id = ?").bind(nextStatus, orderId).run();
+    if (result.meta.changes === 0) {
+      return { error: "Order not found.", status: 404 };
+    }
+    return {};
+  } catch (error) {
+    console.error("Failed to update order status", error);
+    return { error: "Unable to update order right now." };
+  }
+}
+
 export async function onRequestPost({ request, env }) {
   let payload;
   try {
@@ -255,6 +299,37 @@ export async function onRequest({ request, env, ctx }) {
 
   if (request.method === "GET") {
     return onRequestGet({ request, env, ctx });
+  }
+
+  if (request.method === "PATCH") {
+    let payload;
+    try {
+      payload = await request.json();
+    } catch (error) {
+      return jsonResponse({ error: "Request body must be valid JSON." }, 400);
+    }
+
+    if (!payload || typeof payload !== "object") {
+      return jsonResponse({ error: "Invalid request payload." }, 400);
+    }
+
+    const orderId = normalizeString(payload.orderId);
+    const status = normalizeStatusInput(payload.status);
+
+    if (!orderId) {
+      return jsonResponse({ error: "Order ID is required." }, 400);
+    }
+
+    if (!status) {
+      return jsonResponse({ error: "Status is invalid." }, 400);
+    }
+
+    const result = await updateOrderStatus(env, orderId, status);
+    if (result.error) {
+      return jsonResponse({ error: result.error }, result.status ?? 500);
+    }
+
+    return jsonResponse({ orderId, status });
   }
 
   return jsonResponse({ error: "Method not allowed." }, 405);

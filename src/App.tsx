@@ -9,6 +9,8 @@ import OrdersPage from './pages/OrdersPage';
 import SupportPage from './pages/SupportPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
+import AdminPage from './pages/AdminPage';
+import RiderPage from './pages/RiderPage';
 
 function App(): JSX.Element {
   return (
@@ -24,6 +26,8 @@ function App(): JSX.Element {
           <Route path="checkout/success" element={<OrderSuccessPage />} />
           <Route path="orders" element={<OrdersPage />} />
           <Route path="support" element={<SupportPage />} />
+          <Route path="admin" element={<AdminPage />} />
+          <Route path="rider" element={<RiderPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

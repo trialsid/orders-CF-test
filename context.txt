@@ -1,26 +1,27 @@
 Project: Order.Ieeja grocery storefront (Cloudflare Pages + D1).
 Stack: React (Vite) with Tailwind design system (green accents, light/dark theme), lucide-react icons, TypeScript hooks/components, Cloudflare Pages Functions backend, Cloudflare D1 database for orders.
 
-Structure highlights:
-- src/: React app with MainLayout providing theme/locale context and checkout draft persistence, routed pages (Home, Browse, Product detail, Cart, Checkout, Checkout success, Orders, Support), reusable components (SiteNav, ProductsSection, CartSection, Toast, MobileStickyAction), hooks (useProducts, useCart, useOrders), utilities (formatCurrency, checkout helpers).
-- functions/: Cloudflare Pages Functions (_worker.js router, products.js inventory endpoint, order.js order submission/listing backed by D1).
-- migrations/: Versioned D1 schema migrations (0001_create_orders.sql, 0002_add_order_details.sql) applied locally; remote application pending.
+- src/: React app with MainLayout providing theme/locale context and checkout draft persistence, routed pages (Home, Browse, Product detail, Cart, Checkout, Checkout success, Orders, Support, Admin, Rider), reusable components (SiteNav, ProductsSection, CartSection, Toast, MobileStickyAction), hooks (useProducts, useCart, useOrders, useAdminConfig), utilities (formatCurrency, checkout helpers, updateOrderStatus).
+- functions/: Cloudflare Pages Functions (_worker.js router, products.js inventory endpoint, order.js order submission/listing/status updates backed by D1, config.js for delivery economics admin API).
+- migrations/: Versioned D1 schema migrations (0001_create_orders.sql, 0002_add_order_details.sql, 0003_create_admin_config.sql) applied locally; remote application pending.
 - wrangler.toml: name="order-ieeja", compatibility_date="2025-07-18", pages_build_output_dir="dist", D1 binding ORDERS_DB -> database_id 0eaea965-4467-4aee-89a9-28aed83e4c79.
 
-Current backend flow:
 - POST /order validates cart payload, requires phone/address/slot/payment, persists to D1 (orders table with customer, delivery, payment fields), returns orderId + summary.
 - GET /order lists recent orders (limit query param), includes structured customer/delivery/payment data used by Orders page.
+- PATCH /order allows staff/riders to move orders across statuses (pending→confirmed→outForDelivery→delivered/cancelled) via the admin/rider consoles.
+- GET/PUT /config exposes delivery economics (minimum order, free delivery threshold, below-threshold fee) stored in D1 admin_config.
 
-Frontend state:
 - Mobile sticky CTAs use two-tier lime/amber info chips with dual-action pills and now hide automatically when the keyboard opens.
 - Browse page (formerly Discover) pulls departments from the live catalog, renders horizontal department chips, and shows compact product cards with category chips plus inline quantity controls on both mobile and desktop; desktop hero CTA and product detail page convert to “− qty +” controls once an item is added.
 - Cart and checkout keep the refreshed quantity styling, persist draft data, and redirect to a dedicated success screen after submission; success + Orders pages surface live customer/delivery/payment details.
 - Hero + features copy now pitch “Ieeja supermarket delivery” with ₹100 minimum order, free delivery above ₹299, and ₹15 fee otherwise; metrics and store note reinforce the same pricing in both locales.
+- Admin page offers an ops dashboard (metrics, live fulfilment queue, recent submissions, delivery economics form synced via useAdminConfig) with mobile-friendly cards and branded scrollbars; Rider page presents a pared-down queue for confirmed/out-for-delivery jobs with tap-to-call, address, and status advance controls.
+- Scroll UI (global + horizontal scrollers) now uses emerald-themed custom scrollbars to match the design system.
 
 - Local catalog source: proposed-280-SKUs.csv (kept outside deployment) feeds scripts/generate-inventory.mjs → functions/_inventory-data.json; npm run build:inventory runs automatically before dev/build.
 - Development: npm run dev (Vite) + npm run cf:dev (Wrangler dev). D1 migrations applied locally (0001,0002); hold remote migration/app binding until deploy.
 - Dev servers (vite or wrangler pages) may cache index.html; restart or disable cache in DevTools if hashed bundles 404.
 - npm run build currently fails in this environment due to missing optional dependency `@rollup/rollup-linux-x64-gnu`; reinstall dependencies if a local build is needed.
-- Pending work ideas: richer Orders UI with status management, externalized slot/payment config, PWA/service worker manifest when ready.
+- Pending work ideas: richer Orders UI with customer-facing status tracking, secure auth/roles for /admin + /rider, assign-per-rider queues with push updates, storing slot/payment config in D1, and PWA/service worker manifest when ready.
 
 Note: Keep dist/ out of git; Pages binding ORDERS_DB must be added in Cloudflare dashboard before deploy. Context last updated Nov 29, 2025 after CSV-driven inventory ingestion, Browse page rebrand/department filters, desktop quantity controls, product detail CTA parity, and updated hero/delivery messaging for ₹100 minimum / ₹299 free delivery / ₹15 fee below threshold.

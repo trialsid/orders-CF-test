@@ -9,6 +9,21 @@
 
   html {
     @apply scroll-smooth;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(52, 211, 153, 0.8) rgba(16, 185, 129, 0.14);
+  }
+
+  html::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  html::-webkit-scrollbar-track {
+    background: rgba(16, 185, 129, 0.14);
+  }
+
+  html::-webkit-scrollbar-thumb {
+    background-color: rgba(52, 211, 153, 0.8);
+    border-radius: 999px;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -106,5 +121,27 @@
 
   .floating-call {
     @apply fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-900/20 transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 dark:shadow-brand-900/50;
+  }
+}
+
+@layer utilities {
+  .scrollbar-brand {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(52, 211, 153, 0.8) rgba(16, 185, 129, 0.14);
+  }
+
+  .scrollbar-brand::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-brand::-webkit-scrollbar-track {
+    background: rgba(16, 185, 129, 0.14);
+    border-radius: 999px;
+  }
+
+  .scrollbar-brand::-webkit-scrollbar-thumb {
+    background-color: rgba(52, 211, 153, 0.8);
+    border-radius: 999px;
   }
 }

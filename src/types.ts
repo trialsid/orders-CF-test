@@ -73,6 +73,8 @@ export interface SubmittedOrderItem {
   lineTotal: number;
 }
 
+export type OrderStatus = 'pending' | 'confirmed' | 'outForDelivery' | 'delivered' | 'cancelled';
+
 export interface OrderRecord {
   id: string;
   customerName: string;
@@ -80,7 +82,7 @@ export interface OrderRecord {
   customerAddress?: string;
   totalAmount: number;
   currency: string;
-  status: string;
+  status: OrderStatus;
   items: SubmittedOrderItem[];
   createdAt: string;
   deliverySlot?: string;
@@ -91,6 +93,12 @@ export interface OrderRecord {
 export interface OrdersResponse {
   orders: OrderRecord[];
   error?: string;
+}
+
+export interface AdminConfig {
+  minimumOrderAmount: number;
+  freeDeliveryThreshold: number;
+  deliveryFeeBelowThreshold: number;
 }
 
 export interface CheckoutFormValues {

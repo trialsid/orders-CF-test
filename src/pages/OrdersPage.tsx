@@ -13,14 +13,6 @@ const STATUS_BADGE_STYLES: Record<string, string> = {
   cancelled: 'bg-rose-500/10 text-rose-700 dark:text-rose-200',
 };
 
-const formatItemsSummary = (items: { name: string; quantity: number }[]): string => {
-  if (!items.length) {
-    return '';
-  }
-  const parts = items.slice(0, 3).map((item) => `${item.quantity} × ${item.name}`);
-  return items.length > 3 ? `${parts.join(', ')}…` : parts.join(', ');
-};
-
 function OrdersPage(): JSX.Element {
   const { t, locale } = useTranslations();
   const { orders, status, error, refresh } = useOrders();
@@ -81,36 +73,27 @@ function OrdersPage(): JSX.Element {
               const formattedDate = orderDate
                 ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(orderDate)
                 : '';
-              const summary = formatItemsSummary(order.items);
               const slotDetail = order.deliverySlot;
               const paymentDetail = order.paymentMethod;
-              const detailLines = [
-                order.customerName ? t('orders.customerLine', { name: order.customerName }) : null,
-                order.customerPhone ? t('orders.customerPhone', { phone: order.customerPhone }) : null,
-                order.customerAddress ? t('orders.customerAddress', { address: order.customerAddress }) : null,
-                order.deliveryInstructions
-                  ? t('orders.deliveryInstructions', { instructions: order.deliveryInstructions })
-                  : null,
-              ].filter(Boolean) as string[];
 
               return (
                 <article
                   key={order.id}
-                  className="rounded-3xl border border-emerald-100/60 bg-white/90 p-6 shadow-lg dark:border-emerald-900/60 dark:bg-slate-900/70"
+                  className="rounded-3xl border border-emerald-100/60 bg-white/90 p-5 shadow-sm dark:border-emerald-900/60 dark:bg-slate-900/70"
                 >
-                  <header className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h2 className="font-display text-lg font-semibold text-emerald-900 dark:text-brand-100">{order.id}</h2>
+                      <p className="font-display text-lg font-semibold text-emerald-900 dark:text-brand-100">{order.id}</p>
                       <p className="text-sm text-slate-500 dark:text-slate-300">
                         {formattedDate ? t('orders.placedOn', { date: formattedDate }) : ''}
                       </p>
                     </div>
                     <span
-                      className={`rounded-full border border-transparent px-4 py-2 text-xs font-semibold uppercase tracking-wide ${badgeClass}`}
+                      className={`rounded-full border border-transparent px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide ${badgeClass}`}
                     >
                       {statusLabel}
                     </span>
-                  </header>
+                  </div>
 
                   {(slotDetail || paymentDetail) && (
                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
@@ -129,30 +112,20 @@ function OrdersPage(): JSX.Element {
                     </div>
                   )}
 
-                  <div className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                    {summary && <p>{summary}</p>}
-                    {detailLines.length > 0 && (
-                      <ul className="space-y-1 text-xs text-slate-500 dark:text-slate-400">
-                        {detailLines.map((line, index) => (
-                          <li key={`${order.id}-detail-${index}`}>{line}</li>
-                        ))}
-                      </ul>
-                    )}
-                    <p className="font-semibold text-emerald-800 dark:text-emerald-200">
-                      {formatCurrency(order.totalAmount)}
-                    </p>
-                  </div>
+                  <p className="mt-4 text-lg font-semibold text-emerald-800 dark:text-emerald-200">
+                    {formatCurrency(order.totalAmount)}
+                  </p>
 
-                  <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <div className="mt-4 flex flex-wrap gap-3">
                     <button
                       type="button"
-                      className="rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
+                      className="rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-xs font-semibold text-emerald-800 transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
                     >
                       {t('orders.invoice')}
                     </button>
                     <button
                       type="button"
-                      className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                      className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-xs font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
                     >
                       {t('orders.reorder')}
                     </button>
