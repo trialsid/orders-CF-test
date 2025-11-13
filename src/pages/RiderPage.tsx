@@ -1,15 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle, MapPin, PackageCheck, Phone, Truck } from 'lucide-react';
+import { CheckCircle, MapPin, PackageCheck, Phone, Truck, Shield } from 'lucide-react';
 import PageSection from '../components/PageSection';
 import { useOrders } from '../hooks/useOrders';
 import type { OrderRecord, OrderStatus } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
 import { updateOrderStatus as updateOrderStatusRequest } from '../utils/updateOrderStatus';
+import { useAuth } from '../context/AuthContext';
 
 const ASSIGNED_STATUSES: OrderStatus[] = ['confirmed', 'outForDelivery'];
 
 function RiderPage(): JSX.Element {
-  const { orders, status, error, refresh } = useOrders(50);
+  const { token, user } = useAuth();
+  const { orders, status, error, refresh } = useOrders(50, { token, requireAuth: true });
   const [updating, setUpdating] = useState<Record<string, boolean>>({});
   const [statusError, setStatusError] = useState<string>();
 
@@ -33,7 +35,7 @@ function RiderPage(): JSX.Element {
     setStatusError(undefined);
     setUpdating((prev) => ({ ...prev, [order.id]: true }));
     try {
-      await updateOrderStatusRequest(order.id, nextStatus);
+      await updateOrderStatusRequest(order.id, nextStatus, token);
       refresh();
     } catch (updateError) {
       const message = updateError instanceof Error ? updateError.message : 'Unable to update order right now.';
@@ -116,14 +118,21 @@ function RiderPage(): JSX.Element {
       title="Rider console"
       description="Grab the next delivery, call the customer, and update status as you go."
       actions={
-        <button
-          type="button"
-          onClick={refresh}
-          className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-900/60 dark:bg-slate-950 dark:text-emerald-200"
-          disabled={status === 'loading'}
-        >
-          {status === 'loading' ? 'Refreshing…' : 'Refresh feed'}
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          {user && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/30 dark:text-emerald-100">
+              <Shield className="h-4 w-4" /> {(user.fullName ?? user.displayName ?? user.phone) ?? ''} • {user.role}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={refresh}
+            className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-900/60 dark:bg-slate-950 dark:text-emerald-200"
+            disabled={status === 'loading'}
+          >
+            {status === 'loading' ? 'Refreshing…' : 'Refresh feed'}
+          </button>
+        </div>
       }
     >
       <div className="space-y-6">

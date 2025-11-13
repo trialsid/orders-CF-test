@@ -1,3 +1,5 @@
+import { requireAuth, AuthError } from "./_auth";
+
 const DEFAULT_CONFIG = {
   minimumOrderAmount: 100,
   freeDeliveryThreshold: 299,
@@ -21,6 +23,13 @@ function getDatabase(env) {
 function toNumber(value) {
   const numeric = typeof value === "string" ? Number(value) : value;
   return Number.isFinite(numeric) ? numeric : undefined;
+}
+
+function handleAuthError(error) {
+  if (error instanceof AuthError) {
+    return jsonResponse({ error: error.message }, error.status);
+  }
+  return null;
 }
 
 async function readConfig(db) {
@@ -64,6 +73,18 @@ export async function onRequest({ request, env }) {
   const db = getDatabase(env);
   if (!db) {
     return jsonResponse({ error: "ORDERS_DB binding is not configured." }, 501);
+  }
+
+  if (request.method === "GET" || request.method === "PUT" || request.method === "PATCH") {
+    try {
+      await requireAuth(request, env, ["admin"]);
+    } catch (error) {
+      const authResponse = handleAuthError(error);
+      if (authResponse) {
+        return authResponse;
+      }
+      throw error;
+    }
   }
 
   if (request.method === "GET") {

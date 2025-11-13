@@ -88,6 +88,8 @@ export interface OrderRecord {
   deliverySlot?: string;
   deliveryInstructions?: string;
   paymentMethod?: string;
+  userId?: string;
+  deliveryAddressId?: string;
 }
 
 export interface OrdersResponse {
@@ -108,4 +110,53 @@ export interface CheckoutFormValues {
   slot: string;
   paymentMethod: string;
   instructions: string;
+}
+
+export type UserRole = 'customer' | 'rider' | 'admin';
+
+export interface UserAddressSnapshot {
+  addressId?: string | null;
+  contactName?: string | null;
+  phone?: string | null;
+  line1?: string | null;
+  line2?: string | null;
+  area?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postalCode?: string | null;
+  landmark?: string | null;
+}
+
+export interface UserAddress {
+  id: string;
+  label?: string | null;
+  contactName?: string | null;
+  phone?: string | null;
+  line1?: string | null;
+  line2?: string | null;
+  area?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postalCode?: string | null;
+  landmark?: string | null;
+  isDefault: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface AuthUser {
+  id: string;
+  phone: string;
+  role: UserRole;
+  status: string;
+  displayName?: string | null;
+  fullName?: string | null;
+  primaryAddress?: UserAddressSnapshot | null;
+  createdAt?: string | null;
+}
+
+export interface AuthResponse {
+  user: AuthUser;
+  token: string;
+  error?: string;
 }

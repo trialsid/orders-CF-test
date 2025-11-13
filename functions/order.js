@@ -1,4 +1,5 @@
 import { INVENTORY_MAP } from "./_inventory";
+import { requireAuth, AuthError } from "./_auth";
 
 const DEFAULT_ORDER_STATUS = "pending";
 const ALLOWED_ORDER_STATUSES = new Set(["pending", "confirmed", "outForDelivery", "delivered", "cancelled"]);
@@ -21,12 +22,105 @@ function getDatabase(env) {
   return env && typeof env === "object" ? env.ORDERS_DB : undefined;
 }
 
+function handleAuthError(error) {
+  if (error instanceof AuthError) {
+    return jsonResponse({ error: error.message }, error.status);
+  }
+  return null;
+}
+
+async function getOptionalCustomerContext(request, env) {
+  const authHeader = request.headers.get("Authorization") ?? "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+  return requireAuth(request, env, ["customer", "admin"]);
+}
+
+async function upsertUserAddress(db, userId, summary) {
+  if (!db || !userId) {
+    return null;
+  }
+  const addressLine = normalizeString(summary.customer?.address);
+  if (!addressLine) {
+    return null;
+  }
+
+  const phone = normalizeDigits(summary.customer?.phone ?? "");
+  const contactName = normalizeString(summary.customer?.name);
+  const landmark = normalizeString(summary.delivery?.instructions);
+
+  try {
+    const existing = await db
+      .prepare(
+        `SELECT id FROM user_addresses
+         WHERE user_id = ? AND line1 = ? AND IFNULL(phone, '') = IFNULL(?, '')
+         LIMIT 1`
+      )
+      .bind(userId, addressLine, phone ?? null)
+      .first();
+    if (existing?.id) {
+      return existing.id;
+    }
+
+    const { total } =
+      (await db.prepare("SELECT COUNT(1) as total FROM user_addresses WHERE user_id = ?").bind(userId).first()) ?? {};
+    const isDefault = Number(total ?? 0) === 0 ? 1 : 0;
+
+    const addressId = crypto.randomUUID();
+    await db
+      .prepare(
+        `INSERT INTO user_addresses (
+           id,
+           user_id,
+           contact_name,
+           phone,
+           line1,
+           line2,
+           area,
+           city,
+           state,
+           postal_code,
+           landmark,
+           is_default
+         )
+         VALUES (?1, ?2, ?3, ?4, ?5, NULL, NULL, NULL, NULL, NULL, ?6, ?7)`
+      )
+      .bind(addressId, userId, contactName ?? null, phone ?? null, addressLine, landmark ?? null, isDefault)
+      .run();
+
+    if (isDefault) {
+      const snapshot = JSON.stringify({
+        addressId,
+        contactName: contactName ?? null,
+        phone: phone ?? null,
+        line1: addressLine,
+        landmark: landmark ?? null,
+      });
+      await db.prepare("UPDATE users SET primary_address_json = ? WHERE id = ?").bind(snapshot, userId).run();
+    }
+
+    return addressId;
+  } catch (error) {
+    console.error("Failed to upsert user address", error);
+    return null;
+  }
+}
+
 function normalizeString(value) {
   if (typeof value !== "string") {
     return undefined;
   }
   const trimmed = value.trim();
   return trimmed.length ? trimmed : undefined;
+}
+
+function normalizeDigits(value) {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const digits = value.replace(/\D/g, "");
+  return digits.length ? digits : undefined;
 }
 
 function validateOrder(body) {
@@ -111,8 +205,7 @@ function validateOrder(body) {
   };
 }
 
-async function persistOrder(env, summary, orderId) {
-  const db = getDatabase(env);
+async function persistOrder(db, summary, orderId, options = {}) {
   if (!db) {
     return { error: "ORDERS_DB binding is not configured." };
   }
@@ -133,9 +226,11 @@ async function persistOrder(env, summary, orderId) {
            customer_address,
            delivery_slot,
            payment_method,
-           delivery_instructions
+           delivery_instructions,
+           user_id,
+           delivery_address_id
          )
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .bind(
         orderId,
@@ -148,7 +243,9 @@ async function persistOrder(env, summary, orderId) {
         summary.customer.address ?? null,
         summary.delivery?.slot ?? null,
         summary.payment?.method ?? null,
-        summary.delivery?.instructions ?? null
+        summary.delivery?.instructions ?? null,
+        options.userId ?? null,
+        options.deliveryAddressId ?? null
       )
       .run();
     return {};
@@ -211,6 +308,11 @@ async function updateOrderStatus(env, orderId, nextStatus) {
 }
 
 export async function onRequestPost({ request, env }) {
+  const db = getDatabase(env);
+  if (!db) {
+    return jsonResponse({ error: "ORDERS_DB binding is not configured." }, 501);
+  }
+
   let payload;
   try {
     payload = await request.json();
@@ -225,7 +327,26 @@ export async function onRequestPost({ request, env }) {
 
   const orderId = `ORD-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
-  const persistResult = await persistOrder(env, result, orderId);
+  let userContext = null;
+  try {
+    userContext = await getOptionalCustomerContext(request, env);
+  } catch (error) {
+    const authResponse = handleAuthError(error);
+    if (authResponse) {
+      return authResponse;
+    }
+    throw error;
+  }
+
+  let deliveryAddressId = null;
+  if (userContext?.sub) {
+    deliveryAddressId = await upsertUserAddress(db, userContext.sub, result);
+  }
+
+  const persistResult = await persistOrder(db, result, orderId, {
+    userId: userContext?.sub ?? null,
+    deliveryAddressId,
+  });
   if (persistResult.error) {
     return jsonResponse({ error: persistResult.error }, 500);
   }
@@ -246,13 +367,24 @@ export async function onRequestGet({ request, env }) {
     return jsonResponse({ error: "ORDERS_DB binding is not configured." }, 501);
   }
 
+  let authContext;
+  try {
+    authContext = await requireAuth(request, env, ["admin", "rider", "customer"]);
+  } catch (error) {
+    const authResponse = handleAuthError(error);
+    if (authResponse) {
+      return authResponse;
+    }
+    throw error;
+  }
+
   const url = new URL(request.url);
   const limitParam = Number(url.searchParams.get("limit") ?? "25");
   const limit = Number.isFinite(limitParam) ? Math.min(Math.max(Math.floor(limitParam), 1), 100) : 25;
+  const isPrivileged = authContext.role === "admin" || authContext.role === "rider";
 
   try {
-    const statement = db.prepare(
-      `SELECT id,
+    const baseQuery = `SELECT id,
               customer_name,
               customer_phone,
               total_amount,
@@ -263,12 +395,17 @@ export async function onRequestGet({ request, env }) {
               customer_address,
               delivery_slot,
               payment_method,
-              delivery_instructions
-       FROM orders
-       ORDER BY datetime(created_at) DESC
-       LIMIT ?`
-    );
-    const { results } = await statement.bind(limit).all();
+              delivery_instructions,
+              user_id,
+              delivery_address_id
+       FROM orders`;
+
+    const whereClause = isPrivileged ? "" : " WHERE user_id = ?";
+    const orderLimitClause = " ORDER BY datetime(created_at) DESC LIMIT ?";
+    const statement = db.prepare(baseQuery + whereClause + orderLimitClause);
+
+    const binding = isPrivileged ? [limit] : [authContext.sub, limit];
+    const { results } = await statement.bind(...binding).all();
 
     const orders = (results ?? []).map((row) => ({
       id: row.id,
@@ -283,6 +420,8 @@ export async function onRequestGet({ request, env }) {
       deliverySlot: row.delivery_slot ?? undefined,
       paymentMethod: row.payment_method ?? undefined,
       deliveryInstructions: row.delivery_instructions ?? undefined,
+      userId: row.user_id ?? undefined,
+      deliveryAddressId: row.delivery_address_id ?? undefined,
     }));
 
     return jsonResponse({ orders });
@@ -295,6 +434,18 @@ export async function onRequestGet({ request, env }) {
 export async function onRequest({ request, env, ctx }) {
   if (request.method === "POST") {
     return onRequestPost({ request, env, ctx });
+  }
+
+  if (request.method === "PATCH") {
+    try {
+      await requireAuth(request, env, ["admin", "rider"]);
+    } catch (error) {
+      const authResponse = handleAuthError(error);
+      if (authResponse) {
+        return authResponse;
+      }
+      throw error;
+    }
   }
 
   if (request.method === "GET") {

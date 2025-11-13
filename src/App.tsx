@@ -11,6 +11,9 @@ import ProductDetailPage from './pages/ProductDetailPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import AdminPage from './pages/AdminPage';
 import RiderPage from './pages/RiderPage';
+import AuthPage from './pages/AuthPage';
+import RequireAuth from './components/RequireAuth';
+import AccountPage from './pages/AccountPage';
 
 function App(): JSX.Element {
   return (
@@ -26,8 +29,32 @@ function App(): JSX.Element {
           <Route path="checkout/success" element={<OrderSuccessPage />} />
           <Route path="orders" element={<OrdersPage />} />
           <Route path="support" element={<SupportPage />} />
-          <Route path="admin" element={<AdminPage />} />
-          <Route path="rider" element={<RiderPage />} />
+          <Route
+            path="admin"
+            element={
+              <RequireAuth roles={['admin']}>
+                <AdminPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="rider"
+            element={
+              <RequireAuth roles={['rider', 'admin']}>
+                <RiderPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="account"
+            element={
+              <RequireAuth roles={['customer', 'admin', 'rider']}>
+                <AccountPage />
+              </RequireAuth>
+            }
+          />
+          <Route path="auth/login" element={<AuthPage mode="login" />} />
+          <Route path="auth/register" element={<AuthPage mode="register" />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

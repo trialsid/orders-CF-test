@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Moon, Sun, Phone, Menu, X, ShoppingCart, ChevronDown } from 'lucide-react';
+import { Moon, Sun, Phone, Menu, X, ShoppingCart, ChevronDown, UserCircle2, LogOut } from 'lucide-react';
 import { useTranslations, type Locale } from '../i18n/i18n';
+import { useAuth } from '../context/AuthContext';
 
 type SiteNavProps = {
   theme: 'light' | 'dark';
@@ -13,6 +14,23 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const { locale, setLocale, t } = useTranslations();
+  const { user, status: authStatus, logout } = useAuth();
+  const isAuthReady = authStatus === 'ready';
+  const accountDestination = user
+    ? user.role === 'admin'
+      ? '/admin'
+      : user.role === 'rider'
+      ? '/rider'
+      : '/account'
+    : '/auth/login';
+  const accountLabel = user
+    ? user.role === 'admin'
+      ? t('nav.adminConsole')
+      : user.role === 'rider'
+      ? t('nav.riderConsole')
+      : t('nav.account')
+    : t('nav.signIn');
+  const userDisplayName = user?.fullName ?? user?.displayName ?? user?.phone ?? '';
 
   const navItems = useMemo(
     () => [
@@ -32,6 +50,11 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
 
   const handleLocaleChange = (value: Locale) => {
     setLocale(value);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setOpen(false);
   };
 
   return (
@@ -107,6 +130,36 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
             <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500 dark:text-emerald-300" />
           </div>
 
+          {isAuthReady && !user && (
+            <Link
+              to="/auth/login"
+              className="hidden items-center gap-2 rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-100 md:inline-flex"
+            >
+              <UserCircle2 className="h-4 w-4" />
+              {t('nav.signIn')}
+            </Link>
+          )}
+
+          {isAuthReady && user && (
+            <div className="hidden items-center gap-2 md:flex">
+              <Link
+                to={accountDestination}
+                className="inline-flex items-center gap-2 rounded-full border border-brand-200/60 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm transition hover:border-brand-400 hover:text-brand-800 dark:border-brand-400/60 dark:bg-brand-900/30 dark:text-brand-200"
+              >
+                <UserCircle2 className="h-4 w-4" />
+                {accountLabel}
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200/70 bg-white text-emerald-700 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-100"
+                aria-label={t('nav.signOut')}
+              >
+                <LogOut className="h-5 w-5" />
+              </button>
+            </div>
+          )}
+
           <a
             className="hidden items-center gap-2 rounded-full border border-brand-500/20 bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 md:inline-flex"
             href="tel:+919876543210"
@@ -165,6 +218,36 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
             >
               {t('nav.callToOrder')}
             </a>
+            {isAuthReady && !user && (
+              <Link
+                to="/auth/login"
+                className="inline-flex items-center justify-center rounded-full border border-emerald-200/70 bg-white px-5 py-3 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-900/60 dark:bg-slate-950 dark:text-emerald-200"
+              >
+                {t('nav.signIn')}
+              </Link>
+            )}
+            {isAuthReady && user && (
+              <div className="flex flex-col gap-2 rounded-2xl border border-emerald-200/70 bg-emerald-50/70 p-4 text-sm text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/40 dark:text-emerald-100">
+                <div className="flex items-center gap-2 font-semibold">
+                  <UserCircle2 className="h-5 w-5" />
+                  {userDisplayName}
+                </div>
+                <Link
+                  to={accountDestination}
+                  onClick={() => setOpen(false)}
+                  className="rounded-full bg-white px-4 py-2 text-center text-sm font-semibold text-brand-600 shadow-sm dark:bg-slate-950 dark:text-brand-200"
+                >
+                  {accountLabel}
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-900/60 dark:bg-slate-950 dark:text-emerald-100"
+                >
+                  {t('nav.signOut')}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

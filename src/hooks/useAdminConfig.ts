@@ -14,7 +14,7 @@ type UseAdminConfigResult = {
 
 const DEFAULT_ERROR = 'Unable to load configuration right now.';
 
-export function useAdminConfig(): UseAdminConfigResult {
+export function useAdminConfig(authToken?: string): UseAdminConfigResult {
   const [config, setConfig] = useState<AdminConfig>();
   const [status, setStatus] = useState<FetchStatus>('idle');
   const [error, setError] = useState<string>();
@@ -25,7 +25,13 @@ export function useAdminConfig(): UseAdminConfigResult {
     setError(undefined);
 
     try {
-      const response = await fetch('/config');
+      const response = await fetch('/config', {
+        headers: authToken
+          ? {
+              Authorization: `Bearer ${authToken}`,
+            }
+          : undefined,
+      });
       const payload = await response.json();
 
       if (!response.ok || payload.error) {
@@ -39,7 +45,7 @@ export function useAdminConfig(): UseAdminConfigResult {
       setError(message);
       setStatus('error');
     }
-  }, []);
+  }, [authToken]);
 
   useEffect(() => {
     load();
@@ -58,6 +64,7 @@ export function useAdminConfig(): UseAdminConfigResult {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
           body: JSON.stringify(updates),
         });
@@ -78,7 +85,7 @@ export function useAdminConfig(): UseAdminConfigResult {
         setSaving(false);
       }
     },
-    []
+    [authToken]
   );
 
   return { config, status, error, refresh, saveConfig, saving };

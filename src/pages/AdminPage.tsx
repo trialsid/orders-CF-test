@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ClipboardList, RefreshCw, Settings2, Truck, Users } from 'lucide-react';
+import { AlertTriangle, ClipboardList, RefreshCw, Settings2, Truck, Users, ShieldCheck } from 'lucide-react';
 import PageSection from '../components/PageSection';
 import { useOrders } from '../hooks/useOrders';
 import { useAdminConfig } from '../hooks/useAdminConfig';
 import { formatCurrency } from '../utils/formatCurrency';
 import { updateOrderStatus as updateOrderStatusRequest } from '../utils/updateOrderStatus';
 import type { AdminConfig, OrderRecord, OrderStatus } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 const DEFAULT_STATUS: OrderStatus = 'pending';
 
@@ -75,7 +76,8 @@ const getStatusLabel = (status: OrderStatus): string =>
   ORDER_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status;
 
 function AdminPage(): JSX.Element {
-  const { orders, status, error, refresh } = useOrders(100);
+  const { token, user } = useAuth();
+  const { orders, status, error, refresh } = useOrders(100, { token, requireAuth: true });
   const {
     config,
     status: configStatus,
@@ -83,7 +85,7 @@ function AdminPage(): JSX.Element {
     refresh: refreshConfig,
     saveConfig,
     saving,
-  } = useAdminConfig();
+  } = useAdminConfig(token ?? undefined);
 
   const [configFields, setConfigFields] = useState<Record<keyof AdminConfig, string>>({
     minimumOrderAmount: '100',
@@ -151,7 +153,7 @@ function AdminPage(): JSX.Element {
     setStatusUpdateError(undefined);
     setUpdatingOrders((prev) => ({ ...prev, [orderId]: true }));
     try {
-      await updateOrderStatusRequest(orderId, nextStatus);
+      await updateOrderStatusRequest(orderId, nextStatus, token);
       refresh();
     } catch (updateError) {
       const message = updateError instanceof Error ? updateError.message : 'Unable to update order status right now.';
@@ -347,15 +349,22 @@ function AdminPage(): JSX.Element {
       title="Operations control center"
       description="Monitor live orders, keep delivery economics front-and-center, and stage future tools for staff access."
       actions={
-        <button
-          type="button"
-          onClick={refresh}
-          disabled={isLoadingOrders}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 disabled:opacity-60 sm:w-auto dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
-        >
-          <RefreshCw className="h-4 w-4" />
-          {isLoadingOrders ? 'Refreshing…' : 'Refresh data'}
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          {user && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/40 dark:text-emerald-100">
+              <ShieldCheck className="h-4 w-4" /> {(user.fullName ?? user.displayName ?? user.phone) ?? ''} • {user.role}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={refresh}
+            disabled={isLoadingOrders}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 disabled:opacity-60 sm:w-auto dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
+          >
+            <RefreshCw className="h-4 w-4" />
+            {isLoadingOrders ? 'Refreshing…' : 'Refresh data'}
+          </button>
+        </div>
       }
     >
       <div className="space-y-8">

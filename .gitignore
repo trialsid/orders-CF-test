@@ -17,6 +17,7 @@ lerna-debug.log*
 # Env files
 .env
 .env.*
+.dev.vars
 .wrangler/
 .wrangler/state/
 

@@ -6,6 +6,7 @@ import FloatingCall from '../components/FloatingCall';
 import Toast, { type ToastMessage } from '../components/Toast';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../hooks/useCart';
+import { useAuth } from '../context/AuthContext';
 import type { CheckoutFormValues, OrderResponse } from '../types';
 import { createEmptyCheckoutForm, prepareOrderPayload, MAX_ITEM_QUANTITY } from '../utils/checkout';
 import {
@@ -65,6 +66,7 @@ export type AppOutletContext = {
 function MainLayout(): JSX.Element {
   const products = useProducts();
   const cart = useCart();
+  const { token } = useAuth();
   const location = useLocation();
   const [theme, setTheme] = useState<Theme>(() => getPreferredTheme());
   const [locale, setLocale] = useState<Locale>(() => getPreferredLocale());
@@ -216,9 +218,14 @@ function MainLayout(): JSX.Element {
     setIsSubmitting(true);
 
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch('/order', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload),
       });
 
