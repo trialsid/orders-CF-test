@@ -1,6 +1,6 @@
-# Ayush Grocery Mart
+# Order Ieeja (order.ieeja.com)
 
-A demo e-commerce storefront for a rural South Indian grocery shop, built on Cloudflare Pages with Pages Functions.
+A demo grocery storefront for a rural South Indian shop, hosted on Cloudflare Pages with Pages Functions.
 
 ## Project structure
 
@@ -18,7 +18,7 @@ functions/         # Cloudflare Pages Functions (filesystem-routed)
   auth/            # Auth endpoints
     register.js    # POST /auth/register
     login.js       # POST /auth/login
-  me.js          # GET /auth/me
+  me.js            # GET /auth/me
   _auth.js         # Shared auth helpers (hashing, JWT signing)
 migrations/        # D1 schema migrations (orders, admin_config, users, user_addresses)
 ```
@@ -34,7 +34,7 @@ migrations/        # D1 schema migrations (orders, admin_config, users, user_add
    - `AUTH_SECRET`: at least 16 characters; used to sign auth tokens.
 3. Start the Cloudflare Pages dev server (functions in `functions/` are picked up automatically):
    ```bash
-   npm run dev
+   npm run cf:dev
    ```
 
 ## Deploying
@@ -45,13 +45,15 @@ migrations/        # D1 schema migrations (orders, admin_config, users, user_add
    ```
 2. Create the Pages project (first time only):
    ```bash
-   npx wrangler pages project create ayush-grocery-pages
+   npx wrangler pages project create order-ieeja
    ```
 3. Deploy:
    ```bash
-   npm run deploy
+   npm run cf:deploy           # Preview/main branch
+   # or
+   npm run cf:deploy:prod      # Production branch
    ```
-4. In the Cloudflare dashboard, assign your custom domain once the build completes.
+4. In the Cloudflare dashboard, assign the custom domain `order.ieeja.com` once the build completes.
 
 ### D1 migrations
 
