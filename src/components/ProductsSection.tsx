@@ -101,64 +101,33 @@ function ProductsSection({
                 >
                   {product.name}
                 </Link>
-                <div className="flex items-baseline justify-between gap-2 sm:hidden">
-                  <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    {t('products.labels.mrp', { price: formatCurrency(product.mrp) })}
-                  </span>
-                  <span className="text-base font-semibold text-brand-700">
-                    {formatCurrency(product.price)}
-                  </span>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center gap-3 sm:mt-6 sm:flex-row sm:items-center sm:justify-between">
-                <div className="hidden sm:block">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                    {t('products.labels.mrp', { price: formatCurrency(product.mrp) })}
-                  </p>
-                  <p className="text-lg font-semibold text-brand-700 dark:text-brand-300">{formatCurrency(product.price)}</p>
-                </div>
-                <div className="flex w-full items-center justify-end sm:w-auto sm:justify-start">
-                  {quantity > 0 && canAdjustQuantity ? (
-                    <div className="hidden items-center gap-2 sm:flex">
-                      <button
-                        type="button"
-                        onClick={handleDecrease}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white text-brand-700 shadow-soft transition hover:border-emerald-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-brand-200"
-                        aria-label={t('cart.aria.decrease', { name: product.name })}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </button>
-                      <span className="inline-flex min-w-[2.5rem] items-center justify-center rounded-full bg-gradient-to-r from-lime-100 via-yellow-50 to-amber-100 px-3 py-1 text-base font-semibold text-amber-900 shadow-sm shadow-amber-200/60 dark:from-amber-700 dark:via-amber-600 dark:to-amber-700 dark:text-amber-50 dark:shadow-amber-950/40">
-                        {quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleIncrease}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-                        aria-label={t('cart.aria.increase', { name: product.name })}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => onAddToCart(product)}
-                      className="hidden items-center justify-center gap-2 rounded-full border border-brand-500/40 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:border-brand-500 hover:text-brand-900 group-hover:shadow-sm dark:border-brand-700/50 dark:bg-slate-900 dark:text-brand-200 dark:hover:border-brand-400 sm:inline-flex sm:py-2.5"
-                      aria-label={t('products.aria.addToCart', { name: product.name })}
-                    >
-                      {t('products.actions.addToCart')}
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  )}
+                <div className="flex w-full items-center justify-between mt-3 gap-3 sm:mt-6 sm:flex-row sm:items-center">
+                  {/* Desktop Price & MRP */}
+                  <div className="hidden sm:block">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                      {t('products.labels.mrp', { price: formatCurrency(product.mrp) })}
+                    </p>
+                    <p className="text-lg font-semibold text-brand-700 dark:text-brand-300">{formatCurrency(product.price)}</p>
+                  </div>
 
-                  <div className="inline-flex w-full items-end justify-end sm:hidden">
+                  {/* Mobile Price & MRP */}
+                  <div className="flex flex-col items-start gap-0.5 sm:hidden">
+                    <span className="text-xs font-medium uppercase tracking-wide text-slate-500 line-through">
+                      {t('products.labels.mrp', { price: formatCurrency(product.mrp) })}
+                    </span>
+                    <span className="text-base font-semibold text-brand-700">
+                      {formatCurrency(product.price)}
+                    </span>
+                  </div>
+
+                  {/* Quantity Controls / Add to Cart Button */}
+                  <div className="flex items-center justify-end sm:w-auto sm:justify-start">
                     {quantity > 0 && canAdjustQuantity ? (
-                      <div className="flex w-full items-center justify-between">
+                      <div className="flex items-center gap-2 sm:flex">
                         <button
                           type="button"
                           onClick={handleDecrease}
-                          className="inline-flex items-center justify-center rounded-full bg-emerald-100 px-5 py-2 text-base font-semibold text-brand-700 shadow-soft transition hover:bg-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:bg-brand-900/40 dark:text-brand-100 dark:hover:bg-brand-900/60"
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white text-brand-700 shadow-soft transition hover:border-emerald-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-brand-200"
                           aria-label={t('cart.aria.decrease', { name: product.name })}
                         >
                           <Minus className="h-4 w-4" />
@@ -169,22 +138,36 @@ function ProductsSection({
                         <button
                           type="button"
                           onClick={handleIncrease}
-                          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2 text-base font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
                           aria-label={t('cart.aria.increase', { name: product.name })}
                         >
                           <Plus className="h-4 w-4" />
                         </button>
                       </div>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={handleIncrease}
-                        className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2 text-base font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-                        aria-label={t('products.aria.addToCart', { name: product.name })}
-                        title={t('products.actions.addToCart')}
-                      >
-                        <Plus className="h-5 w-5" />
-                      </button>
+                      <>
+                        {/* Desktop Add to Cart Button */}
+                        <button
+                          type="button"
+                          onClick={() => onAddToCart(product)}
+                          className="hidden sm:inline-flex items-center justify-center gap-2 rounded-full border border-brand-500/40 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:border-brand-500 hover:text-brand-900 dark:border-brand-700/50 dark:bg-slate-900 dark:text-brand-200 dark:hover:border-brand-400 sm:py-2.5"
+                          aria-label={t('products.aria.addToCart', { name: product.name })}
+                        >
+                          {t('products.actions.addToCart')}
+                          <Plus className="h-4 w-4" />
+                        </button>
+
+                        {/* Mobile Add to Cart Button (compact green +) */}
+                        <button
+                          type="button"
+                          onClick={() => onAddToCart(product)}
+                          className="sm:hidden inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                          aria-label={t('products.aria.addToCart', { name: product.name })}
+                          title={t('products.actions.addToCart')}
+                        >
+                          <Plus className="h-5 w-5" />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

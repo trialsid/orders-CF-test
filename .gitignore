@@ -21,6 +21,9 @@ lerna-debug.log*
 .wrangler/
 .wrangler/state/
 
+# Local credentials
+admin-details
+
 # OS/Editor junk
 .DS_Store
 Thumbs.db

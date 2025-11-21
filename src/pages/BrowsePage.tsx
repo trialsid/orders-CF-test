@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import { ShoppingCart } from 'lucide-react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import ProductsSection from '../components/ProductsSection';
 import type { AppOutletContext } from '../layouts/MainLayout';
 import { useTranslations } from '../i18n/i18n';
@@ -12,6 +12,29 @@ function BrowsePage(): JSX.Element {
   const { products, cart } = useOutletContext<AppOutletContext>();
   const navigate = useNavigate();
   const { t } = useTranslations();
+  const location = useLocation();
+
+  const searchTerm = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('search') || '';
+  }, [location.search]);
+
+  const filteredAndSearchedProducts = useMemo(() => {
+    const baseProducts = products.filteredProducts || [];
+
+    if (!searchTerm) {
+      return baseProducts;
+    }
+
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    return baseProducts.filter(
+      (product) =>
+        product.name.toLowerCase().includes(lowerCaseSearchTerm) ||
+        product.description?.toLowerCase().includes(lowerCaseSearchTerm) ||
+        product.category?.toLowerCase().includes(lowerCaseSearchTerm) ||
+        product.department?.toLowerCase().includes(lowerCaseSearchTerm)
+    );
+  }, [products.filteredProducts, searchTerm]);
 
   const statusText = useMemo(() => {
     if (products.isLoading) {
@@ -22,14 +45,21 @@ function BrowsePage(): JSX.Element {
       return t('products.status.error');
     }
 
-    const count = products.filteredProducts.length;
-    const note = products.storeNote.trim();
+    const count = filteredAndSearchedProducts?.length ?? 0;
+    const note = products.storeNote?.trim() ?? '';
 
     if (!count) {
+      if (searchTerm) {
+        return t('products.status.emptySearch', { term: searchTerm });
+      }
       if (products.filter === 'all') {
         return t('products.status.emptyAll');
       }
       return t('products.status.emptyFilter', { department: products.filter });
+    }
+
+    if (searchTerm) {
+      return t('products.status.availableSearch', { count, term: searchTerm });
     }
 
     if (products.filter === 'all') {
@@ -43,10 +73,12 @@ function BrowsePage(): JSX.Element {
       count,
       department: products.filter,
     });
-  }, [products.filter, products.filteredProducts.length, products.isLoading, products.loadError, products.storeNote, t]);
+  }, [products.filter, filteredAndSearchedProducts.length, products.isLoading, products.loadError, products.storeNote, t, searchTerm]);
 
   const handleFilterChange = (department: string) => {
     products.setFilter(department);
+    // Clear search term from URL when applying a new filter
+    navigate(`/browse${department === 'all' ? '' : `?filter=${department}`}`, { replace: true });
   };
 
   const totalQuantity = cart.cartItems.reduce((sum, entry) => sum + entry.quantity, 0);
@@ -69,7 +101,7 @@ function BrowsePage(): JSX.Element {
         departments={products.departments}
         filter={products.filter}
         onFilterChange={handleFilterChange}
-        products={products.filteredProducts}
+        products={filteredAndSearchedProducts}
         statusText={statusText}
         onAddToCart={cart.addItem}
         onUpdateQuantity={cart.updateQuantity}

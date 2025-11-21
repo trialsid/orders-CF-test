@@ -36,10 +36,11 @@ function getAuthSecret(env) {
 }
 
 function normalizePhone(value) {
-  if (typeof value !== "string") {
+  if (value === undefined || value === null) {
     return undefined;
   }
-  const digits = value.replace(/\D/g, "");
+  const str = String(value);
+  const digits = str.replace(/\D/g, "");
   if (!PHONE_REGEX.test(digits)) {
     return undefined;
   }

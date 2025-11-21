@@ -1,9 +1,34 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CartEntry, Product } from '../types';
 import { MAX_ITEM_QUANTITY } from '../utils/checkout';
 
+const CART_STORAGE_KEY = 'order-ieeja-cart';
+
+const getInitialCart = (): Map<string, CartEntry> => {
+  if (typeof window === 'undefined') {
+    return new Map();
+  }
+  try {
+    const storedCart = window.localStorage.getItem(CART_STORAGE_KEY);
+    if (storedCart) {
+      const parsedCart = JSON.parse(storedCart) as [string, CartEntry][];
+      return new Map(parsedCart);
+    }
+  } catch (error) {
+    console.error('Failed to parse cart from localStorage', error);
+  }
+  return new Map();
+};
+
 export function useCart() {
-  const [cart, setCart] = useState<Map<string, CartEntry>>(new Map());
+  const [cart, setCart] = useState<Map<string, CartEntry>>(() => getInitialCart());
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(Array.from(cart.entries())));
+  }, [cart]);
 
   const cartItems = useMemo<CartEntry[]>(() => Array.from(cart.values()), [cart]);
   const cartTotal = useMemo(() => cartItems.reduce((sum, { product, quantity }) => sum + product.price * quantity, 0), [cartItems]);

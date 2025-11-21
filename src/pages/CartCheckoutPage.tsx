@@ -44,6 +44,8 @@ const formatAddressSnapshot = (address?: CheckoutFormValues | { line1?: string |
     return parts.join(', ');
 };
 
+const DELIVERY_SLOTS = ["11:30 AM", "6:30 PM"];
+
 function CartCheckoutPage(): JSX.Element {
     const {
         cart,
@@ -487,8 +489,11 @@ function CartCheckoutPage(): JSX.Element {
                                     <option value="" disabled>
                                         {t('checkout.forms.slotPlaceholder')}
                                     </option>
-                                    <option value="11:30 AM">11:30 AM</option>
-                                    <option value="6:30 PM">6:30 PM</option>
+                                    {DELIVERY_SLOTS.map((slot) => (
+                                        <option key={slot} value={slot}>
+                                            {slot}
+                                        </option>
+                                    ))}
                                 </select>
                                 {slotError && (
                                     <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">{slotError}</p>

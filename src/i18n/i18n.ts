@@ -26,11 +26,14 @@ const translations = {
       telugu: 'TE',
       callToOrder: 'Call to order',
       tagline: 'Ieeja supermarket delivery',
+      search: 'Search',
+      searchPlaceholder: 'Search products…',
       signIn: 'Sign in',
       signOut: 'Sign out',
       adminConsole: 'Admin',
       riderConsole: 'Rider',
       account: 'Account',
+      settings: 'Menu',
     },
     hero: {
       badge: 'Ieeja’s neighborhood supermarket',
@@ -104,9 +107,12 @@ const translations = {
         availableAll: '{{count}} item(s) available today.',
         availableAllWithNote: '{{count}} item(s) available today. {{note}}',
         availableDepartment: 'Showing {{count}} {{department}} pick(s).',
+        emptySearch: 'No items match "{{term}}". Try another name.',
+        availableSearch: '{{count}} match(es) for "{{term}}".',
       },
       aria: {
         addToCart: 'Add {{name}} to basket',
+        removeFromCart: 'Remove {{name}} from basket',
       },
     },
     cart: {
@@ -125,6 +131,7 @@ const translations = {
       aria: {
         decrease: 'Decrease {{name}}',
         increase: 'Increase {{name}}',
+        remove: 'Remove {{name}} from basket',
       },
     },
     checkout: {
@@ -336,6 +343,8 @@ const translations = {
       switchPrompt: 'Need a different flow?',
       switchToRegister: 'Create a new account',
       switchToLogin: 'Already have an account? Sign in',
+      registerCta: 'Register a new account',
+      loginCta: 'Back to sign in',
       redirectNote: 'You will be redirected to {{destination}} after signing in.',
       validation: {
         phone: 'Enter a valid phone number with at least 6 digits.',
@@ -364,11 +373,14 @@ const translations = {
       telugu: 'TE',
       callToOrder: 'ఆర్డర్ కోసం కాల్',
       tagline: 'ఈజా సూపర్‌మార్కెట్ డెలివరీ',
+      search: 'శోధించండి',
+      searchPlaceholder: 'ఉత్పత్తులను శోధించండి…',
       signIn: 'లాగిన్',
       signOut: 'లాగౌట్',
       adminConsole: 'అడ్మిన్',
       riderConsole: 'రైడర్',
       account: 'ఖాతా',
+      settings: 'మెను',
     },
     hero: {
       badge: 'ఈజా పరిసర సూపర్‌మార్కెట్',
@@ -444,9 +456,12 @@ const translations = {
         availableAll: 'ఈరోజు {{count}} వస్తువు(లు) అందుబాటులో ఉన్నాయి.',
         availableAllWithNote: 'ఈరోజు {{count}} వస్తువు(లు) అందుబాటులో ఉన్నాయి. {{note}}',
         availableDepartment: '{{department}} నుండి {{count}} ఎంపిక(లు) చూపిస్తున్నాం.',
+        emptySearch: '"{{term}}" కోసం ఏ వస్తువులూ కనిపించలేదు.',
+        availableSearch: '"{{term}}" కోసం {{count}} ఫలితం(లు).',
       },
       aria: {
         addToCart: '{{name}} ని కార్ట్‌లో జోడించండి',
+        removeFromCart: '{{name}} ని కార్ట్ నుంచి తొలగించండి',
       },
     },
     cart: {
@@ -465,6 +480,7 @@ const translations = {
       aria: {
         decrease: '{{name}} పరిమాణం తగ్గించండి',
         increase: '{{name}} పరిమాణం పెంచండి',
+        remove: '{{name}} ని కార్ట్ నుంచి తొలగించండి',
       },
     },
     checkout: {
@@ -674,6 +690,8 @@ const translations = {
       switchPrompt: 'ఇంకో ఎంపిక కావాలా?',
       switchToRegister: 'కొత్త ఖాతాను సృష్టించండి',
       switchToLogin: 'ఇప్పటికే ఖాతా ఉందా? లాగిన్ అవ్వండి',
+      registerCta: 'కొత్త ఖాతాను సృష్టించండి',
+      loginCta: 'లాగిన్‌కి తిరిగి వెళ్లండి',
       redirectNote: 'సైన్ ఇన్ తర్వాత {{destination}} కి మిమ్మల్ని తీసుకెళ్తాము.',
       validation: {
         phone: 'కనీసం 6 అంకెలతో ఫోన్ నంబర్ ఇవ్వండి.',

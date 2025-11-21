@@ -7,6 +7,7 @@ export interface Product {
   department: string;
   mrp: number;
   rawSellingPrice: number;
+  image?: string;
 }
 
 export interface ProductsResponse {

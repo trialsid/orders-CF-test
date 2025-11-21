@@ -5,7 +5,6 @@ import HomePage from './pages/HomePage';
 import BrowsePage from './pages/BrowsePage';
 import CartCheckoutPage from './pages/CartCheckoutPage';
 import OrdersPage from './pages/OrdersPage';
-import SupportPage from './pages/SupportPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import AdminPage from './pages/AdminPage';
@@ -27,7 +26,6 @@ function App(): JSX.Element {
           <Route path="checkout" element={<CartCheckoutPage />} />
           <Route path="checkout/success" element={<OrderSuccessPage />} />
           <Route path="orders" element={<OrdersPage />} />
-          <Route path="support" element={<SupportPage />} />
           <Route
             path="admin"
             element={
