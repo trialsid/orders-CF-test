@@ -13,6 +13,13 @@
     "cf:deploy": "npm run build && wrangler pages deploy dist",
     "cf:deploy:preview": "npm run build && wrangler pages deploy dist",
     "cf:deploy:prod": "npm run build && wrangler pages deploy dist --branch production",
+    "cf:db:export": "npx wrangler@latest d1 export order_ieeja_orders --remote --output backup.sql",
+    "cf:db:reorder": "node scripts/reorder-d1-export.js backup.sql",
+    "cf:db:import": "npx wrangler@latest d1 execute order_ieeja_orders --local --file backup.sql",
+    "cf:db:sync": "npm run cf:db:export && npm run cf:db:reorder && npm run cf:db:import",
+    "cf:db:refresh": "node -e \"require('fs').rmSync('./.wrangler/state', { recursive: true, force: true });\" && npm run cf:db:sync",
+    "cf:db:users": "npx wrangler@latest d1 execute order_ieeja_orders --local --command \"SELECT phone, role, status FROM users;\"",
+    "cf:db:users:remote": "npx wrangler@latest d1 execute order_ieeja_orders --remote --command \"SELECT phone, role, status FROM users;\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

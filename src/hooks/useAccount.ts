@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import type { AuthUser, UserAddress } from '../types';
+import { useMemo } from 'react';
 
 type AccountStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -18,12 +19,16 @@ export function useAccountData() {
   const [status, setStatus] = useState<AccountStatus>('idle');
   const [error, setError] = useState<string>();
 
-  const headers = token
-    ? {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      }
-    : null;
+  const headers = useMemo(
+    () =>
+      token
+        ? {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        : null,
+    [token]
+  );
 
   const fetchAccount = useCallback(async () => {
     if (!headers) {
