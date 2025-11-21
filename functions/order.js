@@ -327,9 +327,9 @@ export async function onRequestPost({ request, env }) {
 
   const orderId = `ORD-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
-  let userContext = null;
+  let userContext;
   try {
-    userContext = await getOptionalCustomerContext(request, env);
+    userContext = await requireAuth(request, env, ["customer", "admin"]);
   } catch (error) {
     const authResponse = handleAuthError(error);
     if (authResponse) {
@@ -344,7 +344,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   const persistResult = await persistOrder(db, result, orderId, {
-    userId: userContext?.sub ?? null,
+    userId: userContext.sub,
     deliveryAddressId,
   });
   if (persistResult.error) {

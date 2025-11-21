@@ -59,6 +59,7 @@ function CartCheckoutPage(): JSX.Element {
     const { addresses, status: accountStatus } = useAccountData();
     const { t } = useTranslations();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [form, setForm] = useState<CheckoutFormValues>(() => checkoutDraft.form);
     const [touched, setTouched] = useState<TouchedState>(() => createInitialTouchedState());
@@ -568,11 +569,15 @@ function CartCheckoutPage(): JSX.Element {
 
                         <button
                             type="button"
-                            onClick={handleSubmit}
+                            onClick={user ? handleSubmit : () => navigate('/auth/login', { state: { from: location.pathname } })}
                             disabled={!cart.hasItems || isSubmitting}
                             className="mt-6 w-full inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-60 uppercase tracking-wide"
                         >
-                            {isSubmitting ? t('checkout.aside.submitting') : 'Place Order'}
+                            {isSubmitting
+                                ? t('checkout.aside.submitting')
+                                : user
+                                    ? t('checkout.placeOrder')
+                                    : t('checkout.signInToPlaceOrder')}
                             {!isSubmitting && <ChevronRight className="h-5 w-5" />}
                         </button>
 
@@ -584,9 +589,15 @@ function CartCheckoutPage(): JSX.Element {
             </div>
 
             <MobileStickyAction
-                onClick={handleSubmit}
+                onClick={user ? handleSubmit : () => navigate('/auth/login', { state: { from: location.pathname } })}
                 disabled={!cart.hasItems || isSubmitting}
-                label={isSubmitting ? t('checkout.aside.submitting') : 'Place Order'}
+                label={
+                    isSubmitting
+                        ? t('checkout.aside.submitting')
+                        : user
+                            ? t('checkout.placeOrder')
+                            : t('checkout.signInToPlaceOrder')
+                }
                 icon={!isSubmitting ? <ChevronRight className="h-5 w-5" /> : undefined}
                 buttonClassName="uppercase tracking-wide"
                 helperText={t('cart.stickySummary', { count: cart.cartItems.reduce((sum, i) => sum + i.quantity, 0), total: formatCurrency(cart.cartTotal) })}

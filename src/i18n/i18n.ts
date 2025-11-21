@@ -138,6 +138,7 @@ const translations = {
       title: 'Checkout',
       description:
         'Complete the delivery details, choose how you’d like to pay, and confirm your order. We’ll call within 5 minutes to verify.',
+      signInToPlaceOrder: 'Sign in to Place Order',
       steps: {
         details: 'Delivery details',
         payment: 'Payment preference',
