@@ -20,15 +20,15 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
     ? user.role === 'admin'
       ? '/admin'
       : user.role === 'rider'
-      ? '/rider'
-      : '/account'
+        ? '/rider'
+        : '/account'
     : '/auth/login';
   const accountLabel = user
     ? user.role === 'admin'
       ? t('nav.adminConsole')
       : user.role === 'rider'
-      ? t('nav.riderConsole')
-      : t('nav.account')
+        ? t('nav.riderConsole')
+        : t('nav.account')
     : t('nav.signIn');
   const userDisplayName = user?.fullName ?? user?.displayName ?? user?.phone ?? '';
 
@@ -36,8 +36,6 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
     () => [
       { label: t('nav.home'), to: '/' },
       { label: t('nav.discover'), to: '/browse' },
-      { label: t('nav.cart'), to: '/cart' },
-      { label: t('nav.checkout'), to: '/checkout' },
       { label: t('nav.orders'), to: '/orders' },
       { label: t('nav.support'), to: '/support' },
     ],
@@ -79,10 +77,9 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  isActive
-                    ? 'bg-brand-500 text-white shadow-sm'
-                    : 'text-emerald-800 hover:bg-emerald-100/70 dark:text-emerald-200 dark:hover:bg-emerald-900/60'
+                `rounded-full px-4 py-2 text-sm font-semibold transition ${isActive
+                  ? 'bg-brand-500 text-white shadow-sm'
+                  : 'text-emerald-800 hover:bg-emerald-100/70 dark:text-emerald-200 dark:hover:bg-emerald-900/60'
                 }`
               }
             >
@@ -93,7 +90,7 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
 
         <div className="flex items-center gap-2">
           <Link
-            to="/cart"
+            to="/checkout"
             className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200/70 bg-white text-emerald-700 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
             aria-label={t('nav.openCart')}
           >
@@ -187,10 +184,9 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `rounded-full px-5 py-3 font-semibold ${
-                    isActive
-                      ? 'bg-brand-500 text-white'
-                      : 'text-emerald-800 hover:bg-emerald-100/80 dark:text-emerald-200 dark:hover:bg-emerald-900/60'
+                  `rounded-full px-5 py-3 font-semibold ${isActive
+                    ? 'bg-brand-500 text-white'
+                    : 'text-emerald-800 hover:bg-emerald-100/80 dark:text-emerald-200 dark:hover:bg-emerald-900/60'
                   }`
                 }
               >
