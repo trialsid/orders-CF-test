@@ -29,7 +29,6 @@ function OrdersPage(): JSX.Element {
     <PageSection
       title={t('orders.title')}
       description={t('orders.description')}
-      introClassName="text-left sm:text-center"
       spacing="compact"
       actions={
         isAuthenticated ? (

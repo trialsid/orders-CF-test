@@ -11,7 +11,6 @@ function SupportPage(): JSX.Element {
       <PageSection
         title={t('support.title')}
         description={t('support.description')}
-        introClassName="text-left sm:text-center"
         spacing="none"
       >
         {null}

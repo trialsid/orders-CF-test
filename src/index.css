@@ -80,7 +80,7 @@
   }
 
   .section {
-    @apply py-8 sm:py-20;
+    @apply py-6 sm:py-12 lg:py-14;
   }
 
   .section--muted {
@@ -88,7 +88,7 @@
   }
 
   .section__intro {
-    @apply mx-auto mb-8 max-w-3xl text-center sm:mb-10;
+    @apply mx-auto mb-6 flex w-full max-w-4xl flex-col items-center text-center sm:mb-8;
   }
 
   .section__intro h2 {
@@ -96,7 +96,7 @@
   }
 
   .section__intro p {
-    @apply mt-3 text-sm text-slate-600 dark:text-slate-300 sm:text-base;
+    @apply mt-3 max-w-3xl text-sm text-slate-600 dark:text-slate-300 sm:text-base;
   }
 
   .chip {

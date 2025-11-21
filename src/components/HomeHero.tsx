@@ -19,7 +19,7 @@ function HomeHero({ highlights, onBrowse }: HomeHeroProps): JSX.Element {
   ];
 
   return (
-    <section className="relative isolate overflow-hidden border-b border-emerald-100/60 bg-gradient-to-b from-brand-50/80 to-transparent pb-14 pt-8 dark:border-emerald-900/40 dark:from-emerald-900/30 sm:pb-20 sm:pt-16">
+    <section className="relative isolate overflow-hidden border-b border-emerald-100/60 bg-gradient-to-b from-brand-50/80 to-transparent pb-12 pt-6 dark:border-emerald-900/40 dark:from-emerald-900/30 sm:pb-16 sm:pt-12">
       <div className="absolute inset-x-0 top-0 -z-10 h-[480px] bg-[radial-gradient(circle_at_top,_rgba(34,197,94,0.25),_transparent_60%)]" />
       <div className="page-shell">
         <div className="relative mt-2 grid gap-10 lg:mt-4 lg:grid-cols-[1.1fr_minmax(0,0.9fr)] lg:gap-12">

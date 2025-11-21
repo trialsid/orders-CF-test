@@ -21,7 +21,6 @@ Stack: React (Vite) with Tailwind design system (green accents, light/dark theme
 - Admin page offers an ops dashboard (metrics, live fulfilment queue, recent submissions, delivery economics form synced via useAdminConfig) with mobile-friendly cards and branded scrollbars; Rider page presents a pared-down queue for confirmed/out-for-delivery jobs with tap-to-call, address, and status advance controls. Both screens now surface the signed-in operator badge and use auth tokens when mutating data. The Account page lets customers edit profile names and manage saved delivery addresses (create/edit/delete, default).
 - SiteNav pulls from AuthContext – logged-in users see quick links to their console plus a logout control, while logged-out visitors get a Sign in CTA (mobile + desktop). Admin/Rider routes are gated via a RequireAuth wrapper that redirects to /auth/login when needed.
 - Scroll UI (global + horizontal scrollers) now uses emerald-themed custom scrollbars to match the design system.
-
 - Local catalog source: proposed-280-SKUs.csv (kept outside deployment) feeds scripts/generate-inventory.mjs → functions/_inventory-data.json; npm run build:inventory runs automatically before dev/build.
 - Development: npm run dev (Vite) + npm run cf:dev (Wrangler dev). D1 migrations applied locally (0001-0004); hold remote migration/app binding until deploy.
 - Dev servers (vite or wrangler pages) may cache index.html; restart or disable cache in DevTools if hashed bundles 404.

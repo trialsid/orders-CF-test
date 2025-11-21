@@ -169,7 +169,6 @@ function CartCheckoutPage(): JSX.Element {
             title={t('checkout.title')}
             description="Review your items and enter delivery details to place your order."
             className="pb-28 md:pb-16"
-            introClassName="text-left sm:text-center"
             spacing="compact"
         >
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">

@@ -57,7 +57,7 @@ function PageSection({
                 {description}
               </p>
             ) : null}
-            {actions ? <div className="mt-4 flex flex-wrap gap-3">{actions}</div> : null}
+            {actions ? <div className="mt-4 flex flex-wrap justify-center gap-3">{actions}</div> : null}
           </header>
         )}
         {children}

@@ -41,7 +41,6 @@ function OrderSuccessPage(): JSX.Element {
     <PageSection
       title={t('checkout.success.title')}
       description={t('checkout.success.description')}
-      introClassName="text-left sm:text-center"
       spacing="compact"
     >
       <div className="space-y-8">
