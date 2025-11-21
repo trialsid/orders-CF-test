@@ -3,6 +3,8 @@ const textDecoder = new TextDecoder();
 
 const TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 const PHONE_REGEX = /^[0-9]{6,15}$/;
+// Cloudflare's SubtleCrypto PBKDF2 caps iterations at 100k; stay within to avoid runtime errors.
+const PBKDF2_ITERATIONS = 100000;
 
 export class AuthError extends Error {
   constructor(message, status = 401) {
@@ -129,7 +131,7 @@ function timingSafeEqual(a, b) {
 
 async function hashPassword(password) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
-  const iterations = 150000;
+  const iterations = PBKDF2_ITERATIONS;
   const keyMaterial = await crypto.subtle.importKey("raw", textEncoder.encode(password), "PBKDF2", false, [
     "deriveBits",
   ]);
