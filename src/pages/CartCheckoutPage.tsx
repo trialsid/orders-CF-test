@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import { ChevronRight, Truck, ShoppingBag } from 'lucide-react';
 import PageSection from '../components/PageSection';
 import MobileStickyAction from '../components/MobileStickyAction';

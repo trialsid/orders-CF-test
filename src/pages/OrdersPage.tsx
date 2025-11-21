@@ -1,5 +1,5 @@
-import React from 'react';
-import { Clock3, Wallet, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { Clock3, Wallet, ShieldCheck, LayoutList, Table } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useOrders } from '../hooks/useOrders';
 import { useTranslations } from '../i18n/i18n';
@@ -18,7 +18,11 @@ const STATUS_BADGE_STYLES: Record<string, string> = {
 function OrdersPage(): JSX.Element {
   const { t, locale } = useTranslations();
   const { user, token } = useAuth();
+  const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
+
   const isAuthenticated = Boolean(user && token);
+  const isAdmin = user?.role === 'admin';
+
   const { orders, status, error, refresh } = useOrders(25, { token, enabled: isAuthenticated, requireAuth: true });
 
   const isLoading = status === 'loading';
@@ -32,14 +36,44 @@ function OrdersPage(): JSX.Element {
       spacing="compact"
       actions={
         isAuthenticated ? (
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
-            onClick={refresh}
-            disabled={isLoading}
-          >
-            {isLoading ? t('orders.loading') : t('orders.refresh')}
-          </button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <div className="flex items-center rounded-full border border-emerald-200/70 bg-white p-1 shadow-sm dark:border-emerald-800 dark:bg-slate-900">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('list')}
+                  className={`rounded-full p-1.5 transition ${
+                    viewMode === 'list'
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-200'
+                      : 'text-slate-400 hover:text-emerald-600 dark:text-slate-500 dark:hover:text-emerald-400'
+                  }`}
+                  aria-label="List view"
+                >
+                  <LayoutList className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('table')}
+                  className={`rounded-full p-1.5 transition ${
+                    viewMode === 'table'
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-200'
+                      : 'text-slate-400 hover:text-emerald-600 dark:text-slate-500 dark:hover:text-emerald-400'
+                  }`}
+                  aria-label="Table view"
+                >
+                  <Table className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
+              onClick={refresh}
+              disabled={isLoading}
+            >
+              {isLoading ? t('orders.loading') : t('orders.refresh')}
+            </button>
+          </div>
         ) : undefined
       }
     >
@@ -90,7 +124,62 @@ function OrdersPage(): JSX.Element {
             </div>
           )}
 
-          {hasOrders && (
+          {hasOrders && viewMode === 'table' && isAdmin && (
+            <div className="overflow-hidden rounded-3xl border border-emerald-100/60 bg-white/90 shadow-sm dark:border-emerald-900/60 dark:bg-slate-900/70">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-emerald-50/50 text-emerald-900 dark:bg-emerald-900/20 dark:text-emerald-100">
+                    <tr>
+                      <th className="px-6 py-4 font-semibold">Order ID</th>
+                      <th className="px-6 py-4 font-semibold">Date</th>
+                      <th className="px-6 py-4 font-semibold">Customer</th>
+                      <th className="px-6 py-4 font-semibold">Status</th>
+                      <th className="px-6 py-4 font-semibold">Slot</th>
+                      <th className="px-6 py-4 font-semibold">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-emerald-100/60 dark:divide-emerald-900/60">
+                    {orders.map((order) => {
+                      const statusLabelKey = `orders.status.${order.status}`;
+                      const statusLabel = t(statusLabelKey) || order.status;
+                      const badgeClass = STATUS_BADGE_STYLES[order.status] ?? STATUS_BADGE_STYLES.pending;
+                      const orderDate = order.createdAt ? new Date(order.createdAt) : undefined;
+                      const formattedDate = orderDate
+                        ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(orderDate)
+                        : '';
+                      return (
+                        <tr key={order.id} className="hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10">
+                          <td className="px-6 py-4 font-medium text-emerald-900 dark:text-emerald-100">{order.id}</td>
+                          <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{formattedDate}</td>
+                          <td className="px-6 py-4">
+                            <div className="text-emerald-900 dark:text-emerald-100">{order.customerName}</div>
+                            {order.customerPhone && (
+                              <div className="text-xs text-slate-500 dark:text-slate-400">{order.customerPhone}</div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`inline-block rounded-full border border-transparent px-3 py-1 text-xs font-semibold uppercase tracking-wide ${badgeClass}`}
+                            >
+                              {statusLabel}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                            {order.deliverySlot || '—'}
+                          </td>
+                          <td className="px-6 py-4 font-semibold text-emerald-800 dark:text-emerald-200">
+                            {formatCurrency(order.totalAmount)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {hasOrders && viewMode === 'list' && (
             <div className="space-y-4">
               {orders.map((order) => {
                 const statusLabelKey = `orders.status.${order.status}`;
