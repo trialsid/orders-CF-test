@@ -60,6 +60,7 @@ function CartCheckoutPage(): JSX.Element {
     const { t } = useTranslations();
     const navigate = useNavigate();
     const location = useLocation();
+    const [stickyHeight, setStickyHeight] = useState(0);
 
     const [form, setForm] = useState<CheckoutFormValues>(() => checkoutDraft.form);
     const [touched, setTouched] = useState<TouchedState>(() => createInitialTouchedState());
@@ -281,7 +282,8 @@ function CartCheckoutPage(): JSX.Element {
         <PageSection
             title={t('checkout.title')}
             description="Review your items and enter delivery details to place your order."
-            className="pb-28 md:pb-16"
+            className="md:pb-16"
+            style={stickyHeight ? { paddingBottom: stickyHeight + 20 } : undefined}
             spacing="compact"
         >
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
@@ -571,7 +573,7 @@ function CartCheckoutPage(): JSX.Element {
                             type="button"
                             onClick={user ? handleSubmit : () => navigate('/auth/login', { state: { from: location.pathname } })}
                             disabled={!cart.hasItems || isSubmitting}
-                            className="mt-6 w-full inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-60 uppercase tracking-wide"
+                            className="mt-6 w-full hidden md:inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-60 uppercase tracking-wide"
                         >
                             {isSubmitting
                                 ? t('checkout.aside.submitting')
@@ -602,6 +604,7 @@ function CartCheckoutPage(): JSX.Element {
                 buttonClassName="uppercase tracking-wide"
                 helperText={t('cart.stickySummary', { count: cart.cartItems.reduce((sum, i) => sum + i.quantity, 0), total: formatCurrency(cart.cartTotal) })}
                 badge={cart.cartItems.reduce((sum, i) => sum + i.quantity, 0) || undefined}
+                onHeightChange={setStickyHeight}
             />
         </PageSection>
     );

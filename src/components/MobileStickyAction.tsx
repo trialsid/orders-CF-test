@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export type MobileStickyActionProps = {
   label: string;
@@ -15,6 +15,8 @@ export type MobileStickyActionProps = {
   onSecondaryClick?: () => void;
   secondaryDisabled?: boolean;
   secondaryButtonClassName?: string;
+  onHeightChange?: (height: number) => void;
+  customMainAction?: React.ReactNode;
 };
 
 function MobileStickyAction({
@@ -32,9 +34,30 @@ function MobileStickyAction({
   onSecondaryClick,
   secondaryDisabled = false,
   secondaryButtonClassName,
+  onHeightChange,
+  customMainAction,
 }: MobileStickyActionProps): JSX.Element | null {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!onHeightChange || !containerRef.current) return;
+
+    const element = containerRef.current;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === element) {
+          onHeightChange(entry.contentRect.height);
+        }
+      }
+    });
+
+    observer.observe(element);
+    onHeightChange(element.offsetHeight);
+
+    return () => observer.disconnect();
+  }, [onHeightChange]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -130,6 +153,7 @@ function MobileStickyAction({
   return (
     <div className="pointer-events-none md:hidden">
       <div
+        ref={containerRef}
         className={`pointer-events-auto fixed inset-x-0 bottom-0 z-40 px-4 pb-[calc(env(safe-area-inset-bottom,0)+1rem)] ${
           containerClassName ?? ''
         }`}
@@ -147,30 +171,34 @@ function MobileStickyAction({
               ) : null}
             </div>
           )}
-          <div className="flex flex-row gap-2">
+          <div className="flex flex-col gap-3">
+            {customMainAction ? (
+              <div className="flex-1 min-w-0">{customMainAction}</div>
+            ) : (
+              <button
+                type={type}
+                onClick={onClick}
+                disabled={disabled}
+                className={`flex min-h-[2.75rem] flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2 text-base font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-70 ${
+                  buttonClassName ?? ''
+                }`}
+              >
+                {label}
+                {icon ? icon : null}
+              </button>
+            )}
             {secondaryLabel ? (
               <button
                 type="button"
                 onClick={onSecondaryClick}
                 disabled={secondaryDisabled}
-                className={`flex min-h-[2.75rem] flex-1 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-base font-semibold text-slate-700 shadow-soft transition hover:border-slate-400 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900/90 dark:text-slate-200 dark:hover:border-slate-400 ${
+                className={`flex min-h-[2.75rem] flex-1 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-base font-semibold text-slate-700 shadow-soft transition hover:border-slate-400 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-400 ${
                   secondaryButtonClassName ?? ''
                 }`}
               >
                 {secondaryLabel}
               </button>
             ) : null}
-            <button
-              type={type}
-              onClick={onClick}
-              disabled={disabled}
-              className={`flex min-h-[2.75rem] flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2 text-base font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-70 ${
-                buttonClassName ?? ''
-              }`}
-            >
-              {label}
-              {icon ? icon : null}
-            </button>
           </div>
         </div>
       </div>

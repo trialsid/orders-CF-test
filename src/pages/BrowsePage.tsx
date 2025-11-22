@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import ProductsSection from '../components/ProductsSection';
@@ -11,12 +11,12 @@ function BrowsePage(): JSX.Element {
   const sectionRef = useRef<HTMLElement | null>(null);
   const { products, cart } = useOutletContext<AppOutletContext>();
   const navigate = useNavigate();
-  const { t } = useTranslations();
-  const location = useLocation();
-
-  const searchTerm = useMemo(() => {
-    const params = new URLSearchParams(location.search);
-    return params.get('search') || '';
+    const { t } = useTranslations();
+    const location = useLocation();
+    const [stickyHeight, setStickyHeight] = useState(0);
+  
+    const searchTerm = useMemo(() => {
+      const params = new URLSearchParams(location.search);    return params.get('search') || '';
   }, [location.search]);
 
   const filteredAndSearchedProducts = useMemo(() => {
@@ -94,6 +94,12 @@ function BrowsePage(): JSX.Element {
     navigate('/cart');
   };
 
+  useEffect(() => {
+    if (!cart.hasItems) {
+      setStickyHeight(0);
+    }
+  }, [cart.hasItems]);
+
   return (
     <>
       <ProductsSection
@@ -106,6 +112,7 @@ function BrowsePage(): JSX.Element {
         onAddToCart={cart.addItem}
         onUpdateQuantity={cart.updateQuantity}
         getQuantity={(productId) => quantityById.get(productId) ?? 0}
+        paddingBottom={stickyHeight + 20}
       />
       <MobileStickyAction
         hidden={!cart.hasItems}
@@ -117,6 +124,7 @@ function BrowsePage(): JSX.Element {
           total: formatCurrency(cartTotal),
         })}
         badge={totalQuantity > 0 ? totalQuantity : undefined}
+        onHeightChange={setStickyHeight}
       />
     </>
   );

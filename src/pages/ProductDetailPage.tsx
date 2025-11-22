@@ -11,6 +11,7 @@ function ProductDetailPage(): JSX.Element {
   const navigate = useNavigate();
   const { products, cart } = useOutletContext<AppOutletContext>();
   const { t } = useTranslations();
+  const [stickyHeight, setStickyHeight] = React.useState(0);
 
   const product = useMemo(
     () => products.products.find((item) => item.id === productId),
@@ -83,7 +84,10 @@ function ProductDetailPage(): JSX.Element {
   }
 
   return (
-    <section className="section pb-28 md:pb-16">
+    <section
+      className="section md:pb-16"
+      style={stickyHeight ? { paddingBottom: stickyHeight + 20 } : undefined}
+    >
       <div className="page-shell space-y-10">
         <div className="flex items-center gap-4">
           <button
@@ -153,43 +157,6 @@ function ProductDetailPage(): JSX.Element {
               </span>
               <p className="mt-2 text-3xl font-semibold text-emerald-900 dark:text-brand-100">{formatCurrency(product.price)}</p>
             </div>
-            {quantity > 0 ? (
-              <div className="inline-flex w-full items-center justify-between rounded-full bg-gradient-to-r from-lime-100 via-yellow-50 to-amber-100 px-4 py-2 shadow-sm dark:from-amber-800/60 dark:via-amber-700/50 dark:to-amber-800/60">
-                <button
-                  type="button"
-                  onClick={handleDecrease}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-brand-700 shadow-soft transition hover:bg-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:bg-slate-900 dark:text-brand-100"
-                  aria-label={t('cart.aria.decrease', { name: product.name })}
-                >
-                  <Minus className="h-5 w-5" />
-                </button>
-                <span className="text-2xl font-semibold text-amber-900 dark:text-amber-50">{quantity}</span>
-                <button
-                  type="button"
-                  onClick={handleIncrease}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-                  aria-label={t('cart.aria.increase', { name: product.name })}
-                >
-                  <PlusCircle className="h-5 w-5" />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 sm:px-6 sm:py-3 sm:text-base"
-              >
-                {t('products.actions.addToCart')}
-                <PlusCircle className="h-5 w-5" />
-              </button>
-            )}
-            <Link
-              to="/cart"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-200/70 bg-white px-6 py-3 text-sm font-semibold text-emerald-800 transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              {t('products.detail.viewCart')}
-            </Link>
           </aside>
         </div>
       </div>
@@ -199,6 +166,33 @@ function ProductDetailPage(): JSX.Element {
         label={t('products.actions.addToCart')}
         icon={<PlusCircle className="h-5 w-5" />}
         buttonClassName="uppercase tracking-wide"
+        onHeightChange={setStickyHeight}
+        customMainAction={
+          quantity > 0 ? (
+            <div className="flex h-[2.75rem] w-full items-center justify-between rounded-full bg-gradient-to-r from-lime-100 via-yellow-50 to-amber-100 px-1 shadow-sm dark:bg-slate-900 dark:from-slate-900 dark:to-slate-900 dark:border dark:border-slate-700">
+              <button
+                type="button"
+                onClick={handleDecrease}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-700 shadow-soft transition hover:bg-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:bg-slate-800 dark:text-brand-100 dark:hover:bg-slate-700"
+                aria-label={t('cart.aria.decrease', { name: product.name })}
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+              <span className="text-xl font-semibold text-amber-900 dark:text-slate-100">{quantity}</span>
+              <button
+                type="button"
+                onClick={handleIncrease}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                aria-label={t('cart.aria.increase', { name: product.name })}
+              >
+                <PlusCircle className="h-4 w-4" />
+              </button>
+            </div>
+          ) : undefined
+        }
+        secondaryLabel={cart.hasItems ? t('products.detail.viewCart') : undefined}
+        onSecondaryClick={() => navigate('/cart')}
+        secondaryButtonClassName="!bg-gradient-to-r !from-brand-500 !to-brand-600 !text-white !border-transparent hover:!from-brand-600 hover:!to-brand-700 dark:!bg-none dark:!bg-brand-600 dark:!text-white"
       />
     </section>
   );

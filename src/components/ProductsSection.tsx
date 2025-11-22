@@ -16,6 +16,7 @@ type ProductsSectionProps = {
   onAddToCart: (product: Product) => void;
   getQuantity?: (productId: string) => number;
   onUpdateQuantity?: (productId: string, delta: number) => void;
+  paddingBottom?: number;
 };
 
 function ProductsSection({
@@ -28,6 +29,7 @@ function ProductsSection({
   onAddToCart,
   getQuantity,
   onUpdateQuantity,
+  paddingBottom,
 }: ProductsSectionProps): JSX.Element {
   const { t } = useTranslations();
   const resolveQuantity = getQuantity ?? (() => 0);
@@ -35,7 +37,10 @@ function ProductsSection({
 
   return (
     <section id="products" ref={sectionRef} className="section">
-      <div className="page-shell">
+      <div
+        className="page-shell"
+        style={paddingBottom ? { paddingBottom: `${paddingBottom}px` } : undefined}
+      >
         <div className="section__intro">
           <h2>{t('products.title')}</h2>
           <p>{t('products.description')}</p>
