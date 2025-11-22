@@ -1,4 +1,3 @@
-import inventory from './_inventory-data.json' assert { type: 'json' };
-
-export const INVENTORY = inventory;
-export const INVENTORY_MAP = new Map(INVENTORY.map((item) => [item.id, item]));
+// This file is now empty as inventory is fetched from D1 database.
+export const INVENTORY = [];
+export const INVENTORY_MAP = new Map();

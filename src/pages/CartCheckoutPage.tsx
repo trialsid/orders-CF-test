@@ -283,7 +283,7 @@ function CartCheckoutPage(): JSX.Element {
             title={t('checkout.title')}
             description="Review your items and enter delivery details to place your order."
             className="md:pb-16"
-            style={stickyHeight ? { paddingBottom: stickyHeight + 20 } : undefined}
+            paddingBottom={stickyHeight ? stickyHeight + 20 : undefined}
             spacing="compact"
         >
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">

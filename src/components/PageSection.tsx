@@ -14,6 +14,7 @@ type PageSectionProps = {
   contentClassName?: string;
   introClassName?: string;
   spacing?: 'none' | 'compact' | 'relaxed';
+  paddingBottom?: number; // Added paddingBottom prop
 };
 
 function PageSection({
@@ -28,6 +29,7 @@ function PageSection({
   contentClassName,
   introClassName,
   spacing = 'relaxed',
+  paddingBottom, // Destructure paddingBottom
 }: PageSectionProps): JSX.Element {
   const SectionHeading = `h${headingLevel}` as keyof JSX.IntrinsicElements;
   const spacingClass =
@@ -39,7 +41,10 @@ function PageSection({
 
   return (
     <section id={id} className={`section ${className ?? ''}`}>
-      <div className={`page-shell ${spacingClass} ${contentClassName ?? ''}`}>
+      <div
+        className={`page-shell ${spacingClass} ${contentClassName ?? ''}`}
+        style={paddingBottom ? { paddingBottom: `${paddingBottom}px` } : undefined} // Apply inline style
+      >
         {(title || description || actions || eyebrow) && (
           <header className={`section__intro ${introClassName ?? ''}`}>
             {eyebrow && (
