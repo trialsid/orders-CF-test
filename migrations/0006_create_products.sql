@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS products;
 CREATE TABLE products (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,

@@ -21,22 +21,6 @@ function getDatabase(env) {
   return env && typeof env === "object" ? env.ORDERS_DB : undefined;
 }
 
-async function getProductById(db, productId) {
-  if (!db || !productId) {
-    return null;
-  }
-  try {
-    const product = await db
-      .prepare("SELECT id, name, price FROM products WHERE id = ? AND is_active = 1")
-      .bind(productId)
-      .first();
-    return product || null;
-  } catch (error) {
-    console.error(`Failed to fetch product ${productId} from D1`, error);
-    return null;
-  }
-}
-
 function handleAuthError(error) {
   if (error instanceof AuthError) {
     return jsonResponse({ error: error.message }, error.status);
@@ -52,13 +36,16 @@ async function getOptionalCustomerContext(request, env) {
   return requireAuth(request, env, ["customer", "admin"]);
 }
 
-async function upsertUserAddress(dbOrBatch, userId, summary) {
-  if (!dbOrBatch || !userId) {
-    return null;
+async function upsertUserAddress(db, userId, summary) {
+  const statements = [];
+  let addressId = null;
+  
+  if (!db || !userId) {
+    return { deliveryAddressId: null, statements };
   }
   const addressLine = normalizeString(summary.customer?.address);
   if (!addressLine) {
-    return null;
+    return { deliveryAddressId: null, statements };
   }
 
   const phone = normalizeDigits(summary.customer?.phone ?? "");
@@ -66,7 +53,7 @@ async function upsertUserAddress(dbOrBatch, userId, summary) {
   const landmark = normalizeString(summary.delivery?.instructions);
 
   try {
-    const existing = await dbOrBatch
+    const existing = await db
       .prepare(
         `SELECT id FROM user_addresses
          WHERE user_id = ? AND line1 = ? AND IFNULL(phone, '') = IFNULL(?, '')
@@ -74,51 +61,58 @@ async function upsertUserAddress(dbOrBatch, userId, summary) {
       )
       .bind(userId, addressLine, phone ?? null)
       .first();
+      
     if (existing?.id) {
-      return existing.id;
+      addressId = existing.id;
+    } else {
+      const { total } =
+        (await db.prepare("SELECT COUNT(1) as total FROM user_addresses WHERE user_id = ?").bind(userId).first()) ?? {};
+      const isDefault = Number(total ?? 0) === 0 ? 1 : 0;
+
+      addressId = crypto.randomUUID();
+      
+      // If we are making this the default, first unset any existing default for this user.
+      // This helps mitigate race conditions where concurrent requests might both decide to set a default.
+      if (isDefault) {
+        statements.push(db.prepare("UPDATE user_addresses SET is_default = 0 WHERE user_id = ?").bind(userId));
+      }
+
+      statements.push(db
+        .prepare(
+          `INSERT INTO user_addresses (
+             id,
+             user_id,
+             contact_name,
+             phone,
+             line1,
+             line2,
+             area,
+             city,
+             state,
+             postal_code,
+             landmark,
+             is_default
+           )
+           VALUES (?1, ?2, ?3, ?4, ?5, NULL, NULL, NULL, NULL, NULL, ?6, ?7)`
+        )
+        .bind(addressId, userId, contactName ?? null, phone ?? null, addressLine, landmark ?? null, isDefault));
+
+      if (isDefault) {
+        const snapshot = JSON.stringify({
+          addressId,
+          contactName: contactName ?? null,
+          phone: phone ?? null,
+          line1: addressLine,
+          landmark: landmark ?? null,
+        });
+        statements.push(db.prepare("UPDATE users SET primary_address_json = ? WHERE id = ?").bind(snapshot, userId));
+      }
     }
 
-    const { total } =
-      (await dbOrBatch.prepare("SELECT COUNT(1) as total FROM user_addresses WHERE user_id = ?").bind(userId).first()) ?? {};
-    const isDefault = Number(total ?? 0) === 0 ? 1 : 0;
-
-    const addressId = crypto.randomUUID();
-    await dbOrBatch
-      .prepare(
-        `INSERT INTO user_addresses (
-           id,
-           user_id,
-           contact_name,
-           phone,
-           line1,
-           line2,
-           area,
-           city,
-           state,
-           postal_code,
-           landmark,
-           is_default
-         )
-         VALUES (?1, ?2, ?3, ?4, ?5, NULL, NULL, NULL, NULL, NULL, ?6, ?7)`
-      )
-      .bind(addressId, userId, contactName ?? null, phone ?? null, addressLine, landmark ?? null, isDefault)
-      .run();
-
-    if (isDefault) {
-      const snapshot = JSON.stringify({
-        addressId,
-        contactName: contactName ?? null,
-        phone: phone ?? null,
-        line1: addressLine,
-        landmark: landmark ?? null,
-      });
-      await dbOrBatch.prepare("UPDATE users SET primary_address_json = ? WHERE id = ?").bind(snapshot, userId).run();
-    }
-
-    return addressId;
+    return { deliveryAddressId: addressId, statements };
   } catch (error) {
-    console.error("Failed to upsert user address", error);
-    return null;
+    console.error("Failed to prepare user address upsert statements", error);
+    return { deliveryAddressId: null, statements: [] };
   }
 }
 
@@ -139,6 +133,9 @@ function normalizeDigits(value) {
 }
 
 async function validateOrder(db, body) {
+  if (!db) {
+    return { error: "ORDERS_DB binding is not configured." };
+  }
   if (!body || typeof body !== "object") {
     return { error: "Invalid request body." };
   }
@@ -149,12 +146,24 @@ async function validateOrder(db, body) {
     return { error: "Please include at least one item in your order." };
   }
 
+  const itemIds = items.map((item) => item.id).filter(Boolean);
+  if (itemIds.length === 0) {
+    return { error: "Please include at least one valid item in your order." };
+  }
+
+  const productsResult = await db
+    .prepare(`SELECT id, name, price FROM products WHERE id IN (${itemIds.map(() => '?').join(',')}) AND is_active = 1`)
+    .bind(...itemIds)
+    .all();
+
+  const productsMap = new Map((productsResult.results ?? []).map((product) => [product.id, product]));
+
   const processed = [];
   let total = 0;
 
   for (const entry of items) {
     const { id, quantity } = entry ?? {};
-    const item = await getProductById(db, id);
+    const item = productsMap.get(id);
     if (!item) {
       return { error: `Item with id '${id}' is unavailable right now.` };
     }
@@ -220,54 +229,43 @@ async function validateOrder(db, body) {
   };
 }
 
-async function persistOrder(dbOrBatch, summary, orderId, options = {}) {
-  if (!dbOrBatch) {
-    return { error: "ORDERS_DB binding is not configured." };
-  }
-
+function persistOrder(dbOrBatch, summary, orderId, options = {}) {
   const payload = JSON.stringify(summary.items);
 
-  try {
-    await dbOrBatch
-      .prepare(
-        `INSERT INTO orders (
-           id,
-           customer_name,
-           customer_phone,
-           total_amount,
-           currency,
-           status,
-           items_json,
-           customer_address,
-           delivery_slot,
-           payment_method,
-           delivery_instructions,
-           user_id,
-           delivery_address_id
-         )
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      )
-      .bind(
-        orderId,
-        summary.customer.name,
-        summary.customer.phone ?? null,
-        summary.total,
-        "INR",
-        DEFAULT_ORDER_STATUS,
-        payload,
-        summary.customer.address ?? null,
-        summary.delivery?.slot ?? null,
-        summary.payment?.method ?? null,
-        summary.delivery?.instructions ?? null,
-        options.userId ?? null,
-        options.deliveryAddressId ?? null
-      )
-      .run();
-    return {};
-  } catch (error) {
-    console.error("Failed to persist order", error);
-    return { error: "Unable to save order right now." };
-  }
+  return dbOrBatch
+    .prepare(
+      `INSERT INTO orders (
+         id,
+         customer_name,
+         customer_phone,
+         total_amount,
+         currency,
+         status,
+         items_json,
+         customer_address,
+         delivery_slot,
+         payment_method,
+         delivery_instructions,
+         user_id,
+         delivery_address_id
+       )
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      orderId,
+      summary.customer.name,
+      summary.customer.phone ?? null,
+      summary.total,
+      "INR",
+      DEFAULT_ORDER_STATUS,
+      payload,
+      summary.customer.address ?? null,
+      summary.delivery?.slot ?? null,
+      summary.payment?.method ?? null,
+      summary.delivery?.instructions ?? null,
+      options.userId ?? null,
+      options.deliveryAddressId ?? null
+    );
 }
 
 function parseItems(itemsJson) {
@@ -352,51 +350,24 @@ export async function onRequestPost({ request, env }) {
   }
 
   let deliveryAddressId = null;
+  let addressStatements = [];
   if (userContext?.sub) {
-    deliveryAddressId = await upsertUserAddress(db, userContext.sub, result);
+    const { deliveryAddressId: resolvedAddressId, statements } = await upsertUserAddress(db, userContext.sub, result);
+    deliveryAddressId = resolvedAddressId;
+    addressStatements = statements;
   }
 
   const orderId = `ORD-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-
-  const persistOrderStatement = db.prepare(
-    `INSERT INTO orders (
-       id,
-       customer_name,
-       customer_phone,
-       total_amount,
-       currency,
-       status,
-       items_json,
-       customer_address,
-       delivery_slot,
-       payment_method,
-       delivery_instructions,
-       user_id,
-       delivery_address_id
-     )
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  )
-  .bind(
-    orderId,
-    result.customer.name,
-    result.customer.phone ?? null,
-    result.total,
-    "INR",
-    DEFAULT_ORDER_STATUS,
-    JSON.stringify(result.items),
-    result.customer.address ?? null,
-    result.delivery?.slot ?? null,
-    result.payment?.method ?? null,
-    result.delivery?.instructions ?? null,
-    userContext.sub ?? null,
-    deliveryAddressId ?? null
-  );
+  const orderStatement = persistOrder(db, result, orderId, {
+    userId: userContext.sub,
+    deliveryAddressId,
+  });
 
   try {
-    await db.batch([persistOrderStatement]);
+    await db.batch([...addressStatements, orderStatement]);
   } catch (error) {
-    console.error("Failed to persist order in a batch transaction", error);
-    return jsonResponse({ error: "Unable to save order right now." }, 500);
+    console.error("Failed to persist order and address in a batch transaction", error);
+    return jsonResponse({ error: "Unable to save order and address right now due to a database error." }, 500);
   }
 
   return jsonResponse({

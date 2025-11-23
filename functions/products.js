@@ -5,8 +5,8 @@ function getDatabase(env) {
 export async function onRequest({ env }) {
   const db = getDatabase(env);
   if (!db) {
-    return new Response(JSON.stringify({ error: "ORDERS_DB binding is not configured." }), {
-      status: 501,
+    return new Response(JSON.stringify({ error: "Database service is currently unavailable." }), {
+      status: 503,
       headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
   }
