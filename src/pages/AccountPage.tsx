@@ -152,40 +152,58 @@ function AccountPage(): JSX.Element {
     () => [...addresses].sort((a, b) => (a.isDefault === b.isDefault ? 0 : a.isDefault ? -1 : 1)),
     [addresses]
   );
+  const defaultAddress = sortedAddresses.find((addr) => addr.isDefault) ?? sortedAddresses[0];
 
   const renderAddressCard = (address: UserAddress) => (
     <article
       key={address.id}
-      className="rounded-2xl border border-emerald-100/70 bg-white/95 p-4 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60"
+      className={`rounded-2xl border p-4 shadow-sm transition hover:shadow-md ${
+        address.isDefault
+          ? 'border-emerald-200/90 bg-gradient-to-br from-emerald-50 to-white dark:border-emerald-800 dark:from-emerald-950/40 dark:to-slate-950/60'
+          : 'border-emerald-100/70 bg-white/95 dark:border-emerald-900/60 dark:bg-slate-950/60'
+      }`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
           <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
             {address.label || t('account.addressForm.homeLabel')}
           </p>
-          <p className="text-xs text-slate-500 dark:text-slate-300">{address.contactName || profile?.displayName}</p>
-          {address.phone && (
-            <p className="text-xs text-slate-500 dark:text-slate-300">{address.phone}</p>
-          )}
+          <p className="text-xs text-slate-600 dark:text-slate-300">{address.contactName || profile?.displayName}</p>
+          {address.phone && <p className="text-xs text-slate-500 dark:text-slate-300">{address.phone}</p>}
         </div>
-        {address.isDefault && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-100">
+        {address.isDefault ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm dark:bg-emerald-900/50 dark:text-emerald-100">
             <ShieldCheck className="h-4 w-4" />
             {t('account.defaultBadge')}
           </span>
+        ) : (
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-900/60 dark:text-slate-300">
+            {address.city || address.state || 'Address'}
+          </span>
         )}
       </div>
-      <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-        {address.line1}
-        {address.line2 ? `, ${address.line2}` : ''}
-        {address.area ? `, ${address.area}` : ''}
-        {address.city ? `, ${address.city}` : ''}
-        {address.state ? `, ${address.state}` : ''}
-        {address.postalCode ? `, ${address.postalCode}` : ''}
-      </p>
-      {address.landmark && (
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('account.landmarkLabel', { landmark: address.landmark })}</p>
-      )}
+      <div className="mt-3 space-y-1 text-sm text-slate-700 dark:text-slate-200">
+        <p className="flex items-start gap-2">
+          <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+          <span>
+            {address.line1}
+            {address.line2 ? `, ${address.line2}` : ''}
+            {address.area ? `, ${address.area}` : ''}
+          </span>
+        </p>
+        <p className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300">
+          <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-300" aria-hidden />
+          <span>
+            {[address.city, address.state, address.postalCode].filter(Boolean).join(', ')}
+          </span>
+        </p>
+        {address.landmark && (
+          <p className="flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-200" aria-hidden />
+            <span>{t('account.landmarkLabel', { landmark: address.landmark })}</span>
+          </p>
+        )}
+      </div>
       <div className="mt-4 flex flex-wrap gap-2">
         {!address.isDefault && (
           <button
@@ -229,7 +247,62 @@ function AccountPage(): JSX.Element {
         </div>
       )}
 
-      <section className="rounded-3xl border border-emerald-100/70 bg-white/95 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/70">
+      <section className="overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-200 via-emerald-100 to-teal-100 p-[1px] shadow-lg dark:from-emerald-800 dark:via-emerald-700 dark:to-teal-700">
+        <div className="flex flex-col gap-4 rounded-[22px] bg-gradient-to-br from-white via-emerald-50/80 to-white/90 p-6 text-emerald-900 dark:from-emerald-950/80 dark:via-emerald-900/70 dark:to-emerald-900/40 dark:text-white">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700/80 dark:text-emerald-100/80">
+                {t('account.profileEyebrow')}
+              </p>
+              <p className="text-2xl font-semibold text-emerald-950 dark:text-white">
+                {profile?.fullName || profile?.displayName || t('account.profileTitle')}
+              </p>
+              <p className="mt-1 text-sm text-emerald-800/80 dark:text-emerald-100/80">{profile?.phone ? `+${profile.phone}` : t('account.profileHelp', { phone: '' })}</p>
+              {defaultAddress && (
+                <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-100/70 px-3 py-1 text-xs font-semibold text-emerald-800 dark:bg-white/10 dark:text-emerald-50">
+                  <ShieldCheck className="h-4 w-4" />
+                  {defaultAddress.label || t('account.addressForm.homeLabel')} • {defaultAddress.city || defaultAddress.state || defaultAddress.line1}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => openAddressForm()}
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-300/60 dark:bg-white/15 dark:hover:bg-white/25 dark:focus:ring-white/30"
+              >
+                <Plus className="h-4 w-4" />
+                {t('account.addAddress')}
+              </button>
+              <button
+                type="button"
+                onClick={handleRevokeSessions}
+                className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-4 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-white dark:border-white/30 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-emerald-200/70 dark:focus:ring-white/30"
+              >
+                <LogOut className="h-4 w-4" />
+                Revoke sessions
+              </button>
+            </div>
+          </div>
+          <div className="grid gap-3 text-xs md:grid-cols-3">
+            <div className="rounded-2xl bg-white/60 px-3 py-2 text-emerald-900 shadow-sm dark:bg-white/10 dark:text-white">
+              <p className="text-emerald-800/80 text-[11px] uppercase tracking-wide dark:text-emerald-100/70">Addresses</p>
+              <p className="text-lg font-semibold">{addresses.length || 0}</p>
+            </div>
+            <div className="rounded-2xl bg-white/60 px-3 py-2 text-emerald-900 shadow-sm dark:bg-white/10 dark:text-white">
+              <p className="text-emerald-800/80 text-[11px] uppercase tracking-wide dark:text-emerald-100/70">Default</p>
+              <p className="text-sm font-semibold leading-tight">{defaultAddress ? defaultAddress.label || defaultAddress.line1 : 'None set'}</p>
+            </div>
+            <div className="rounded-2xl bg-white/60 px-3 py-2 text-emerald-900 shadow-sm dark:bg-white/10 dark:text-white">
+              <p className="text-emerald-800/80 text-[11px] uppercase tracking-wide dark:text-emerald-100/70">Status</p>
+              <p className="text-sm font-semibold leading-tight">{status === 'loading' ? t('account.loading') : 'Active'}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <section className="rounded-3xl border border-emerald-100/70 bg-white/95 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/70">
         <header className="flex items-center gap-3">
           <div className="rounded-2xl bg-emerald-100 p-3 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
             <Home className="h-5 w-5" />
@@ -276,7 +349,7 @@ function AccountPage(): JSX.Element {
         </form>
       </section>
 
-      <section className="rounded-3xl border border-emerald-100/70 bg-white/95 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/70">
+        <section className="rounded-3xl border border-emerald-100/70 bg-white/95 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/70">
         <header className="flex items-center gap-3">
           <div className="rounded-2xl bg-rose-100 p-3 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200">
              <ShieldCheck className="h-5 w-5" />
@@ -302,6 +375,7 @@ function AccountPage(): JSX.Element {
             </button>
         </div>
       </section>
+      </div>
 
       <section className="rounded-3xl border border-emerald-100/70 bg-white/95 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/70">
         <header className="flex items-center justify-between gap-3">
