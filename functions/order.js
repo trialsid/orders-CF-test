@@ -13,12 +13,13 @@ const DEFAULT_CONFIG = {
   deliveryFeeBelowThreshold: 15,
 };
 
-function jsonResponse(payload, status = 200) {
+function jsonResponse(payload, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
+      ...extraHeaders,
     },
   });
 }
@@ -497,6 +498,35 @@ export async function onRequestGet({ request, env }) {
 
   const isPrivileged = authContext.role === "admin" || authContext.role === "rider";
 
+  // ETag / Caching Logic
+  // Note: We use 'private' cache control because order data is user-specific.
+  // We rely on ETag validation (304) to save bandwidth/DB reads for repeat visits.
+  let etag = null;
+
+  if (!isPrivileged && !search && !statusFilter) {
+    // Optimization: For standard customer order lists, check a lightweight version first.
+    try {
+      const meta = await db.prepare("SELECT COUNT(*) as count, MAX(created_at) as max_created FROM orders WHERE user_id = ?").bind(authContext.sub).first();
+      const count = meta?.count || 0;
+      const maxCreated = meta?.max_created || '0';
+      etag = `W/"${authContext.sub}-${count}-${maxCreated}"`;
+
+      const ifNoneMatch = request.headers.get("If-None-Match");
+      if (ifNoneMatch === etag) {
+        return new Response(null, {
+          status: 304,
+          headers: {
+            "Cache-Control": "private, no-cache, revalidate", // Browser must check ETag every time
+            "ETag": etag
+          }
+        });
+      }
+    } catch (err) {
+      console.warn("Failed to perform ETag check for orders", err);
+      // Continue to full fetch on error
+    }
+  }
+
   try {
     let query = `SELECT id,
               customer_name,
@@ -559,7 +589,14 @@ export async function onRequestGet({ request, env }) {
       deliveryAddressId: row.delivery_address_id ?? undefined,
     }));
 
-    return jsonResponse({ orders });
+    const extraHeaders = etag ? { 
+      "ETag": etag,
+      "Cache-Control": "private, no-cache, revalidate"
+    } : {
+      "Cache-Control": "no-store" // Default for search/filtered/admin queries
+    };
+
+    return jsonResponse({ orders }, 200, extraHeaders);
   } catch (error) {
     console.error("Failed to read orders", error);
     return jsonResponse({ error: "Unable to load orders right now." }, 500);

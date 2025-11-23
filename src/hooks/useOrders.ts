@@ -9,7 +9,6 @@ type UseOrdersOptions = {
   requireAuth?: boolean;
   searchTerm?: string;
   statusFilter?: OrderStatus | 'all';
-  refreshInterval?: number; // Interval in milliseconds for auto-refresh
 };
 
 type UseOrdersResult = {
@@ -20,14 +19,12 @@ type UseOrdersResult = {
 };
 
 const DEFAULT_ERROR_MESSAGE = 'Unable to load orders right now. Please try again later.';
-const DEFAULT_REFRESH_INTERVAL = 30000; // 30 seconds
 
 export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersResult {
-  const { token, enabled = true, requireAuth = false, searchTerm, statusFilter, refreshInterval = DEFAULT_REFRESH_INTERVAL } = options ?? {};
+  const { token, enabled = true, requireAuth = false, searchTerm, statusFilter } = options ?? {};
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [status, setStatus] = useState<OrdersStatus>('idle');
   const [error, setError] = useState<string | undefined>();
-  const intervalRef = useRef<number | null>(null);
 
   const loadOrders = useCallback(
     async (signal?: AbortSignal) => {
@@ -62,6 +59,11 @@ export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersRes
               }
             : undefined,
         });
+        
+        // 304 Not Modified handling:
+        // Browser fetch API transparently handles 304. If 304, response.status is 200 (from cache).
+        // If we manually revalidating, we trust the browser cache + ETag.
+        
         const payload = (await response.json()) as OrdersResponse;
 
         if (!response.ok || payload.error) {
@@ -84,30 +86,36 @@ export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersRes
     [limit, token, enabled, requireAuth, searchTerm, statusFilter]
   );
 
+  // Initial Load
   useEffect(() => {
     if (!enabled) {
       return;
     }
     const controller = new AbortController();
     loadOrders(controller.signal);
+    return () => controller.abort();
+  }, [loadOrders, enabled]);
 
-    if (refreshInterval > 0) {
-      // Clear any existing interval to prevent multiple intervals running
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      intervalRef.current = setInterval(() => {
-        loadOrders(controller.signal);
-      }, refreshInterval) as unknown as number; // Type assertion for setInterval return
-    }
+  // Revalidate on Window Focus
+  useEffect(() => {
+    if (!enabled) return;
 
-    return () => {
-      controller.abort();
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+    const handleFocus = () => {
+      // When user switches back to the tab, check for updates.
+      // Thanks to ETag, this is cheap if nothing changed.
+      if (document.visibilityState === 'visible') {
+        loadOrders();
       }
     };
-  }, [loadOrders, enabled, refreshInterval]);
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, [loadOrders, enabled]);
 
   const refresh = useCallback(() => {
     loadOrders();

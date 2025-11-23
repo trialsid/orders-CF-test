@@ -18,14 +18,20 @@ export function useProducts() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<boolean>(false);
 
-  const loadProducts = useCallback(async () => {
+  const loadProducts = useCallback(async (forceRefresh = false) => {
     setIsLoading(true);
     setLoadError(false);
     try {
-      const response = await fetch(`/products?t=${Date.now()}`);
+      // Only append timestamp if explicitly forcing a refresh (bypassing cache)
+      const url = forceRefresh ? `/products?t=${Date.now()}` : '/products';
+      const response = await fetch(url);
+      
       if (!response.ok) {
         throw new Error(`Failed to load products: ${response.status}`);
       }
+      
+      // 304 Not Modified is handled automatically by the browser's fetch API
+      // (it returns the cached response with status 200 usually, or we can check status)
       const data = (await response.json()) as ProductsResponse;
       
       const items = data.items ?? [];
@@ -65,6 +71,6 @@ export function useProducts() {
     storeNote,
     isLoading,
     loadError,
-    refresh: loadProducts,
+    refresh: () => loadProducts(true),
   };
 }
