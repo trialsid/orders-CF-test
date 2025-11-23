@@ -12,16 +12,16 @@ export async function onRequest({ request, env }) {
   }
 
   try {
-    // 1. Lightweight Check: Get version info to generate ETag
-    // This costs very few read units compared to fetching the whole table.
+    let etag = null;
+
+    // 1. Global ETag Check (Unconditional)
+    // We always check the global state first to ensure the ETag is consistent across all users/views.
+    // This costs 1 extra lightweight query on cache misses, but ensures correctness.
     const meta = await db.prepare("SELECT COUNT(*) as count, MAX(updated_at) as last_modified FROM products WHERE is_active = 1").first();
-    
     const count = meta?.count || 0;
     const lastModified = meta?.last_modified || '0';
-    // Create a weak ETag based on count and last modified timestamp
-    const etag = `W/"${count}-${lastModified}"`;
+    etag = `W/"${count}-${lastModified}"`;
 
-    // 2. Check Client's Cache
     const ifNoneMatch = request.headers.get("If-None-Match");
     if (ifNoneMatch === etag) {
       return new Response(null, {
@@ -33,7 +33,9 @@ export async function onRequest({ request, env }) {
       });
     }
 
-    // 3. Fetch Full Data (only if cache missed)
+    // 2. Fetch Full Data (Cache miss)
+    // We don't strictly need updated_at in the select anymore since we have the global ETag, 
+    // but keeping it is fine.
     const { results } = await db.prepare("SELECT id, name, description, department, category, price, mrp, raw_selling_price FROM products WHERE is_active = 1 ORDER BY name ASC").all();
 
     const products = (results ?? []).map((row) => ({

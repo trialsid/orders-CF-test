@@ -388,7 +388,8 @@ async function updateOrderStatus(env, orderId, nextStatus) {
   }
 
   try {
-    const result = await db.prepare("UPDATE orders SET status = ? WHERE id = ?").bind(nextStatus, orderId).run();
+    // Also update `updated_at` when status changes
+    const result = await db.prepare("UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ?").bind(nextStatus, orderId).run();
     if (result.meta.changes === 0) {
       return { error: "Order not found.", status: 404 };
     }
@@ -499,31 +500,31 @@ export async function onRequestGet({ request, env }) {
   const isPrivileged = authContext.role === "admin" || authContext.role === "rider";
 
   // ETag / Caching Logic
-  // Note: We use 'private' cache control because order data is user-specific.
-  // We rely on ETag validation (304) to save bandwidth/DB reads for repeat visits.
+  // We use a "Global ETag" based on the user's entire order history (Count + Max Updated At).
+  // This ensures that if *any* order changes (even one not in the current limit/page), the cache invalidates.
+  // This costs 1 extra lightweight query on cache misses, but ensures correctness and allows 304s for hits.
   let etag = null;
-
+  
   if (!isPrivileged && !search && !statusFilter) {
-    // Optimization: For standard customer order lists, check a lightweight version first.
     try {
-      const meta = await db.prepare("SELECT COUNT(*) as count, MAX(created_at) as max_created FROM orders WHERE user_id = ?").bind(authContext.sub).first();
+      const meta = await db.prepare("SELECT COUNT(*) as count, MAX(updated_at) as last_modified FROM orders WHERE user_id = ?").bind(authContext.sub).first();
       const count = meta?.count || 0;
-      const maxCreated = meta?.max_created || '0';
-      etag = `W/"${authContext.sub}-${count}-${maxCreated}"`;
+      const lastModified = meta?.last_modified || '0';
+      etag = `W/"${authContext.sub}-${count}-${lastModified}"`;
 
       const ifNoneMatch = request.headers.get("If-None-Match");
       if (ifNoneMatch === etag) {
         return new Response(null, {
           status: 304,
           headers: {
-            "Cache-Control": "private, no-cache, revalidate", // Browser must check ETag every time
+            "Cache-Control": "private, max-age=0, must-revalidate",
             "ETag": etag
           }
         });
       }
     } catch (err) {
       console.warn("Failed to perform ETag check for orders", err);
-      // Continue to full fetch on error
+      // Continue to full fetch on error, but don't block the request
     }
   }
 
@@ -536,6 +537,7 @@ export async function onRequestGet({ request, env }) {
               status,
               items_json,
               created_at,
+              updated_at,
               customer_address,
               delivery_slot,
               payment_method,
@@ -589,11 +591,15 @@ export async function onRequestGet({ request, env }) {
       deliveryAddressId: row.delivery_address_id ?? undefined,
     }));
 
+    // If we didn't generate a global ETag (e.g. because we are searching/filtering/privileged),
+    // we can't easily cache this dynamic result set safely without more complex logic.
+    // We leave etag null in those cases, defaulting to no-store.
+    
     const extraHeaders = etag ? { 
       "ETag": etag,
-      "Cache-Control": "private, no-cache, revalidate"
+      "Cache-Control": "private, max-age=0, must-revalidate"
     } : {
-      "Cache-Control": "no-store" // Default for search/filtered/admin queries
+      "Cache-Control": "no-store"
     };
 
     return jsonResponse({ orders }, 200, extraHeaders);

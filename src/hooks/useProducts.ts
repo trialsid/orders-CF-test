@@ -18,22 +18,32 @@ export function useProducts() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<boolean>(false);
 
-  const loadProducts = useCallback(async (forceRefresh = false) => {
+  const loadProducts = useCallback(async (forceRefresh = false, signal?: AbortSignal) => {
     setIsLoading(true);
     setLoadError(false);
     try {
-      // Only append timestamp if explicitly forcing a refresh (bypassing cache)
-      const url = forceRefresh ? `/products?t=${Date.now()}` : '/products';
-      const response = await fetch(url);
-      
+      const fetchOptions: RequestInit = {
+        signal, // Use the passed signal
+      };
+      if (forceRefresh) {
+        fetchOptions.cache = 'no-cache'; // Forces revalidation with ETag
+      }
+
+      const response = await fetch('/products', fetchOptions);
+
+      if (response.status === 304) {
+        setIsLoading(false);
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(`Failed to load products: ${response.status}`);
       }
       
-      // 304 Not Modified is handled automatically by the browser's fetch API
-      // (it returns the cached response with status 200 usually, or we can check status)
       const data = (await response.json()) as ProductsResponse;
       
+      if (signal?.aborted) return; // Check if aborted before setting state
+
       const items = data.items ?? [];
       setProducts(items);
       const message = (data.message ?? '').trim();
@@ -42,6 +52,12 @@ export function useProducts() {
       setDepartments(uniqueDepartments);
       setIsLoading(false);
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        // Fetch was aborted, not an actual error
+        console.log("Product fetch aborted");
+        setIsLoading(false); // Stop loading without error
+        return;
+      }
       console.error(error);
       setLoadError(true);
       setIsLoading(false);
@@ -49,7 +65,9 @@ export function useProducts() {
   }, []);
 
   useEffect(() => {
-    loadProducts();
+    const controller = new AbortController();
+    loadProducts(false, controller.signal);
+    return () => controller.abort();
   }, [loadProducts]);
 
   const filteredProducts = useMemo(() => {

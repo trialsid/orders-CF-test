@@ -129,14 +129,6 @@ function AdminPage(): JSX.Element {
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState<User['role'] | 'all'>('all');
 
-  // Live Mode: Auto-refresh every 30s
-  useEffect(() => {
-    const interval = setInterval(() => {
-      refresh();
-      refreshUsers(); // Refresh users data as well
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [refresh, refreshUsers]);
 
   const filteredOrders = useMemo(() => {
     let result = orders;

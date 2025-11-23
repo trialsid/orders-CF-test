@@ -9,18 +9,31 @@
     "prebuild": "npm run build:inventory",
     "build": "vite build",
     "preview": "vite preview",
-    "cf:dev": "npm run build && wrangler pages dev dist",
-    "cf:deploy": "npm run build && wrangler pages deploy dist",
-    "cf:deploy:preview": "npm run build && wrangler pages deploy dist",
-    "cf:deploy:prod": "npm run build && wrangler pages deploy dist --branch production",
-    "cf:db:export": "npx wrangler@latest d1 export order_ieeja_orders --remote --output backup.sql",
-    "cf:db:reorder": "node scripts/reorder-d1-export.js backup.sql",
-    "cf:db:import": "npx wrangler@latest d1 execute order_ieeja_orders --local --file backup.sql",
-    "cf:db:sync": "npm run cf:db:export && npm run cf:db:reorder && npm run cf:db:import",
-    "cf:db:refresh": "node -e \"require('fs').rmSync('./.wrangler/state', { recursive: true, force: true });\" && npm run cf:db:sync",
-    "cf:db:users": "npx wrangler@latest d1 execute order_ieeja_orders --local --command \"SELECT phone, role, status FROM users;\"",
-    "cf:db:users:remote": "npx wrangler@latest d1 execute order_ieeja_orders --remote --command \"SELECT phone, role, status FROM users;\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+
+    "pages:dev": "npm run build && wrangler pages dev dist",
+    "pages:deploy": "npm run build && wrangler pages deploy dist",
+    "pages:deploy:preview": "npm run build && wrangler pages deploy dist",
+    "pages:deploy:prod": "npm run build && wrangler pages deploy dist --branch production",
+
+    "db:migrate": "npx wrangler d1 migrations apply order_ieeja_orders --local",
+    "db:migrate:remote": "npx wrangler d1 migrations apply order_ieeja_orders --remote",
+    "db:migrate:status": "npx wrangler d1 migrations list order_ieeja_orders --local",
+    "db:migrate:status:remote": "npx wrangler d1 migrations list order_ieeja_orders --remote",
+
+    "db:pull": "npm run db:pull:export && npm run db:pull:process && npm run db:pull:import",
+    "db:pull:force": "node -e \"require('fs').rmSync('./.wrangler/state', { recursive: true, force: true });\" && npm run db:pull",
+    "db:pull:export": "npx wrangler@latest d1 export order_ieeja_orders --remote --output backup.sql",
+    "db:pull:process": "node scripts/reorder-d1-export.js backup.sql",
+    "db:pull:import": "npx wrangler@latest d1 execute order_ieeja_orders --local --file backup.sql",
+
+    "db:query:users": "npx wrangler@latest d1 execute order_ieeja_orders --local --command \"SELECT phone, role, status FROM users;\"",
+    "db:query:users:remote": "npx wrangler@latest d1 execute order_ieeja_orders --remote --command \"SELECT phone, role, status FROM users;\"",
+
+    "db:wipe:orders": "npx wrangler d1 execute order_ieeja_orders --local --command \"DELETE FROM order_items; DELETE FROM orders;\"",
+    "db:wipe:orders:remote": "npx wrangler d1 execute order_ieeja_orders --remote --command \"DELETE FROM order_items; DELETE FROM orders;\"",
+    "db:wipe:users": "npx wrangler d1 execute order_ieeja_orders --local --command \"DELETE FROM users WHERE role != 'admin';\"",
+    "db:wipe:users:remote": "npx wrangler d1 execute order_ieeja_orders --remote --command \"DELETE FROM users WHERE role != 'admin';\""
   },
   "dependencies": {
     "lucide-react": "^0.465.0",

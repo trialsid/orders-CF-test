@@ -60,9 +60,16 @@ export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersRes
             : undefined,
         });
         
-        // 304 Not Modified handling:
-        // Browser fetch API transparently handles 304. If 304, response.status is 200 (from cache).
-        // If we manually revalidating, we trust the browser cache + ETag.
+        if (response.status === 304) {
+          // Not Modified - use cached data (browser handles this transparently after ETag check)
+          // We don't need to update state, just mark as success if it was previously loading.
+          setStatus((prev) => (prev === 'loading' ? 'success' : prev));
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(`Failed to load orders: ${response.status}`);
+        }
         
         const payload = (await response.json()) as OrdersResponse;
 
