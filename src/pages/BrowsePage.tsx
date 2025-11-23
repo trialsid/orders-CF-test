@@ -84,7 +84,8 @@ function BrowsePage(): JSX.Element {
   const handleFilterChange = (department: string) => {
     products.setFilter(department);
     // Clear search term from URL when applying a new filter
-    navigate(`/browse${department === 'all' ? '' : `?filter=${department}`}`, { replace: true });
+    const queryString = department === 'all' ? '' : `?filter=${encodeURIComponent(department)}`;
+    navigate(`/browse${queryString}`, { replace: true });
   };
 
   const totalQuantity = cart.cartItems.reduce((sum, entry) => sum + entry.quantity, 0);
