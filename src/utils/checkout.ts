@@ -1,4 +1,4 @@
-import type { CartEntry, CheckoutFormValues, OrderPayload } from '../types';
+import type { CartEntry, CheckoutFormValues, OrderPayload, UserAddress, UserAddressSnapshot } from '../types';
 
 export const MAX_ITEM_QUANTITY = 20;
 const PHONE_MIN_DIGITS = 6;
@@ -158,3 +158,21 @@ export function prepareOrderPayload(
     normalizedForm,
   };
 }
+
+export const formatAddressSnapshot = (
+  address?: CheckoutFormValues | UserAddress | UserAddressSnapshot | null
+) => {
+  if (!address || typeof address !== 'object') return '';
+  const parts = [
+    'line1' in address ? address.line1 : undefined,
+    'line2' in address ? address.line2 : undefined,
+    'area' in address ? address.area : undefined,
+    'city' in address ? address.city : undefined,
+    'state' in address ? address.state : undefined,
+    'postalCode' in address ? address.postalCode : undefined,
+    'landmark' in address ? address.landmark : undefined,
+  ]
+    .map((part) => (typeof part === 'string' ? part.trim() : ''))
+    .filter((part) => part.length > 0);
+  return parts.join(', ');
+};

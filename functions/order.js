@@ -451,56 +451,51 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequest({ request, env, ctx }) {
-  if (request.method === "POST") {
-    return onRequestPost({ request, env, ctx });
-  }
-
-  if (request.method === "PATCH") {
-    try {
-      await requireAuth(request, env, ["admin", "rider"]);
-    } catch (error) {
-      const authResponse = handleAuthError(error);
-      if (authResponse) {
-        return authResponse;
+  switch (request.method) {
+    case "POST":
+      return onRequestPost({ request, env, ctx });
+    case "PATCH":
+      try {
+        await requireAuth(request, env, ["admin", "rider"]);
+      } catch (error) {
+        const authResponse = handleAuthError(error);
+        if (authResponse) {
+          return authResponse;
+        }
+        throw error;
       }
-      throw error;
-    }
+
+      let payload;
+      try {
+        payload = await request.json();
+      } catch (error) {
+        return jsonResponse({ error: "Request body must be valid JSON." }, 400);
+      }
+
+      if (!payload || typeof payload !== "object") {
+        return jsonResponse({ error: "Invalid request payload." }, 400);
+      }
+
+      const orderId = normalizeString(payload.orderId);
+      const status = normalizeStatusInput(payload.status);
+
+      if (!orderId) {
+        return jsonResponse({ error: "Order ID is required." }, 400);
+      }
+
+      if (!status) {
+        return jsonResponse({ error: "Status is invalid." }, 400);
+      }
+
+      const result = await updateOrderStatus(env, orderId, status);
+      if (result.error) {
+        return jsonResponse({ error: result.error }, result.status ?? 500);
+      }
+
+      return jsonResponse({ orderId, status });
+    case "GET":
+      return onRequestGet({ request, env, ctx });
+    default:
+      return jsonResponse({ error: "Method not allowed." }, 405);
   }
-
-  if (request.method === "GET") {
-    return onRequestGet({ request, env, ctx });
-  }
-
-  if (request.method === "PATCH") {
-    let payload;
-    try {
-      payload = await request.json();
-    } catch (error) {
-      return jsonResponse({ error: "Request body must be valid JSON." }, 400);
-    }
-
-    if (!payload || typeof payload !== "object") {
-      return jsonResponse({ error: "Invalid request payload." }, 400);
-    }
-
-    const orderId = normalizeString(payload.orderId);
-    const status = normalizeStatusInput(payload.status);
-
-    if (!orderId) {
-      return jsonResponse({ error: "Order ID is required." }, 400);
-    }
-
-    if (!status) {
-      return jsonResponse({ error: "Status is invalid." }, 400);
-    }
-
-    const result = await updateOrderStatus(env, orderId, status);
-    if (result.error) {
-      return jsonResponse({ error: result.error }, result.status ?? 500);
-    }
-
-    return jsonResponse({ orderId, status });
-  }
-
-  return jsonResponse({ error: "Method not allowed." }, 405);
 }
