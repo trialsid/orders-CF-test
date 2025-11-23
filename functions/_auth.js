@@ -313,7 +313,8 @@ export async function handleRegister({ request, env }) {
       return jsonResponse({ error: "AUTH_SECRET is not configured." }, 501);
     }
 
-    const token = await signToken({ sub: userId, role: "customer", phone }, secret);
+    // Include token_version: 1 (default for new users)
+    const token = await signToken({ sub: userId, role: "customer", phone, token_version: 1 }, secret);
     return jsonResponse(
       {
         user: publicUser({
@@ -375,7 +376,8 @@ export async function handleLogin({ request, env }) {
     return jsonResponse({ error: "Invalid credentials." }, 401);
   }
 
-  const token = await signToken({ sub: user.id, role: user.role, phone: user.phone }, secret);
+  const tokenVersion = user.token_version || 1;
+  const token = await signToken({ sub: user.id, role: user.role, phone: user.phone, token_version: tokenVersion }, secret);
   return jsonResponse({ user: publicUser(user), token });
 }
 
@@ -420,6 +422,42 @@ export async function requireAuth(request, env, roles) {
   } catch (error) {
     throw new AuthError("Invalid or expired token.");
   }
+
+  // Verify token_version against DB for revocation support
+  const db = getDatabase(env);
+  if (db) {
+    try {
+      const user = await db.prepare("SELECT token_version, role, status FROM users WHERE id = ?").bind(payload.sub).first();
+      if (!user) {
+        throw new AuthError("Account no longer exists.", 401);
+      }
+      if (user.status !== 'active') {
+        throw new AuthError("Account is suspended.", 403);
+      }
+      
+      const dbVersion = user.token_version || 1;
+      const tokenVersion = payload.token_version || 0; // Treat missing version as 0 (invalid if DB has 1)
+      
+      // Allow grace period: if token has NO version (legacy), allow it only if DB version is 1.
+      // Otherwise, versions must match exactly.
+      const isLegacyToken = payload.token_version === undefined;
+      const isValid = isLegacyToken ? dbVersion === 1 : tokenVersion === dbVersion;
+
+      if (!isValid) {
+        throw new AuthError("Session expired. Please log in again.", 401);
+      }
+      
+      // Use fresh role from DB
+      payload.role = user.role; 
+    } catch (err) {
+      // If DB fails, we might want to fail open or closed. 
+      // Failing closed (denying access) is safer for "requireAuth".
+      if (err instanceof AuthError) throw err;
+      console.error("Auth DB check failed:", err);
+      throw new AuthError("Unable to verify session.", 500);
+    }
+  }
+
   if (roles && roles.length && !roles.includes(payload.role)) {
     throw new AuthError("Forbidden", 403);
   }
