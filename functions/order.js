@@ -268,6 +268,32 @@ function persistOrder(dbOrBatch, summary, orderId, options = {}) {
     );
 }
 
+function persistOrderItems(db, orderId, items) {
+  if (!items || items.length === 0) {
+    return [];
+  }
+  const statements = [];
+  for (const item of items) {
+    statements.push(
+      db
+        .prepare(
+          `INSERT INTO order_items (id, order_id, product_id, product_name, unit_price, quantity, line_total)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
+        )
+        .bind(
+          crypto.randomUUID(),
+          orderId,
+          item.id,
+          item.name,
+          item.unitPrice,
+          item.quantity,
+          item.lineTotal
+        )
+    );
+  }
+  return statements;
+}
+
 function parseItems(itemsJson) {
   if (!itemsJson) {
     return [];
@@ -363,8 +389,10 @@ export async function onRequestPost({ request, env }) {
     deliveryAddressId,
   });
 
+  const orderItemsStatements = persistOrderItems(db, orderId, result.items);
+
   try {
-    await db.batch([...addressStatements, orderStatement]);
+    await db.batch([...addressStatements, orderStatement, ...orderItemsStatements]);
   } catch (error) {
     console.error("Failed to persist order and address in a batch transaction", error);
     return jsonResponse({ error: "Unable to save order and address right now due to a database error." }, 500);

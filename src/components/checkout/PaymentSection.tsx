@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTranslations }'../../i18n/i18n';
+import { useTranslations } from '../../i18n/i18n';
 import type { CheckoutFormValues } from '../../types';
 import type { CheckoutFieldErrors } from '../../utils/checkout';
 
