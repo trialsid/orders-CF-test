@@ -11,12 +11,18 @@ function BrowsePage(): JSX.Element {
   const sectionRef = useRef<HTMLElement | null>(null);
   const { products, cart } = useOutletContext<AppOutletContext>();
   const navigate = useNavigate();
-    const { t } = useTranslations();
-    const location = useLocation();
-    const [stickyHeight, setStickyHeight] = useState(0);
-  
-    const searchTerm = useMemo(() => {
-      const params = new URLSearchParams(location.search);    return params.get('search') || '';
+  const { t } = useTranslations();
+  const location = useLocation();
+  const [stickyHeight, setStickyHeight] = useState(0);
+
+  const searchTerm = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('search') || '';
+  }, [location.search]);
+
+  const filterFromQuery = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('filter') || 'all';
   }, [location.search]);
 
   const filteredAndSearchedProducts = useMemo(() => {
@@ -99,6 +105,16 @@ function BrowsePage(): JSX.Element {
       setStickyHeight(0);
     }
   }, [cart.hasItems]);
+
+  useEffect(() => {
+    const desiredFilter =
+      products.departments.includes(filterFromQuery) || filterFromQuery === 'all'
+        ? filterFromQuery
+        : 'all';
+    if (desiredFilter !== products.filter) {
+      products.setFilter(desiredFilter);
+    }
+  }, [filterFromQuery, products.filter, products.departments, products.setFilter]);
 
   return (
     <>

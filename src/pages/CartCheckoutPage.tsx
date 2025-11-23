@@ -128,7 +128,7 @@ function CartCheckoutPage(): JSX.Element {
     };
 
     const handleSubmit = async () => {
-        const prepared = prepareOrderPayload(form, cart.cartItems);
+        const prepared = prepareOrderPayload(form, cart.cartItems, { saveAddress: saveAddressChoice });
 
         if (!prepared.ok) {
             const fieldErrors = prepared.fieldErrors ?? {};

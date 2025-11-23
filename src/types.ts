@@ -36,6 +36,7 @@ export interface OrderPayload {
   payment?: {
     method?: string;
   };
+  saveAddress?: boolean;
 }
 
 export interface OrderResponse {

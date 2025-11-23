@@ -7,6 +7,12 @@ const STATUS_ALIASES = {
   outfordelivery: "outForDelivery",
 };
 
+const DEFAULT_CONFIG = {
+  minimumOrderAmount: 100,
+  freeDeliveryThreshold: 299,
+  deliveryFeeBelowThreshold: 15,
+};
+
 function jsonResponse(payload, status = 200) {
   return new Response(JSON.stringify(payload), {
     status,
@@ -19,6 +25,28 @@ function jsonResponse(payload, status = 200) {
 
 function getDatabase(env) {
   return env && typeof env === "object" ? env.ORDERS_DB : undefined;
+}
+
+async function readConfig(db) {
+  const config = { ...DEFAULT_CONFIG };
+  if (!db) {
+    return config;
+  }
+  try {
+    const { results } = await db.prepare("SELECT key, value FROM admin_config").all();
+    for (const row of results ?? []) {
+      if (!row?.key) continue;
+      if (Object.prototype.hasOwnProperty.call(config, row.key)) {
+        const num = Number(row.value);
+        if (Number.isFinite(num) && num >= 0) {
+          config[row.key] = num;
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Failed to read admin config for order validation", error);
+  }
+  return config;
 }
 
 function handleAuthError(error) {
@@ -152,7 +180,11 @@ async function validateOrder(db, body) {
   }
 
   const productsResult = await db
-    .prepare(`SELECT id, name, price FROM products WHERE id IN (${itemIds.map(() => '?').join(',')}) AND is_active = 1`)
+    .prepare(
+      `SELECT id, name, price, stock_quantity
+       FROM products
+       WHERE id IN (${itemIds.map(() => '?').join(',')}) AND is_active = 1`
+    )
     .bind(...itemIds)
     .all();
 
@@ -170,6 +202,9 @@ async function validateOrder(db, body) {
     const qty = Number(quantity);
     if (!Number.isFinite(qty) || qty <= 0 || qty > 20) {
       return { error: `Invalid quantity for ${item.name}.` };
+    }
+    if (typeof item.stock_quantity === "number" && item.stock_quantity < qty) {
+      return { error: `${item.name} is low on stock. Available: ${item.stock_quantity}.` };
     }
 
     const lineTotal = qty * item.price;
@@ -211,6 +246,11 @@ async function validateOrder(db, body) {
     return { error: "Please choose a payment method." };
   }
 
+  const config = await readConfig(db);
+  if (total < config.minimumOrderAmount) {
+    return { error: `Orders must be at least ₹${config.minimumOrderAmount}.` };
+  }
+
   return {
     customer: {
       name: customerName,
@@ -226,6 +266,7 @@ async function validateOrder(db, body) {
     payment: {
       method: paymentMethod,
     },
+    config,
   };
 }
 
@@ -292,6 +333,17 @@ function persistOrderItems(db, orderId, items) {
     );
   }
   return statements;
+}
+
+function buildStockUpdateStatements(db, items) {
+  if (!items || items.length === 0) {
+    return [];
+  }
+  return items.map((item) =>
+    db
+      .prepare("UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND stock_quantity >= ?")
+      .bind(item.quantity, item.id, item.quantity)
+  );
 }
 
 function parseItems(itemsJson) {
@@ -375,24 +427,36 @@ export async function onRequestPost({ request, env }) {
     throw error;
   }
 
+  const shouldSaveAddress = payload && payload.saveAddress !== false;
   let deliveryAddressId = null;
   let addressStatements = [];
-  if (userContext?.sub) {
+  if (shouldSaveAddress && userContext?.sub) {
     const { deliveryAddressId: resolvedAddressId, statements } = await upsertUserAddress(db, userContext.sub, result);
     deliveryAddressId = resolvedAddressId;
     addressStatements = statements;
   }
 
-  const orderId = `ORD-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  const orderId = `ORD-${crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()}`;
   const orderStatement = persistOrder(db, result, orderId, {
     userId: userContext.sub,
     deliveryAddressId,
   });
 
   const orderItemsStatements = persistOrderItems(db, orderId, result.items);
+  const stockStatements = buildStockUpdateStatements(db, result.items);
 
   try {
-    await db.batch([...addressStatements, orderStatement, ...orderItemsStatements]);
+    // D1 requires db.batch() for atomicity. explicit BEGIN/COMMIT is not supported in Workers.
+    // We execute Order + Items + Address + Stock Updates in one batch.
+    // Note: To strictly prevent negative stock, we rely on the application check above
+    // and the fact that high-concurrency race conditions are rare for this scale.
+    // A robust fix would involve a CHECK constraint on the DB or Durable Objects.
+    await db.batch([
+      ...addressStatements,
+      orderStatement,
+      ...orderItemsStatements,
+      ...stockStatements
+    ]);
   } catch (error) {
     console.error("Failed to persist order and address in a batch transaction", error);
     return jsonResponse({ error: "Unable to save order and address right now due to a database error." }, 500);

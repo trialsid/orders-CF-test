@@ -2,6 +2,9 @@ import type { CartEntry, CheckoutFormValues, OrderPayload, UserAddress, UserAddr
 
 export const MAX_ITEM_QUANTITY = 20;
 const PHONE_MIN_DIGITS = 6;
+type PrepareOptions = {
+  saveAddress?: boolean;
+};
 
 export const createEmptyCheckoutForm = (): CheckoutFormValues => ({
   name: '',
@@ -90,7 +93,8 @@ export function validateCheckoutFields(form: CheckoutFormValues): CheckoutValida
 
 export function prepareOrderPayload(
   form: CheckoutFormValues,
-  cartItems: CartEntry[]
+  cartItems: CartEntry[],
+  options?: PrepareOptions
 ): PreparedOrderPayload {
   const { normalizedForm, fieldErrors } = validateCheckoutFields(form);
 
@@ -150,6 +154,7 @@ export function prepareOrderPayload(
     payment: {
       method: normalizeOptional(normalizedForm.paymentMethod),
     },
+    saveAddress: options?.saveAddress,
   };
 
   return {
