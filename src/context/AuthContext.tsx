@@ -28,6 +28,7 @@ type AuthContextValue = {
   login: (payload: LoginInput) => Promise<AuthUser>;
   register: (payload: RegisterInput) => Promise<AuthUser>;
   logout: () => void;
+  revokeSessions: () => Promise<void>;
 };
 
 type StoredAuthState = {
@@ -196,6 +197,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     [submitAuthRequest]
   );
 
+  const revokeSessions = useCallback(async () => {
+    if (!token) return;
+    setIsAuthenticating(true);
+    setAuthError(null);
+    try {
+      const response = await fetch('/auth/revoke', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.error) {
+        throw new Error(payload.error || 'Unable to revoke sessions.');
+      }
+      clearAuth();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to revoke sessions.';
+      setAuthError(message);
+      throw new Error(message);
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }, [token, clearAuth]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -206,8 +233,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       login,
       register,
       logout: clearAuth,
+      revokeSessions,
     }),
-    [user, token, status, authError, isAuthenticating, login, register, clearAuth]
+    [user, token, status, authError, isAuthenticating, login, register, clearAuth, revokeSessions]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

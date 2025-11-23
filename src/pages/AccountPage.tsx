@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Home, Pencil, Plus, Trash2, ShieldCheck } from 'lucide-react';
+import { Home, Pencil, Plus, Trash2, ShieldCheck, LogOut } from 'lucide-react';
 import PageSection from '../components/PageSection';
 import { useAccountData } from '../hooks/useAccount';
+import { useAuth } from '../context/AuthContext';
 import { useTranslations } from '../i18n/i18n';
 import type { UserAddress } from '../types';
 
@@ -21,6 +22,7 @@ const EMPTY_ADDRESS: Partial<UserAddress> = {
 
 function AccountPage(): JSX.Element {
   const { t } = useTranslations();
+  const { revokeSessions } = useAuth();
   const {
     profile,
     addresses,
@@ -64,6 +66,16 @@ function AccountPage(): JSX.Element {
       setProfileMessage(message);
     } finally {
       setProfileSaving(false);
+    }
+  };
+
+  const handleRevokeSessions = async () => {
+    if (window.confirm("Are you sure you want to log out of all devices? This will sign you out immediately.")) {
+      try {
+        await revokeSessions();
+      } catch (err) {
+        alert("Failed to revoke sessions.");
+      }
     }
   };
 
@@ -262,6 +274,33 @@ function AccountPage(): JSX.Element {
             {profileSaving ? t('account.saving') : t('account.saveProfile')}
           </button>
         </form>
+      </section>
+
+      <section className="rounded-3xl border border-emerald-100/70 bg-white/95 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/70">
+        <header className="flex items-center gap-3">
+          <div className="rounded-2xl bg-rose-100 p-3 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200">
+             <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-rose-600 dark:text-rose-200">
+              Security
+            </p>
+            <p className="text-lg font-semibold text-emerald-950 dark:text-brand-100">Session Management</p>
+          </div>
+        </header>
+        <div className="mt-4">
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+                If you suspect your account is compromised or you forgot to sign out on a public device, you can revoke all active sessions.
+            </p>
+            <button
+              type="button"
+              onClick={handleRevokeSessions}
+              className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-500/20 dark:border-rose-900/30 dark:bg-rose-900/20 dark:text-rose-200 dark:hover:bg-rose-900/30"
+            >
+              <LogOut className="h-4 w-4" />
+              Revoke all sessions
+            </button>
+        </div>
       </section>
 
       <section className="rounded-3xl border border-emerald-100/70 bg-white/95 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/70">

@@ -464,4 +464,30 @@ export async function requireAuth(request, env, roles) {
   return payload;
 }
 
+export async function handleRevoke({ request, env }) {
+  let payload;
+  try {
+    payload = await requireAuth(request, env);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return jsonResponse({ error: error.message }, error.status);
+    }
+    throw error;
+  }
+
+  const db = getDatabase(env);
+  if (!db) {
+    return jsonResponse({ error: "ORDERS_DB binding is not configured." }, 501);
+  }
+
+  try {
+    // Increment token_version to invalidate all existing tokens
+    await db.prepare("UPDATE users SET token_version = IFNULL(token_version, 1) + 1 WHERE id = ?").bind(payload.sub).run();
+    return jsonResponse({ message: "All sessions revoked." });
+  } catch (error) {
+    console.error("Failed to revoke sessions", error);
+    return jsonResponse({ error: "Unable to revoke sessions right now." }, 500);
+  }
+}
+
 export { jsonResponse };
