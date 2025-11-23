@@ -164,7 +164,8 @@ function MainLayout(): JSX.Element {
   }, [location.pathname]);
 
   const submitOrder = async (
-    details: CheckoutFormValues
+    details: CheckoutFormValues,
+    options?: { saveAddress?: boolean }
   ): Promise<OrderResponse | undefined> => {
     if (!cart.hasItems) {
       showToast({
@@ -175,7 +176,7 @@ function MainLayout(): JSX.Element {
       return undefined;
     }
 
-    const prepared = prepareOrderPayload(details, cart.cartItems);
+    const prepared = prepareOrderPayload(details, cart.cartItems, options);
     if (!prepared.ok) {
       if (prepared.cartError === 'quantityLimit') {
         showToast({

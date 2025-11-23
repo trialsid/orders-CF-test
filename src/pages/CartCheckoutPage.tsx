@@ -154,7 +154,7 @@ function CartCheckoutPage(): JSX.Element {
         }
 
         try {
-            const result = await submitOrder(prepared.normalizedForm);
+            const result = await submitOrder(prepared.normalizedForm, { saveAddress: saveAddressChoice });
             if (result) {
                 const clearedForm = createEmptyCheckoutForm();
                 setForm(clearedForm);

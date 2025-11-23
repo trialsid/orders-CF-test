@@ -341,8 +341,8 @@ function buildStockUpdateStatements(db, items) {
   }
   return items.map((item) =>
     db
-      .prepare("UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND stock_quantity >= ?")
-      .bind(item.quantity, item.id, item.quantity)
+      .prepare("UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?")
+      .bind(item.quantity, item.id)
   );
 }
 
