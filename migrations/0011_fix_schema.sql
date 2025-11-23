@@ -47,7 +47,18 @@ CREATE TABLE orders_new (
   FOREIGN KEY (delivery_address_id) REFERENCES user_addresses(id)
 );
 
-INSERT INTO orders_new SELECT * FROM orders;
+-- Explicit column mapping to handle potential column order differences
+INSERT INTO orders_new (
+  id, customer_name, customer_phone, total_amount, currency, status, items_json, 
+  customer_address, delivery_slot, payment_method, delivery_instructions, 
+  user_id, delivery_address_id, created_at
+)
+SELECT 
+  id, customer_name, customer_phone, total_amount, currency, status, items_json, 
+  customer_address, delivery_slot, payment_method, delivery_instructions, 
+  user_id, delivery_address_id, created_at 
+FROM orders;
+
 DROP TABLE orders;
 ALTER TABLE orders_new RENAME TO orders;
 
@@ -69,7 +80,14 @@ CREATE TABLE order_items_new (
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
 );
 
-INSERT INTO order_items_new SELECT * FROM order_items;
+-- Explicit column mapping
+INSERT INTO order_items_new (
+  id, order_id, product_id, product_name, unit_price, quantity, line_total, created_at
+)
+SELECT 
+  id, order_id, product_id, product_name, unit_price, quantity, line_total, created_at 
+FROM order_items;
+
 DROP TABLE order_items;
 ALTER TABLE order_items_new RENAME TO order_items;
 
