@@ -22,7 +22,7 @@ export function useAdminProducts({ token, enabled = true }: UseAdminProductsOpti
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string>();
 
-  const loadProducts = useCallback(async () => {
+  const loadProducts = useCallback(async (force = false) => {
     if (!token || !enabled) return;
 
     setStatus('loading');
@@ -31,7 +31,14 @@ export function useAdminProducts({ token, enabled = true }: UseAdminProductsOpti
     try {
       const res = await fetch('/admin/products', {
         headers: { Authorization: `Bearer ${token}` },
+        cache: force ? 'no-cache' : 'default',
       });
+
+      if (res.status === 304) {
+        setStatus('success');
+        return;
+      }
+
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || 'Failed to fetch products');
@@ -71,5 +78,5 @@ export function useAdminProducts({ token, enabled = true }: UseAdminProductsOpti
     return data;
   };
 
-  return { products, status, error, refresh: loadProducts, updateProduct };
+  return { products, status, error, refresh: () => loadProducts(true), updateProduct };
 }

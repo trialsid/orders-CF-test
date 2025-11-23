@@ -982,6 +982,7 @@ function AdminPage(): JSX.Element {
       {selectedOrder && (
         <OrderDetailsDrawer
           order={selectedOrder}
+          authToken={token}
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrderId(null)}
           onStatusChange={handleStatusChange}

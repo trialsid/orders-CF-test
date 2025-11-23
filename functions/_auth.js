@@ -14,12 +14,13 @@ export class AuthError extends Error {
   }
 }
 
-function jsonResponse(payload, status = 200) {
+function jsonResponse(payload, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
+      ...extraHeaders,
     },
   });
 }
@@ -398,9 +399,29 @@ export async function handleProfile({ request, env }) {
   try {
     const user = await db.prepare("SELECT * FROM users WHERE id = ? LIMIT 1").bind(payload.sub).first();
     if (!user) {
-      return jsonResponse({ error: "Account not found." }, 404);
+    return jsonResponse({ error: "Account not found." }, 404);
+  }
+
+    const etag = `W/"user-${user.id}-${user.updated_at ?? user.created_at ?? "0"}-${user.token_version ?? 1}"`;
+    const ifNoneMatch = request.headers.get("If-None-Match");
+    if (ifNoneMatch === etag) {
+      return new Response(null, {
+        status: 304,
+        headers: {
+          "Cache-Control": "private, max-age=0, must-revalidate",
+          ETag: etag,
+        },
+      });
     }
-    return jsonResponse({ user: publicUser(user) });
+
+    return jsonResponse(
+      { user: publicUser(user) },
+      200,
+      {
+        "Cache-Control": "private, max-age=0, must-revalidate",
+        ETag: etag,
+      }
+    );
   } catch (error) {
     console.error("Failed to load profile", error);
     return jsonResponse({ error: "Unable to load profile right now." }, 500);

@@ -87,6 +87,7 @@ export interface OrderRecord {
   status: OrderStatus;
   items: SubmittedOrderItem[];
   createdAt: string;
+  updatedAt?: string;
   deliverySlot?: string;
   deliveryInstructions?: string;
   paymentMethod?: string;

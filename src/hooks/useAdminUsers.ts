@@ -15,7 +15,7 @@ export function useAdminUsers(token?: string): AdminUsersHook {
   const [status, setStatus] = useState<'loading' | 'idle' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(async (force = false) => {
     if (!token) {
       setStatus('idle');
       setUsers([]);
@@ -29,7 +29,13 @@ export function useAdminUsers(token?: string): AdminUsersHook {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        cache: force ? 'no-cache' : 'default',
       });
+
+      if (response.status === 304) {
+        setStatus('idle');
+        return;
+      }
 
       if (!response.ok) {
         const errData = await response.json();
@@ -89,7 +95,7 @@ export function useAdminUsers(token?: string): AdminUsersHook {
     users,
     status,
     error,
-    refresh: fetchUsers,
+    refresh: () => fetchUsers(true),
     updateUserRole,
     updateUserStatus,
   };

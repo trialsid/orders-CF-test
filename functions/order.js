@@ -289,9 +289,10 @@ function persistOrder(dbOrBatch, summary, orderId, options = {}) {
          payment_method,
          delivery_instructions,
          user_id,
-         delivery_address_id
+         delivery_address_id,
+         updated_at
        )
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
     )
     .bind(
       orderId,
@@ -492,12 +493,93 @@ export async function onRequestGet({ request, env }) {
   }
 
   const url = new URL(request.url);
+  const idParam = normalizeString(url.searchParams.get("id"));
   const limitParam = Number(url.searchParams.get("limit") ?? "100");
   const limit = Number.isFinite(limitParam) ? Math.min(Math.max(Math.floor(limitParam), 1), 1000) : 100;
   const search = normalizeString(url.searchParams.get("search"));
   const statusFilter = normalizeStatusInput(url.searchParams.get("status"));
 
   const isPrivileged = authContext.role === "admin" || authContext.role === "rider";
+
+  // If requesting a specific order by ID, return early with a targeted fetch + per-order ETag.
+  if (idParam) {
+    try {
+      let query = `SELECT id,
+              customer_name,
+              customer_phone,
+              total_amount,
+              currency,
+              status,
+              items_json,
+              created_at,
+              updated_at,
+              customer_address,
+              delivery_slot,
+              payment_method,
+              delivery_instructions,
+              user_id,
+              delivery_address_id
+       FROM orders WHERE id = ?`;
+      const bindings = [idParam];
+
+      if (!isPrivileged) {
+        query += " AND user_id = ?";
+        bindings.push(authContext.sub);
+      }
+
+      query += " LIMIT 1";
+
+      const { results } = await db.prepare(query).bind(...bindings).all();
+      const row = (results ?? [])[0];
+      if (!row) {
+        return jsonResponse({ error: "Order not found." }, 404);
+      }
+
+      const etag = row.updated_at ? `W/"order-${row.id}-${row.updated_at}"` : null;
+      const ifNoneMatch = request.headers.get("If-None-Match");
+      if (etag && ifNoneMatch === etag) {
+        return new Response(null, {
+          status: 304,
+          headers: {
+            "Cache-Control": "private, max-age=0, must-revalidate",
+            ETag: etag,
+          },
+        });
+      }
+
+      const order = {
+        id: row.id,
+        customerName: row.customer_name,
+        customerPhone: row.customer_phone ?? undefined,
+        customerAddress: row.customer_address ?? undefined,
+        totalAmount: row.total_amount,
+        currency: row.currency ?? "INR",
+        status: row.status ?? DEFAULT_ORDER_STATUS,
+        items: parseItems(row.items_json),
+        createdAt: row.created_at,
+        updatedAt: row.updated_at ?? row.created_at,
+        deliverySlot: row.delivery_slot ?? undefined,
+        paymentMethod: row.payment_method ?? undefined,
+        deliveryInstructions: row.delivery_instructions ?? undefined,
+        userId: row.user_id ?? undefined,
+        deliveryAddressId: row.delivery_address_id ?? undefined,
+      };
+
+      return jsonResponse(
+        { orders: [order] },
+        200,
+        etag
+          ? {
+              "Cache-Control": "private, max-age=0, must-revalidate",
+              ETag: etag,
+            }
+          : {}
+      );
+    } catch (error) {
+      console.error("Failed to read order by ID", error);
+      return jsonResponse({ error: "Unable to load order right now." }, 500);
+    }
+  }
 
   // ETag / Caching Logic
   // We use a "Global ETag" based on the user's entire order history (Count + Max Updated At).
@@ -584,6 +666,7 @@ export async function onRequestGet({ request, env }) {
       status: row.status ?? DEFAULT_ORDER_STATUS,
       items: parseItems(row.items_json),
       createdAt: row.created_at,
+      updatedAt: row.updated_at ?? row.created_at,
       deliverySlot: row.delivery_slot ?? undefined,
       paymentMethod: row.payment_method ?? undefined,
       deliveryInstructions: row.delivery_instructions ?? undefined,

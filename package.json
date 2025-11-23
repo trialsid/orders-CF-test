@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
 
-    "pages:dev": "npm run build && wrangler pages dev dist",
+    "pages:dev": "npm run build && wrangler pages dev dist --ip 0.0.0.0",
     "pages:deploy": "npm run build && wrangler pages deploy dist",
     "pages:deploy:preview": "npm run build && wrangler pages deploy dist",
     "pages:deploy:prod": "npm run build && wrangler pages deploy dist --branch production",
@@ -33,7 +33,14 @@
     "db:wipe:orders": "npx wrangler d1 execute order_ieeja_orders --local --command \"DELETE FROM order_items; DELETE FROM orders;\"",
     "db:wipe:orders:remote": "npx wrangler d1 execute order_ieeja_orders --remote --command \"DELETE FROM order_items; DELETE FROM orders;\"",
     "db:wipe:users": "npx wrangler d1 execute order_ieeja_orders --local --command \"DELETE FROM users WHERE role != 'admin';\"",
-    "db:wipe:users:remote": "npx wrangler d1 execute order_ieeja_orders --remote --command \"DELETE FROM users WHERE role != 'admin';\""
+    "db:wipe:users:remote": "npx wrangler d1 execute order_ieeja_orders --remote --command \"DELETE FROM users WHERE role != 'admin';\"",
+
+    "db:exec": "npx wrangler d1 execute order_ieeja_orders --local --command",
+    "db:exec:remote": "npx wrangler d1 execute order_ieeja_orders --remote --command",
+    "db:inspect": "npx wrangler d1 execute order_ieeja_orders --local --command \"SELECT name FROM sqlite_master WHERE type='table'; SELECT 'orders' as table_name, count(*) as count FROM orders UNION SELECT 'users', count(*) FROM users;\"",
+    "logs:tail": "npx wrangler pages deployment tail",
+    "dev:lan": "vite --host",
+    "clean": "node -e \"['dist', '.wrangler'].forEach(dir => require('fs').rmSync(dir, { recursive: true, force: true }));\""
   },
   "dependencies": {
     "lucide-react": "^0.465.0",

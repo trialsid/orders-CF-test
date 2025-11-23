@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Phone, MapPin, Truck, CheckCircle2, Clock, Ban, MessageCircle } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatCurrency';
 import type { OrderRecord, OrderStatus } from '../../types';
 
 interface OrderDetailsDrawerProps {
   order: OrderRecord;
+  authToken?: string | null;
   isOpen: boolean;
   onClose: () => void;
   onStatusChange: (orderId: string, status: OrderStatus) => Promise<void>;
@@ -26,27 +27,79 @@ const ORDER_STATUS_OPTIONS: Array<{ value: OrderStatus; label: string }> = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: OrderDetailsDrawerProps) {
+export function OrderDetailsDrawer({ order, authToken, isOpen, onClose, onStatusChange }: OrderDetailsDrawerProps) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [resolvedOrder, setResolvedOrder] = useState<OrderRecord>(order);
+  const orderEtagsRef = useRef<Record<string, string>>({});
 
-  const statusConfig = STATUS_CONFIG[order.status as OrderStatus] || STATUS_CONFIG.pending;
+  // Keep local state in sync with parent-provided order object
+  useEffect(() => {
+    setResolvedOrder(order);
+  }, [order]);
+
+  // Revalidate order on open using per-order ETag
+  useEffect(() => {
+    if (!isOpen || !authToken || !order?.id) return;
+    const controller = new AbortController();
+
+    const guessEtag =
+      orderEtagsRef.current[order.id] ||
+      (order.updatedAt ? `W/"order-${order.id}-${order.updatedAt}"` : undefined);
+
+    (async () => {
+      try {
+        const response = await fetch(`/order?id=${encodeURIComponent(order.id)}`, {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            ...(guessEtag ? { 'If-None-Match': guessEtag } : {}),
+          },
+          signal: controller.signal,
+        });
+
+        if (response.status === 304) {
+          return;
+        }
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as { orders?: OrderRecord[] };
+        const fresh = payload.orders?.[0];
+        if (fresh) {
+          const nextEtag = response.headers.get('ETag');
+          if (nextEtag) {
+            orderEtagsRef.current[order.id] = nextEtag;
+          }
+          setResolvedOrder(fresh);
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.warn('Failed to refresh order details', error);
+      }
+    })();
+
+    return () => controller.abort();
+  }, [authToken, isOpen, order]);
+
+  const statusConfig = STATUS_CONFIG[resolvedOrder.status as OrderStatus] || STATUS_CONFIG.pending;
   const StatusIcon = statusConfig.icon;
 
   const handleStatusUpdate = async (newStatus: OrderStatus) => {
     setIsUpdating(true);
     try {
-      await onStatusChange(order.id, newStatus);
+      await onStatusChange(resolvedOrder.id, newStatus);
     } finally {
       setIsUpdating(false);
     }
   };
 
   const whatsappLink = useMemo(() => {
-    if (!order.customerPhone) return null;
-    const digits = order.customerPhone.replace(/\D/g, '');
+    if (!resolvedOrder.customerPhone) return null;
+    const digits = resolvedOrder.customerPhone.replace(/\D/g, '');
     const number = digits.length === 10 ? `91${digits}` : digits;
-    return `https://wa.me/${number}?text=Hi ${order.customerName}, regarding your order ${order.id}...`;
-  }, [order.customerName, order.customerPhone, order.id]);
+    return `https://wa.me/${number}?text=Hi ${resolvedOrder.customerName}, regarding your order ${resolvedOrder.id}...`;
+  }, [resolvedOrder.customerName, resolvedOrder.customerPhone, resolvedOrder.id]);
 
   if (!isOpen) return null;
 
@@ -65,7 +118,7 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: O
           <div className="flex items-center justify-between border-b border-slate-100 p-4 dark:border-slate-800">
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Order Details</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{order.id}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{resolvedOrder.id}</p>
             </div>
             <button
               onClick={onClose}
@@ -89,7 +142,7 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: O
                   Update Status
                 </label>
                 <select
-                  value={order.status}
+                  value={resolvedOrder.status}
                   onChange={(e) => handleStatusUpdate(e.target.value as OrderStatus)}
                   disabled={isUpdating}
                   className="w-full rounded-lg border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -110,11 +163,11 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: O
               </h3>
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/50">
                 <div className="mb-4">
-                  <p className="text-lg font-semibold text-slate-900 dark:text-white">{order.customerName}</p>
+                  <p className="text-lg font-semibold text-slate-900 dark:text-white">{resolvedOrder.customerName}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {order.customerPhone && (
+                    {resolvedOrder.customerPhone && (
                       <a
-                        href={`tel:${order.customerPhone}`}
+                        href={`tel:${resolvedOrder.customerPhone}`}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300"
                       >
                         <Phone className="h-3.5 w-3.5" />
@@ -138,10 +191,10 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: O
                 <div className="flex gap-3 text-sm text-slate-600 dark:text-slate-300">
                   <MapPin className="h-5 w-5 shrink-0 text-slate-400" />
                   <div>
-                    <p>{order.customerAddress}</p>
-                    {order.deliveryInstructions && (
+                    <p>{resolvedOrder.customerAddress}</p>
+                    {resolvedOrder.deliveryInstructions && (
                       <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
-                        Note: {order.deliveryInstructions}
+                        Note: {resolvedOrder.deliveryInstructions}
                       </p>
                     )}
                   </div>
@@ -152,7 +205,7 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: O
             {/* Order Items */}
             <section className="mb-6">
               <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Items ({order.items.length})
+                Items ({resolvedOrder.items.length})
               </h3>
               <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
                 <table className="w-full text-left text-sm">
@@ -164,7 +217,7 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: O
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {order.items.map((item) => (
+                    {resolvedOrder.items.map((item) => (
                       <tr key={item.id} className="bg-white dark:bg-slate-900">
                         <td className="px-4 py-3">
                           <p className="font-medium text-slate-900 dark:text-white">{item.name}</p>
@@ -183,7 +236,7 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: O
                     <tr>
                       <td colSpan={2} className="px-4 py-3 text-slate-700 dark:text-slate-200">Total Amount</td>
                       <td className="px-4 py-3 text-right text-slate-900 dark:text-white">
-                        {formatCurrency(order.totalAmount)}
+                        {formatCurrency(resolvedOrder.totalAmount)}
                       </td>
                     </tr>
                   </tfoot>
@@ -199,11 +252,11 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: O
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
                   <p className="text-xs text-slate-500">Slot</p>
-                  <p className="font-medium text-slate-900 dark:text-white">{order.deliverySlot}</p>
+                  <p className="font-medium text-slate-900 dark:text-white">{resolvedOrder.deliverySlot}</p>
                 </div>
                 <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
                   <p className="text-xs text-slate-500">Payment</p>
-                  <p className="font-medium text-slate-900 dark:text-white">{order.paymentMethod}</p>
+                  <p className="font-medium text-slate-900 dark:text-white">{resolvedOrder.paymentMethod}</p>
                 </div>
               </div>
             </section>

@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import type { AuthResponse, AuthUser } from '../types';
@@ -63,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
   const [status, setStatus] = useState<AuthStatus>(() => (stored?.token ? 'checking' : 'ready'));
   const [authError, setAuthError] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const profileEtagRef = useRef<string | null>(null);
 
   const persistAuth = useCallback((nextToken: string | null, nextUser: AuthUser | null) => {
     if (typeof window === 'undefined') {
@@ -86,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     setUser(null);
     setStatus('ready');
     setAuthError(null);
+    profileEtagRef.current = null;
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(STORAGE_KEY);
     }
@@ -113,9 +116,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
           method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
+            ...(profileEtagRef.current ? { 'If-None-Match': profileEtagRef.current } : {}),
           },
           signal: controller.signal,
         });
+        if (response.status === 304) {
+          if (!cancelled) {
+            setStatus('ready');
+          }
+          return;
+        }
         const payload = await response.json();
         if (!response.ok || payload.error) {
           throw new Error(payload.error || 'Unable to refresh session.');
@@ -123,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
         if (cancelled) {
           return;
         }
+        profileEtagRef.current = response.headers.get('ETag');
         setUser(payload.user as AuthUser);
         setStatus('ready');
       } catch (error) {

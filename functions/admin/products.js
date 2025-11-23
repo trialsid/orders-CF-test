@@ -1,11 +1,12 @@
 import { requireAuth, AuthError } from "../_auth";
 
-function jsonResponse(payload, status = 200) {
+function jsonResponse(payload, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
+      ...extraHeaders,
     },
   });
 }
@@ -35,6 +36,30 @@ export async function onRequestGet({ request, env }) {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
 
+  // Conditional GET with a cheap global ETag (count + max(updated_at))
+  let etag = null;
+  try {
+    const meta = await db
+      .prepare("SELECT COUNT(*) as count, MAX(updated_at) as last_modified FROM products")
+      .first();
+    const count = meta?.count || 0;
+    const lastModified = meta?.last_modified || "0";
+    etag = `W/"admin-products-${count}-${lastModified}"`;
+
+    const ifNoneMatch = request.headers.get("If-None-Match");
+    if (ifNoneMatch === etag) {
+      return new Response(null, {
+        status: 304,
+        headers: {
+          "Cache-Control": "private, max-age=0, must-revalidate",
+          ETag: etag,
+        },
+      });
+    }
+  } catch (error) {
+    console.warn("Admin products ETag check failed", error);
+  }
+
   try {
     const { results } = await db
       .prepare(
@@ -53,19 +78,28 @@ export async function onRequestGet({ request, env }) {
       )
       .all();
 
-    return jsonResponse({
-      items: (results ?? []).map((row) => ({
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        department: row.department,
-        category: row.category,
-        price: row.price,
-        mrp: row.mrp,
-        isActive: row.is_active === 1,
-        stockQuantity: row.stock_quantity,
-      })),
-    });
+    return jsonResponse(
+      {
+        items: (results ?? []).map((row) => ({
+          id: row.id,
+          name: row.name,
+          description: row.description,
+          department: row.department,
+          category: row.category,
+          price: row.price,
+          mrp: row.mrp,
+          isActive: row.is_active === 1,
+          stockQuantity: row.stock_quantity,
+        })),
+      },
+      200,
+      etag
+        ? {
+            "Cache-Control": "private, max-age=0, must-revalidate",
+            ETag: etag,
+          }
+        : {}
+    );
   } catch (error) {
     console.error("Failed to fetch admin products", error);
     return jsonResponse({ error: "Unable to load product catalog." }, 500);

@@ -1,11 +1,12 @@
 import { requireAuth, AuthError } from "../_auth";
 
-function jsonResponse(payload, status = 200) {
+function jsonResponse(payload, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
+      ...extraHeaders,
     },
   });
 }
@@ -35,6 +36,30 @@ export async function onRequestGet({ request, env }) {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
 
+  // Conditional GET: global ETag based on count + max(updated_at)
+  let etag = null;
+  try {
+    const meta = await db
+      .prepare("SELECT COUNT(*) as count, MAX(updated_at) as last_modified FROM users")
+      .first();
+    const count = meta?.count || 0;
+    const lastModified = meta?.last_modified || "0";
+    etag = `W/\"admin-users-${count}-${lastModified}\"`;
+
+    const ifNoneMatch = request.headers.get("If-None-Match");
+    if (ifNoneMatch === etag) {
+      return new Response(null, {
+        status: 304,
+        headers: {
+          "Cache-Control": "private, max-age=0, must-revalidate",
+          ETag: etag,
+        },
+      });
+    }
+  } catch (error) {
+    console.warn("Admin users ETag check failed", error);
+  }
+
   try {
     const { results } = await db
       .prepare(
@@ -50,7 +75,16 @@ export async function onRequestGet({ request, env }) {
       )
       .all();
 
-    return jsonResponse({ users: results });
+    return jsonResponse(
+      { users: results },
+      200,
+      etag
+        ? {
+            "Cache-Control": "private, max-age=0, must-revalidate",
+            ETag: etag,
+          }
+        : {}
+    );
   } catch (error) {
     console.error("Failed to fetch users", error);
     return jsonResponse({ error: "Unable to load users." }, 500);
