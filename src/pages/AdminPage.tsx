@@ -1,12 +1,30 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ClipboardList, RefreshCw, Settings2, Truck, Users, ShieldCheck } from 'lucide-react';
+import {
+  AlertTriangle,
+  ClipboardList,
+  RefreshCw,
+  Settings2,
+  Truck,
+  Users,
+  ShieldCheck,
+  LayoutDashboard,
+  Package,
+  Sliders,
+  ChevronRight,
+  Search,
+  Filter,
+  Tag
+} from 'lucide-react';
 import PageSection from '../components/PageSection';
 import { useOrders } from '../hooks/useOrders';
 import { useAdminConfig } from '../hooks/useAdminConfig';
 import { formatCurrency } from '../utils/formatCurrency';
 import { updateOrderStatus as updateOrderStatusRequest } from '../utils/updateOrderStatus';
-import type { AdminConfig, OrderRecord, OrderStatus } from '../types';
+import type { AdminConfig, OrderRecord, OrderStatus, User } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { OrderDetailsDrawer } from '../components/admin/OrderDetailsDrawer';
+import { ProductCatalog } from '../components/admin/ProductCatalog';
+import { useAdminUsers } from '../hooks/useAdminUsers';
 
 const DEFAULT_STATUS: OrderStatus = 'pending';
 
@@ -23,6 +41,13 @@ const ORDER_STATUS_OPTIONS: Array<{ value: OrderStatus; label: string }> = [
   { value: 'outForDelivery', label: 'Out for delivery' },
   { value: 'delivered', label: 'Delivered' },
   { value: 'cancelled', label: 'Cancelled' },
+];
+
+const USER_ROLE_FILTERS: Array<{ value: User['role'] | 'all'; label: string }> = [
+  { value: 'all', label: 'All roles' },
+  { value: 'admin', label: 'Admins' },
+  { value: 'rider', label: 'Riders' },
+  { value: 'customer', label: 'Customers' },
 ];
 
 const NEXT_ACTION_COPY: Partial<Record<OrderStatus, string>> = {
@@ -75,9 +100,12 @@ const resolveStatus = (status?: string): OrderStatus => (isOrderStatus(status) ?
 const getStatusLabel = (status: OrderStatus): string =>
   ORDER_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status;
 
+type Tab = 'dashboard' | 'orders' | 'catalog' | 'settings' | 'users';
+
 function AdminPage(): JSX.Element {
   const { token, user } = useAuth();
   const { orders, status, error, refresh } = useOrders(100, { token, requireAuth: true });
+  const { users, status: usersStatus, error: usersError, refresh: refreshUsers, updateUserRole, updateUserStatus } = useAdminUsers(token ?? undefined);
   const {
     config,
     status: configStatus,
@@ -87,14 +115,76 @@ function AdminPage(): JSX.Element {
     saving,
   } = useAdminConfig(token ?? undefined);
 
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [statusUpdateError, setStatusUpdateError] = useState<string>();
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [userUpdateError, setUserUpdateError] = useState<string>();
+
+  // Search & Filter State (Orders)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
+
+  // Search & Filter State (Users)
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState<User['role'] | 'all'>('all');
+
+  // Live Mode: Auto-refresh every 30s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refresh();
+      refreshUsers(); // Refresh users data as well
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [refresh, refreshUsers]);
+
+  const filteredOrders = useMemo(() => {
+    let result = orders;
+    
+    if (statusFilter !== 'all') {
+      result = result.filter((o) => resolveStatus(o.status) === statusFilter);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (o) =>
+          o.id.toLowerCase().includes(q) ||
+          o.customerName?.toLowerCase().includes(q) ||
+          o.customerPhone?.includes(q)
+      );
+    }
+    
+    return result;
+  }, [orders, statusFilter, searchQuery]);
+  
+  const filteredUsers = useMemo(() => {
+    let result = users;
+
+    if (userRoleFilter !== 'all') {
+      result = result.filter((u) => u.role === userRoleFilter);
+    }
+
+    if (userSearchQuery.trim()) {
+      const q = userSearchQuery.toLowerCase();
+      result = result.filter(
+        (u) =>
+          u.id.toLowerCase().includes(q) ||
+          u.full_name?.toLowerCase().includes(q) ||
+          u.phone.includes(q)
+      );
+    }
+
+    return result;
+  }, [users, userRoleFilter, userSearchQuery]);
+
+  // Config Form State
   const [configFields, setConfigFields] = useState<Record<keyof AdminConfig, string>>({
     minimumOrderAmount: '100',
     freeDeliveryThreshold: '299',
     deliveryFeeBelowThreshold: '15',
   });
   const [configBanner, setConfigBanner] = useState<{ type: 'success' | 'error'; message: string }>();
-  const [statusUpdateError, setStatusUpdateError] = useState<string>();
-  const [updatingOrders, setUpdatingOrders] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (config) {
@@ -151,20 +241,21 @@ function AdminPage(): JSX.Element {
 
   const handleStatusChange = async (orderId: string, nextStatus: OrderStatus) => {
     setStatusUpdateError(undefined);
-    setUpdatingOrders((prev) => ({ ...prev, [orderId]: true }));
     try {
       await updateOrderStatusRequest(orderId, nextStatus, token);
-      refresh();
+      await refresh(); // Refresh list to reflect changes
     } catch (updateError) {
       const message = updateError instanceof Error ? updateError.message : 'Unable to update order status right now.';
       setStatusUpdateError(message);
-    } finally {
-      setUpdatingOrders((prev) => ({ ...prev, [orderId]: false }));
+      // Re-throw to let the drawer know it failed
+      throw updateError;
     }
   };
 
   const isLoadingOrders = status === 'loading';
   const isOrdersError = status === 'error';
+  const isLoadingUsers = usersStatus === 'loading';
+  const isUsersError = usersStatus === 'error';
 
   const derivedMetrics = useMemo(() => {
     if (!orders.length) {
@@ -236,12 +327,6 @@ function AdminPage(): JSX.Element {
       .slice(0, 5);
   }, [orders]);
 
-  const recentOrders = useMemo(() => {
-    return [...orders]
-      .sort((a, b) => getTimeValue(b.createdAt) - getTimeValue(a.createdAt))
-      .slice(0, 6);
-  }, [orders]);
-
   const slotInsights = useMemo(() => {
     const counts: Record<string, number> = {};
     orders.forEach((order) => {
@@ -256,6 +341,11 @@ function AdminPage(): JSX.Element {
       hasData: entries.length > 0,
     };
   }, [orders]);
+
+  const selectedOrder = useMemo(() => 
+    orders.find(o => o.id === selectedOrderId), 
+    [orders, selectedOrderId]
+  );
 
   const summaryCards = [
     {
@@ -280,15 +370,15 @@ function AdminPage(): JSX.Element {
     },
   ];
 
-  const renderOrderRow = (order: OrderRecord) => {
+  const renderOrderRow = (order: OrderRecord, interactive = false) => {
     const statusKey = resolveStatus(order.status);
     const nextAction = NEXT_ACTION_COPY[statusKey];
-    const isUpdating = Boolean(updatingOrders[order.id]);
 
     return (
       <li
         key={order.id}
-        className="rounded-2xl border border-emerald-100/70 bg-white/90 p-4 shadow-sm dark:border-emerald-900/60 dark:bg-slate-900/70"
+        onClick={interactive ? () => setSelectedOrderId(order.id) : undefined}
+        className={`rounded-2xl border border-emerald-100/70 bg-white/90 p-4 shadow-sm dark:border-emerald-900/60 dark:bg-slate-900/70 ${interactive ? 'cursor-pointer transition hover:border-emerald-300 hover:shadow-md' : ''}`}
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -323,31 +413,42 @@ function AdminPage(): JSX.Element {
               {order.paymentMethod}
             </span>
           )}
-          <label className="inline-flex items-center gap-2 rounded-full border border-emerald-100/70 bg-white px-2 py-1 text-slate-600 dark:border-emerald-900/60 dark:bg-slate-950/50">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Set status</span>
-            <select
-              value={statusKey}
-              onChange={(event) => handleStatusChange(order.id, event.target.value as OrderStatus)}
-              disabled={isUpdating}
-              className="rounded-full border-none bg-transparent text-sm font-semibold text-emerald-800 outline-none disabled:opacity-50 dark:text-emerald-100"
-            >
-              {ORDER_STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-300">{formatDateTime(order.createdAt)}</p>
       </li>
     );
   };
 
+  const handleUserRoleChange = async (userId: string, role: User['role']) => {
+    setUserUpdateError(undefined);
+    setUpdatingUserId(userId);
+    try {
+      await updateUserRole(userId, role);
+    } catch (updateError) {
+      const message = updateError instanceof Error ? updateError.message : 'Unable to update role right now.';
+      setUserUpdateError(message);
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
+
+  const handleUserStatusChange = async (userId: string, nextStatus: User['status']) => {
+    setUserUpdateError(undefined);
+    setUpdatingUserId(userId);
+    try {
+      await updateUserStatus(userId, nextStatus);
+    } catch (updateError) {
+      const message = updateError instanceof Error ? updateError.message : 'Unable to update status right now.';
+      setUserUpdateError(message);
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
+
   return (
     <PageSection
-      title="Operations control center"
-      description="Monitor live orders, keep delivery economics front-and-center, and stage future tools for staff access."
+      title="Store Management"
+      description="Overview, order processing, and store configuration."
       actions={
         <div className="flex flex-wrap items-center gap-3">
           {user && (
@@ -357,17 +458,79 @@ function AdminPage(): JSX.Element {
           )}
           <button
             type="button"
-            onClick={refresh}
-            disabled={isLoadingOrders}
+            onClick={() => {
+              refresh();
+              refreshUsers();
+            }}
+            disabled={isLoadingOrders || isLoadingUsers}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 disabled:opacity-60 sm:w-auto dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
           >
             <RefreshCw className="h-4 w-4" />
-            {isLoadingOrders ? 'Refreshing…' : 'Refresh data'}
+            {isLoadingOrders || isLoadingUsers ? 'Refreshing…' : 'Refresh'}
           </button>
         </div>
       }
     >
-      <div className="space-y-8">
+      <div className="space-y-6">
+        {/* Navigation Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto border-b border-emerald-100 pb-1 dark:border-emerald-900/50">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              activeTab === 'dashboard'
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100'
+                : 'text-slate-600 hover:bg-emerald-50 dark:text-slate-400 dark:hover:bg-slate-800'
+            }`}
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              activeTab === 'orders'
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100'
+                : 'text-slate-600 hover:bg-emerald-50 dark:text-slate-400 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Package className="h-4 w-4" />
+            Orders
+          </button>
+          <button
+            onClick={() => setActiveTab('catalog')}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              activeTab === 'catalog'
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100'
+                : 'text-slate-600 hover:bg-emerald-50 dark:text-slate-400 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Tag className="h-4 w-4" />
+            Catalog
+          </button>
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              activeTab === 'users'
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100'
+                : 'text-slate-600 hover:bg-emerald-50 dark:text-slate-400 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Users className="h-4 w-4" />
+            Users
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              activeTab === 'settings'
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100'
+                : 'text-slate-600 hover:bg-emerald-50 dark:text-slate-400 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Sliders className="h-4 w-4" />
+            Settings
+          </button>
+        </div>
+
         {isOrdersError && (
           <div className="rounded-3xl border border-rose-200/60 bg-rose-50/80 p-6 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-900/30 dark:text-rose-100">
             <p className="font-semibold">{error ?? 'Unable to load admin data right now.'}</p>
@@ -381,228 +544,457 @@ function AdminPage(): JSX.Element {
           </div>
         )}
 
-        <div className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-4 ${isLoadingOrders ? 'opacity-70' : ''}`}>
-          {summaryCards.map((card) => (
-            <div
-              key={card.label}
-              className="rounded-3xl border border-emerald-100/70 bg-gradient-to-br from-white to-emerald-50/50 p-5 shadow-sm dark:border-emerald-900/60 dark:from-slate-950 dark:to-emerald-950/20"
-            >
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">{card.label}</p>
-              <p className="mt-2 text-3xl font-display font-semibold text-emerald-950 dark:text-brand-100">{card.value}</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{card.helper}</p>
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-4 ${isLoadingOrders ? 'opacity-70' : ''}`}>
+              {summaryCards.map((card) => (
+                <div
+                  key={card.label}
+                  className="rounded-3xl border border-emerald-100/70 bg-gradient-to-br from-white to-emerald-50/50 p-5 shadow-sm dark:border-emerald-900/60 dark:from-slate-950 dark:to-emerald-950/20"
+                >
+                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">{card.label}</p>
+                  <p className="mt-2 text-3xl font-display font-semibold text-emerald-950 dark:text-brand-100">{card.value}</p>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{card.helper}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <section className="min-w-0 rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60">
-            <header className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">
-                  Live fulfilment queue
+            <div className="grid gap-6 lg:grid-cols-2">
+              <section className="min-w-0 rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60">
+                <header className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">
+                      Live fulfilment queue
+                    </p>
+                    <p className="text-lg font-semibold text-emerald-950 dark:text-brand-100">Orders requiring attention</p>
+                  </div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-100">
+                    <Users className="h-5 w-5" />
+                  </div>
+                </header>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                  Pending and confirmed orders surface here. Click an order to manage it.
                 </p>
-                <p className="text-lg font-semibold text-emerald-950 dark:text-brand-100">Orders requiring attention</p>
-              </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-100">
-                <Users className="h-5 w-5" />
-              </div>
-            </header>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-              Pending and confirmed orders surface here for a quick call or slot confirmation.
-            </p>
-            <ul className="mt-4 space-y-3">
-              {actionableOrders.length === 0 && (
-                <li className="rounded-2xl border border-dashed border-emerald-200/70 p-4 text-sm text-emerald-600 dark:border-emerald-900/50 dark:text-emerald-200">
-                  All caught up. New orders will show up automatically.
-                </li>
-              )}
-              {actionableOrders.map((order) => renderOrderRow(order))}
-            </ul>
-          </section>
+                <ul className="mt-4 space-y-3">
+                  {actionableOrders.length === 0 && (
+                    <li className="rounded-2xl border border-dashed border-emerald-200/70 p-4 text-sm text-emerald-600 dark:border-emerald-900/50 dark:text-emerald-200">
+                      All caught up. New orders will show up automatically.
+                    </li>
+                  )}
+                  {actionableOrders.map((order) => renderOrderRow(order, true))}
+                </ul>
+              </section>
 
-          <section className="min-w-0 rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60">
-            <header className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Recent submissions</p>
-                <p className="text-lg font-semibold text-emerald-950 dark:text-brand-100">Latest orders log</p>
+              <div className="space-y-6">
+                 <section className="rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60">
+                  <div className="flex items-center gap-3">
+                    <Settings2 className="h-5 w-5 text-brand-600 dark:text-brand-300" />
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Delivery playbook</p>
+                      <p className="text-lg font-semibold text-emerald-950 dark:text-brand-100">Fulfilment stages</p>
+                    </div>
+                  </div>
+                  <div className="mt-5 grid grid-cols-2 gap-4">
+                    {pipelineStats.map((stage) => (
+                      <div
+                        key={stage.key}
+                        className="rounded-2xl border border-emerald-100/70 bg-emerald-50/40 p-3 text-sm dark:border-emerald-900/60 dark:bg-emerald-950/30"
+                      >
+                        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">{stage.label}</p>
+                        <p className="mt-1 text-2xl font-display font-semibold text-emerald-950 dark:text-brand-100">{stage.count}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                
+                <section className="rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60">
+                   <header className="mb-4">
+                     <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Preferred slots</p>
+                     <p className="text-lg font-semibold text-emerald-950 dark:text-brand-100">Load balancing</p>
+                   </header>
+                  {slotInsights.hasData ? (
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2 font-semibold text-emerald-900 dark:bg-emerald-900/20 dark:text-emerald-100">
+                        <span>{slotInsights.topSlot?.[0]}</span>
+                        <span>{slotInsights.topSlot?.[1]} orders</span>
+                      </li>
+                      {slotInsights.others.map(([slot, count]) => (
+                        <li key={slot} className="flex items-center justify-between px-3 text-slate-600 dark:text-slate-300">
+                          <span>{slot}</span>
+                          <span>{count}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-slate-600 dark:text-slate-300">No slot data yet.</p>
+                  )}
+                </section>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-300">
-                <ClipboardList className="h-5 w-5" />
-              </div>
-            </header>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-              Use this feed to double-check totals before calling the store team.
-            </p>
-            <div className="mt-4 rounded-3xl border border-emerald-100/70 bg-white/80 p-1 dark:border-emerald-900/60 dark:bg-slate-950/60">
-              <div className="overflow-hidden rounded-t-3xl rounded-b-xl sm:rounded-2xl">
-                <div className="overflow-x-auto scrollbar-brand">
-                  <table className="min-w-[640px] divide-y divide-emerald-50 text-sm dark:divide-emerald-900/50">
-                    <thead className="bg-emerald-50/60 text-left text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-200">
+            </div>
+          </div>
+        )}
+
+        {/* Orders Tab */}
+        {activeTab === 'orders' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <section className="min-w-0 rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60">
+              <header className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Order Management</p>
+                    <p className="text-lg font-semibold text-emerald-950 dark:text-brand-100">
+                      {statusFilter === 'all' ? 'All Orders' : getStatusLabel(statusFilter)} ({filteredOrders.length})
+                    </p>
+                  </div>
+                  
+                  {/* Search Bar */}
+                  <div className="relative w-full sm:w-64">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                      <Search className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search ID, Name, Phone..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="block w-full rounded-full border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    />
+                  </div>
+                </div>
+
+                {/* Status Tabs/Filter */}
+                <div className="flex flex-wrap gap-2">
+                   <button
+                     onClick={() => setStatusFilter('all')}
+                     className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                       statusFilter === 'all' 
+                         ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100' 
+                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
+                     }`}
+                   >
+                     All
+                   </button>
+                   {ORDER_STATUS_OPTIONS.map((option) => (
+                     <button
+                       key={option.value}
+                       onClick={() => setStatusFilter(option.value)}
+                       className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                         statusFilter === option.value
+                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100'
+                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
+                       }`}
+                     >
+                       {option.label}
+                     </button>
+                   ))}
+                </div>
+              </header>
+              
+              <div className="mt-6 overflow-hidden rounded-2xl border border-emerald-100/70 dark:border-emerald-900/60">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[800px] text-left text-sm">
+                    <thead className="bg-emerald-50/60 text-xs uppercase tracking-wide text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-200">
                       <tr>
-                        <th className="px-4 py-3">Order</th>
-                        <th className="px-4 py-3">Customer</th>
-                        <th className="px-4 py-3">Slot</th>
-                        <th className="px-4 py-3">Total</th>
+                        <th className="px-4 py-3 font-semibold">Order ID</th>
+                        <th className="px-4 py-3 font-semibold">Date</th>
+                        <th className="px-4 py-3 font-semibold">Customer</th>
+                        <th className="px-4 py-3 font-semibold">Status</th>
+                        <th className="px-4 py-3 font-semibold">Slot</th>
+                        <th className="px-4 py-3 font-semibold text-right">Total</th>
+                        <th className="px-4 py-3 font-semibold text-center">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-emerald-50/60 dark:divide-emerald-900/40">
-                      {recentOrders.length === 0 && (
+                      {filteredOrders.length === 0 ? (
                         <tr>
-                          <td colSpan={4} className="px-4 py-4 text-center text-slate-500 dark:text-slate-300">
-                            No orders yet. Place a test order to populate this feed.
+                          <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                            No orders found matching your filters.
                           </td>
                         </tr>
+                      ) : (
+                        filteredOrders.map((order) => (
+                          <tr 
+                            key={order.id} 
+                            className="group bg-white/70 transition-colors hover:bg-emerald-50/30 dark:bg-slate-950/40 dark:hover:bg-emerald-900/10"
+                          >
+                            <td className="px-4 py-3 font-mono text-xs font-medium text-slate-500">{order.id}</td>
+                            <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatDateTime(order.createdAt)}</td>
+                            <td className="px-4 py-3">
+                              <div className="font-semibold text-emerald-900 dark:text-emerald-100">{order.customerName}</div>
+                              <div className="text-xs text-slate-500">{order.customerPhone}</div>
+                            </td>
+                            <td className="px-4 py-3">
+                               <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                 order.status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200' :
+                                 order.status === 'confirmed' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' :
+                                 order.status === 'outForDelivery' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200' :
+                                 order.status === 'delivered' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' :
+                                 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                               }`}>
+                                 {getStatusLabel(order.status as OrderStatus)}
+                               </span>
+                            </td>
+                            <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{order.deliverySlot}</td>
+                            <td className="px-4 py-3 text-right font-medium text-emerald-900 dark:text-emerald-100">{formatCurrency(order.totalAmount)}</td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                onClick={() => setSelectedOrderId(order.id)}
+                                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-600 dark:hover:bg-slate-800 dark:hover:text-brand-400"
+                              >
+                                <ChevronRight className="h-5 w-5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
                       )}
-                      {recentOrders.map((order) => (
-                        <tr key={order.id} className="bg-white/70 text-emerald-900 dark:bg-slate-950/40 dark:text-emerald-100">
-                          <td className="px-4 py-3">
-                            <div className="text-xs font-semibold uppercase tracking-wide text-emerald-500 dark:text-emerald-300">{order.id}</div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-300">{formatDateTime(order.createdAt)}</div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="font-semibold">{order.customerName || 'Customer'}</div>
-                            <div className="text-xs text-slate-500">{order.customerPhone || 'Phone n/a'}</div>
-                          </td>
-                          <td className="px-4 py-3 text-xs font-semibold text-emerald-700 dark:text-emerald-200">
-                            {order.deliverySlot || 'Not selected'}
-                          </td>
-                          <td className="px-4 py-3 font-semibold">{formatCurrency(order.totalAmount)}</td>
-                        </tr>
-                      ))}
                     </tbody>
                   </table>
                 </div>
               </div>
+            </section>
+          </div>
+        )}
+
+        {/* Catalog Tab */}
+        {activeTab === 'catalog' && (
+           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <section className="min-w-0 rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60">
+               <ProductCatalog token={token} />
+             </section>
+           </div>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {isUsersError && (
+              <div className="rounded-2xl border border-rose-200/70 bg-rose-50/80 p-4 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-900/30 dark:text-rose-100">
+                {usersError ?? 'Unable to load users right now.'}
+              </div>
+            )}
+            {userUpdateError && (
+              <div className="rounded-2xl border border-amber-200/70 bg-amber-50/80 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/40 dark:text-amber-100">
+                {userUpdateError}
+              </div>
+            )}
+
+            <section className="min-w-0 rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60">
+              <header className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">User access</p>
+                    <p className="text-lg font-semibold text-emerald-950 dark:text-brand-100">
+                      {USER_ROLE_FILTERS.find((option) => option.value === userRoleFilter)?.label ?? 'All users'} ({filteredUsers.length})
+                    </p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">Review accounts, assign roles, and block risky profiles.</p>
+                  </div>
+                  <div className="relative w-full sm:w-80">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                      <Search className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search phone, name, or user id..."
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      className="block w-full rounded-full border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-100">
+                    <Filter className="h-3.5 w-3.5" />
+                    Role filters
+                  </span>
+                  {USER_ROLE_FILTERS.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setUserRoleFilter(option.value)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                        userRoleFilter === option.value
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </header>
+
+              <div className="mt-6 overflow-hidden rounded-2xl border border-emerald-100/70 dark:border-emerald-900/60">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[820px] text-left text-sm">
+                    <thead className="bg-emerald-50/60 text-xs uppercase tracking-wide text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-200">
+                      <tr>
+                        <th className="px-4 py-3 font-semibold">User</th>
+                        <th className="px-4 py-3 font-semibold">Phone</th>
+                        <th className="px-4 py-3 font-semibold">Role</th>
+                        <th className="px-4 py-3 font-semibold">Status</th>
+                        <th className="px-4 py-3 font-semibold">Created</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-emerald-50/60 dark:divide-emerald-900/40">
+                      {isLoadingUsers ? (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-6 text-center text-slate-500 dark:text-slate-300">
+                            Loading users…
+                          </td>
+                        </tr>
+                      ) : filteredUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-8 text-center text-slate-500 dark:text-slate-300">
+                            No users found for this filter.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredUsers.map((adminUser) => {
+                          const isUpdating = updatingUserId === adminUser.id;
+                          return (
+                            <tr
+                              key={adminUser.id}
+                              className="bg-white/70 transition-colors hover:bg-emerald-50/30 dark:bg-slate-950/40 dark:hover:bg-emerald-900/10"
+                            >
+                              <td className="px-4 py-3">
+                                <div className="font-semibold text-emerald-900 dark:text-emerald-100">
+                                  {adminUser.full_name || adminUser.display_name || 'Name unavailable'}
+                                </div>
+                                <div className="text-xs text-slate-500">{adminUser.id}</div>
+                              </td>
+                              <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{adminUser.phone}</td>
+                              <td className="px-4 py-3">
+                                <select
+                                  value={adminUser.role}
+                                  onChange={(event) => handleUserRoleChange(adminUser.id, event.target.value as User['role'])}
+                                  disabled={isUpdating}
+                                  className="w-full rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                                >
+                                  <option value="admin">Admin</option>
+                                  <option value="rider">Rider</option>
+                                  <option value="customer">Customer</option>
+                                </select>
+                              </td>
+                              <td className="px-4 py-3">
+                                <select
+                                  value={adminUser.status}
+                                  onChange={(event) => handleUserStatusChange(adminUser.id, event.target.value as User['status'])}
+                                  disabled={isUpdating}
+                                  className={`w-full rounded-full border px-3 py-1.5 text-sm font-semibold shadow-sm focus:outline-none focus:ring-1 ${
+                                    adminUser.status === 'active'
+                                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800 focus:border-emerald-400 focus:ring-emerald-400 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-100'
+                                      : 'border-amber-200 bg-amber-50 text-amber-800 focus:border-amber-400 focus:ring-amber-400 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100'
+                                  } disabled:opacity-60`}
+                                >
+                                  <option value="active">Active</option>
+                                  <option value="blocked">Blocked</option>
+                                </select>
+                              </td>
+                              <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatDateTime(adminUser.created_at)}</td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <section className="rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Configuration snapshot</p>
+                <p className="text-lg font-semibold text-emerald-950 dark:text-brand-100">Keep teams in sync</p>
+              </div>
+            </div>
+            {configBanner && (
+              <div
+                className={`mt-4 rounded-2xl border p-4 text-sm ${
+                  configBanner.type === 'success'
+                    ? 'border-emerald-200/70 bg-emerald-50/70 text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-900/30 dark:text-emerald-200'
+                    : 'border-rose-200/70 bg-rose-50/70 text-rose-700 dark:border-rose-900/70 dark:bg-rose-900/30 dark:text-rose-100'
+                }`}
+              >
+                {configBanner.message}
+              </div>
+            )}
+            {configError && (
+              <div className="mt-4 rounded-2xl border border-rose-200/70 bg-rose-50/70 p-4 text-sm text-rose-700 dark:border-rose-900/70 dark:bg-rose-900/40 dark:text-rose-100">
+                {configError}
+              </div>
+            )}
+            <div className="mt-5 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+              <form
+                onSubmit={handleConfigSubmit}
+                className="rounded-2xl border border-emerald-100/70 bg-emerald-50/50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20 md:col-span-2"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Order economics</p>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  {CONFIG_FIELD_META.map((field) => (
+                    <label key={field.key} className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                      {field.label}
+                      <div className="mt-2 flex items-center gap-2 rounded-2xl border border-emerald-200/70 bg-white px-3 py-2 text-base text-emerald-900 shadow-inner dark:border-emerald-900/60 dark:bg-slate-950 dark:text-emerald-100">
+                        <span className="text-sm font-semibold text-emerald-500">₹</span>
+                        <input
+                          type="number"
+                          min={0}
+                          step="1"
+                          value={configFields[field.key]}
+                          onChange={(event) => handleConfigFieldChange(field.key, event.target.value)}
+                          className="w-full bg-transparent text-base font-semibold text-emerald-900 outline-none dark:text-emerald-100"
+                          disabled={configStatus === 'loading' || saving}
+                        />
+                      </div>
+                      <span className="mt-1 block text-xs font-normal text-slate-600 dark:text-slate-300">{field.helper}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    type="submit"
+                    disabled={saving || configStatus === 'loading'}
+                    className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-brand-600 hover:to-brand-700 disabled:opacity-60"
+                  >
+                    {saving ? 'Saving…' : 'Save config'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfigReset}
+                    className="inline-flex items-center justify-center rounded-full border border-emerald-200/70 bg-white px-5 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-900/60 dark:bg-slate-950 dark:text-emerald-200"
+                  >
+                    Reset values
+                  </button>
+                </div>
+              </form>
+               <div className="rounded-2xl border border-emerald-100/70 bg-brand-50/60 p-4 dark:border-emerald-900/60 dark:bg-brand-900/30">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Payments offered</p>
+                <ul className="mt-3 space-y-1 text-sm text-emerald-900 dark:text-emerald-100">
+                  <li>Cash on delivery</li>
+                  <li>UPI on delivery</li>
+                </ul>
+                <p className="mt-2 text-xs text-brand-600/80 dark:text-brand-200/80">Expose future prepaid/credit options here.</p>
+              </div>
             </div>
           </section>
-        </div>
-
-        <section className="rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60">
-          <div className="flex items-center gap-3">
-            <Settings2 className="h-5 w-5 text-brand-600 dark:text-brand-300" />
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Delivery playbook</p>
-              <p className="text-lg font-semibold text-emerald-950 dark:text-brand-100">Fulfilment stages</p>
-            </div>
-          </div>
-          <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {pipelineStats.map((stage) => (
-              <div
-                key={stage.key}
-                className="rounded-2xl border border-emerald-100/70 bg-emerald-50/40 p-4 text-sm dark:border-emerald-900/60 dark:bg-emerald-950/30"
-              >
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">{stage.label}</p>
-                <p className="mt-2 text-3xl font-display font-semibold text-emerald-950 dark:text-brand-100">{stage.count}</p>
-                <p className="mt-1 text-slate-600 dark:text-slate-300">{stage.description}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Configuration snapshot</p>
-              <p className="text-lg font-semibold text-emerald-950 dark:text-brand-100">Keep teams in sync</p>
-            </div>
-          </div>
-          {configBanner && (
-            <div
-              className={`mt-4 rounded-2xl border p-4 text-sm ${
-                configBanner.type === 'success'
-                  ? 'border-emerald-200/70 bg-emerald-50/70 text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-900/30 dark:text-emerald-200'
-                  : 'border-rose-200/70 bg-rose-50/70 text-rose-700 dark:border-rose-900/70 dark:bg-rose-900/30 dark:text-rose-100'
-              }`}
-            >
-              {configBanner.message}
-            </div>
-          )}
-          {configError && (
-            <div className="mt-4 rounded-2xl border border-rose-200/70 bg-rose-50/70 p-4 text-sm text-rose-700 dark:border-rose-900/70 dark:bg-rose-900/40 dark:text-rose-100">
-              {configError}
-            </div>
-          )}
-          <div className="mt-5 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-            <form
-              onSubmit={handleConfigSubmit}
-              className="rounded-2xl border border-emerald-100/70 bg-emerald-50/50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20 md:col-span-2"
-            >
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Order economics</p>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                {CONFIG_FIELD_META.map((field) => (
-                  <label key={field.key} className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-                    {field.label}
-                    <div className="mt-2 flex items-center gap-2 rounded-2xl border border-emerald-200/70 bg-white px-3 py-2 text-base text-emerald-900 shadow-inner dark:border-emerald-900/60 dark:bg-slate-950 dark:text-emerald-100">
-                      <span className="text-sm font-semibold text-emerald-500">₹</span>
-                      <input
-                        type="number"
-                        min={0}
-                        step="1"
-                        value={configFields[field.key]}
-                        onChange={(event) => handleConfigFieldChange(field.key, event.target.value)}
-                        className="w-full bg-transparent text-base font-semibold text-emerald-900 outline-none dark:text-emerald-100"
-                        disabled={configStatus === 'loading' || saving}
-                      />
-                    </div>
-                    <span className="mt-1 block text-xs font-normal text-slate-600 dark:text-slate-300">{field.helper}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="submit"
-                  disabled={saving || configStatus === 'loading'}
-                  className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-brand-600 hover:to-brand-700 disabled:opacity-60"
-                >
-                  {saving ? 'Saving…' : 'Save config'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfigReset}
-                  className="inline-flex items-center justify-center rounded-full border border-emerald-200/70 bg-white px-5 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-900/60 dark:bg-slate-950 dark:text-emerald-200"
-                >
-                  Reset values
-                </button>
-              </div>
-            </form>
-            <div className="rounded-2xl border border-emerald-100/70 bg-slate-50/80 p-4 dark:border-emerald-900/60 dark:bg-slate-900/40">
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Preferred slots</p>
-              {slotInsights.hasData ? (
-                <ul className="mt-3 space-y-1 text-sm">
-                  <li className="font-semibold text-emerald-900 dark:text-emerald-100">
-                    {slotInsights.topSlot?.[0]} • {slotInsights.topSlot?.[1]} orders
-                  </li>
-                  {slotInsights.others.map(([slot, count]) => (
-                    <li key={slot} className="text-slate-600 dark:text-slate-300">
-                      {slot} • {count}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">No slot data yet. Once orders include slots, the busiest window appears here.</p>
-              )}
-              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Use this to balance load between 11:30 AM & 6:30 PM dispatches.</p>
-            </div>
-            <div className="rounded-2xl border border-emerald-100/70 bg-brand-50/60 p-4 dark:border-emerald-900/60 dark:bg-brand-900/30">
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Payments offered</p>
-              <ul className="mt-3 space-y-1 text-sm text-emerald-900 dark:text-emerald-100">
-                <li>Cash on delivery</li>
-                <li>UPI on delivery</li>
-              </ul>
-              <p className="mt-2 text-xs text-brand-600/80 dark:text-brand-200/80">Expose future prepaid/credit options here.</p>
-            </div>
-            <div className="rounded-2xl border border-emerald-100/70 bg-white p-4 dark:border-emerald-900/60 dark:bg-slate-900/40">
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Next upgrades</p>
-              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-300">
-                <li>Status updates back to customers</li>
-                <li>Slot & payment config stored in D1</li>
-                <li>Staff auth for this page</li>
-              </ul>
-            </div>
-          </div>
-        </section>
+        )}
       </div>
+
+      {/* Details Drawer */}
+      {selectedOrder && (
+        <OrderDetailsDrawer
+          order={selectedOrder}
+          isOpen={!!selectedOrder}
+          onClose={() => setSelectedOrderId(null)}
+          onStatusChange={handleStatusChange}
+        />
+      )}
     </PageSection>
   );
 }

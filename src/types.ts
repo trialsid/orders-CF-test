@@ -162,3 +162,16 @@ export interface AuthResponse {
   token: string;
   error?: string;
 }
+
+export interface User {
+  id: string;
+  phone: string;
+  password_hash?: string;
+  role: UserRole;
+  status: 'active' | 'blocked';
+  display_name?: string | null;
+  full_name?: string | null;
+  metadata_json?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}

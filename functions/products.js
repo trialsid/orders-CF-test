@@ -32,7 +32,7 @@ export async function onRequest({ env }) {
       {
         headers: {
           "Content-Type": "application/json",
-          "Cache-Control": "public, max-age=3600",
+          "Cache-Control": "no-store",
         },
       }
     );

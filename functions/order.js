@@ -490,12 +490,15 @@ export async function onRequestGet({ request, env }) {
   }
 
   const url = new URL(request.url);
-  const limitParam = Number(url.searchParams.get("limit") ?? "25");
-  const limit = Number.isFinite(limitParam) ? Math.min(Math.max(Math.floor(limitParam), 1), 100) : 25;
+  const limitParam = Number(url.searchParams.get("limit") ?? "100");
+  const limit = Number.isFinite(limitParam) ? Math.min(Math.max(Math.floor(limitParam), 1), 1000) : 100;
+  const search = normalizeString(url.searchParams.get("search"));
+  const statusFilter = normalizeStatusInput(url.searchParams.get("status"));
+
   const isPrivileged = authContext.role === "admin" || authContext.role === "rider";
 
   try {
-    const baseQuery = `SELECT id,
+    let query = `SELECT id,
               customer_name,
               customer_phone,
               total_amount,
@@ -511,12 +514,33 @@ export async function onRequestGet({ request, env }) {
               delivery_address_id
        FROM orders`;
 
-    const whereClause = isPrivileged ? "" : " WHERE user_id = ?";
-    const orderLimitClause = " ORDER BY datetime(created_at) DESC LIMIT ?";
-    const statement = db.prepare(baseQuery + whereClause + orderLimitClause);
+    const conditions = [];
+    const bindings = [];
 
-    const binding = isPrivileged ? [limit] : [authContext.sub, limit];
-    const { results } = await statement.bind(...binding).all();
+    if (!isPrivileged) {
+      conditions.push("user_id = ?");
+      bindings.push(authContext.sub);
+    }
+
+    if (statusFilter) {
+      conditions.push("status = ?");
+      bindings.push(statusFilter);
+    }
+
+    if (search) {
+      const searchTerm = `%${search.toLowerCase()}%`;
+      conditions.push("(LOWER(customer_name) LIKE ? OR LOWER(customer_phone) LIKE ? OR LOWER(id) LIKE ?)");
+      bindings.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(" AND ")}`;
+    }
+
+    query += ` ORDER BY datetime(created_at) DESC LIMIT ?`;
+    bindings.push(limit);
+
+    const { results } = await db.prepare(query).bind(...bindings).all();
 
     const orders = (results ?? []).map((row) => ({
       id: row.id,

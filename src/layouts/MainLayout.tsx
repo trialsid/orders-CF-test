@@ -56,7 +56,7 @@ export type CheckoutDraftState = {
 export type AppOutletContext = {
   products: ProductsContextValue;
   cart: CartContextValue;
-  submitOrder: (details: CheckoutFormValues) => Promise<OrderResponse | undefined>;
+  submitOrder: (details: CheckoutFormValues, options?: { saveAddress?: boolean }) => Promise<OrderResponse | undefined>;
   isSubmitting: boolean;
   checkoutDraft: CheckoutDraftState;
   updateCheckoutDraft: (draft: Partial<CheckoutDraftState>) => void;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Product, ProductsResponse } from '../types';
 
 const getDepartmentLabel = (product: Product): string => {
@@ -18,43 +18,33 @@ export function useProducts() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<boolean>(false);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadProducts() {
-      setIsLoading(true);
-      setLoadError(false);
-      try {
-        const response = await fetch('/products');
-        if (!response.ok) {
-          throw new Error(`Failed to load products: ${response.status}`);
-        }
-        const data = (await response.json()) as ProductsResponse;
-        if (cancelled) {
-          return;
-        }
-        const items = data.items ?? [];
-        setProducts(items);
-        const message = (data.message ?? '').trim();
-        setStoreNote(message);
-        const uniqueDepartments = [...new Set(items.map((item) => getDepartmentLabel(item)))].sort();
-        setDepartments(uniqueDepartments);
-        setIsLoading(false);
-      } catch (error) {
-        console.error(error);
-        if (!cancelled) {
-          setLoadError(true);
-          setIsLoading(false);
-        }
+  const loadProducts = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(false);
+    try {
+      const response = await fetch(`/products?t=${Date.now()}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load products: ${response.status}`);
       }
+      const data = (await response.json()) as ProductsResponse;
+      
+      const items = data.items ?? [];
+      setProducts(items);
+      const message = (data.message ?? '').trim();
+      setStoreNote(message);
+      const uniqueDepartments = [...new Set(items.map((item) => getDepartmentLabel(item)))].sort();
+      setDepartments(uniqueDepartments);
+      setIsLoading(false);
+    } catch (error) {
+      console.error(error);
+      setLoadError(true);
+      setIsLoading(false);
     }
-
-    loadProducts();
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   const filteredProducts = useMemo(() => {
     if (filter === 'all') {
@@ -75,5 +65,6 @@ export function useProducts() {
     storeNote,
     isLoading,
     loadError,
+    refresh: loadProducts,
   };
 }
