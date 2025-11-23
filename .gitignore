@@ -38,3 +38,6 @@ coverage/
 
 # Wrangler artifacts
 .wranglerTmp/
+
+# Gemini CLI reports
+analysis_report.txt
