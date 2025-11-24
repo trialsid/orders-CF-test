@@ -5,6 +5,8 @@ const TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 const PHONE_REGEX = /^[0-9]{6,15}$/;
 // Cloudflare's SubtleCrypto PBKDF2 caps iterations at 100k; stay within to avoid runtime errors.
 const PBKDF2_ITERATIONS = 100000;
+const AUTH_CACHE_TTL_MS = 90_000; // 90s in-memory cache to avoid repeat D1 reads on hot paths
+const authCache = new Map();
 
 export class AuthError extends Error {
   constructor(message, status = 401) {
@@ -316,6 +318,13 @@ export async function handleRegister({ request, env }) {
 
     // Include token_version: 1 (default for new users)
     const token = await signToken({ sub: userId, role: "customer", phone, token_version: 1 }, secret);
+    // Warm the in-memory cache for this user
+    authCache.set(userId, {
+      role: "customer",
+      status: "active",
+      version: 1,
+      exp: Date.now() + AUTH_CACHE_TTL_MS,
+    });
     return jsonResponse(
       {
         user: publicUser({
@@ -379,6 +388,12 @@ export async function handleLogin({ request, env }) {
 
   const tokenVersion = user.token_version || 1;
   const token = await signToken({ sub: user.id, role: user.role, phone: user.phone, token_version: tokenVersion }, secret);
+  authCache.set(user.id, {
+    role: user.role,
+    status: user.status,
+    version: tokenVersion,
+    exp: Date.now() + AUTH_CACHE_TTL_MS,
+  });
   return jsonResponse({ user: publicUser(user), token });
 }
 
@@ -444,9 +459,27 @@ export async function requireAuth(request, env, roles) {
     throw new AuthError("Invalid or expired token.");
   }
 
-  // Verify token_version against DB for revocation support
+  // In-memory cache to avoid hitting D1 on every request
+  const now = Date.now();
+  const cached = authCache.get(payload.sub);
+  if (cached && cached.exp > now) {
+    const tokenVersion = payload.token_version || 0;
+    const isLegacyToken = payload.token_version === undefined;
+    const versionMatch = isLegacyToken ? cached.version === 1 : tokenVersion === cached.version;
+    if (!versionMatch) {
+      throw new AuthError("Session expired. Please log in again.", 401);
+    }
+    if (cached.status !== "active") {
+      throw new AuthError("Account is suspended.", 403);
+    }
+    payload.role = cached.role;
+    // Roles filter still applies below
+  }
+
+  // Verify token_version against DB for revocation support (fallback or cache miss)
   const db = getDatabase(env);
-  if (db) {
+  const shouldCheckDb = db && (!cached || cached.exp <= now);
+  if (shouldCheckDb) {
     try {
       const user = await db.prepare("SELECT token_version, role, status FROM users WHERE id = ?").bind(payload.sub).first();
       if (!user) {
@@ -470,6 +503,12 @@ export async function requireAuth(request, env, roles) {
       
       // Use fresh role from DB
       payload.role = user.role; 
+      authCache.set(payload.sub, {
+        role: user.role,
+        status: user.status,
+        version: dbVersion,
+        exp: now + AUTH_CACHE_TTL_MS,
+      });
     } catch (err) {
       // If DB fails, we might want to fail open or closed. 
       // Failing closed (denying access) is safer for "requireAuth".
@@ -504,6 +543,7 @@ export async function handleRevoke({ request, env }) {
   try {
     // Increment token_version to invalidate all existing tokens
     await db.prepare("UPDATE users SET token_version = IFNULL(token_version, 1) + 1 WHERE id = ?").bind(payload.sub).run();
+    authCache.delete(payload.sub);
     return jsonResponse({ message: "All sessions revoked." });
   } catch (error) {
     console.error("Failed to revoke sessions", error);

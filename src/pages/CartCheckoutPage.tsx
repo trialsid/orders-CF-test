@@ -26,6 +26,12 @@ const createInitialTouchedState = (): TouchedState => ({
     name: false,
     phone: false,
     address: false,
+    addressLine2: false,
+    area: false,
+    city: false,
+    state: false,
+    postalCode: false,
+    landmark: false,
     slot: false,
     paymentMethod: false,
     instructions: false,
@@ -47,11 +53,14 @@ function CartCheckoutPage(): JSX.Element {
     const location = useLocation();
     const [stickyHeight, setStickyHeight] = useState(0);
 
-    const [form, setForm] = useState<CheckoutFormValues>(() => checkoutDraft.form);
+    const [form, setForm] = useState<CheckoutFormValues>(() => ({
+        ...createEmptyCheckoutForm(),
+        ...checkoutDraft.form,
+    }));
     const [touched, setTouched] = useState<TouchedState>(() => createInitialTouchedState());
     const [errors, setErrors] = useState<CheckoutFieldErrors>({});
     const [isEditingAddress, setIsEditingAddress] = useState(false);
-    const [addressBeforeEdit, setAddressBeforeEdit] = useState<string>('');
+    const [addressBeforeEdit, setAddressBeforeEdit] = useState<CheckoutFormValues | null>(null);
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
     const [saveAddressChoice, setSaveAddressChoice] = useState<boolean>(false);
 
@@ -59,6 +68,12 @@ function CartCheckoutPage(): JSX.Element {
         name: null,
         phone: null,
         address: null,
+        addressLine2: null,
+        area: null,
+        city: null,
+        state: null,
+        postalCode: null,
+        landmark: null,
         slot: null,
         paymentMethod: null,
         instructions: null,
@@ -169,7 +184,11 @@ function CartCheckoutPage(): JSX.Element {
     };
 
     useEffect(() => {
-        setForm((current) => (current === checkoutDraft.form ? current : checkoutDraft.form));
+        setForm((current) => {
+            // Merge to ensure newly added fields always exist.
+            const next = { ...createEmptyCheckoutForm(), ...checkoutDraft.form };
+            return JSON.stringify(current) === JSON.stringify(next) ? current : next;
+        });
     }, [checkoutDraft.form]);
 
     useEffect(() => {
@@ -192,10 +211,34 @@ function CartCheckoutPage(): JSX.Element {
                 changed = true;
             }
 
-            if (!next.address && user.primaryAddress) {
-                const formatted = formatAddressSnapshot(user.primaryAddress);
-                if (formatted) {
-                    next.address = formatted;
+            const primary = user.primaryAddress;
+            if (primary) {
+                if (!next.address && primary.line1) {
+                    next.address = primary.line1;
+                    changed = true;
+                }
+                if (!next.addressLine2 && primary.line2) {
+                    next.addressLine2 = primary.line2;
+                    changed = true;
+                }
+                if (!next.area && primary.area) {
+                    next.area = primary.area;
+                    changed = true;
+                }
+                if (!next.city && primary.city) {
+                    next.city = primary.city;
+                    changed = true;
+                }
+                if (!next.state && primary.state) {
+                    next.state = primary.state;
+                    changed = true;
+                }
+                if (!next.postalCode && primary.postalCode) {
+                    next.postalCode = primary.postalCode;
+                    changed = true;
+                }
+                if (!next.landmark && primary.landmark) {
+                    next.landmark = primary.landmark;
                     changed = true;
                 }
             }
@@ -209,29 +252,39 @@ function CartCheckoutPage(): JSX.Element {
         if (!selectedAddressId && addresses.length > 0) {
             const defaultAddr = addresses.find((addr) => addr.isDefault) ?? addresses[0];
             setSelectedAddressId(defaultAddr.id);
-            const formatted = formatAddressSnapshot(defaultAddr);
-            if (formatted && !form.address) {
-                const nextForm = { ...form, address: formatted };
+            if (!form.address && defaultAddr.line1) {
+                const nextForm: CheckoutFormValues = {
+                    ...form,
+                    address: defaultAddr.line1 ?? '',
+                    addressLine2: defaultAddr.line2 ?? '',
+                    area: defaultAddr.area ?? '',
+                    city: defaultAddr.city ?? '',
+                    state: defaultAddr.state ?? '',
+                    postalCode: defaultAddr.postalCode ?? '',
+                    landmark: defaultAddr.landmark ?? '',
+                };
                 setFormAndDraft(nextForm);
             }
         }
-    }, [addresses, form.address, selectedAddressId, setFormAndDraft, user]);
+    }, [addresses, form, selectedAddressId, setFormAndDraft, user]);
 
     const startEditAddress = () => {
-        setAddressBeforeEdit(form.address);
+        setAddressBeforeEdit(form);
         setIsEditingAddress(true);
         setSelectedAddressId(null);
     };
 
     const cancelEditAddress = () => {
-        const nextForm = { ...form, address: addressBeforeEdit };
+        const nextForm = addressBeforeEdit ?? form;
         setFormAndDraft(nextForm);
         setErrors((prev) => {
             const next = { ...prev };
             delete next.address;
+            delete next.city;
+            delete next.postalCode;
             return next;
         });
-        setTouched((prev) => ({ ...prev, address: false }));
+        setTouched((prev) => ({ ...prev, address: false, city: false, postalCode: false }));
         setIsEditingAddress(false);
     };
 
@@ -245,8 +298,16 @@ function CartCheckoutPage(): JSX.Element {
         setSelectedAddressId(id);
         setIsEditingAddress(false);
         if (address) {
-            const formatted = formatAddressSnapshot(address);
-            const nextForm = { ...form, address: formatted };
+            const nextForm: CheckoutFormValues = {
+                ...form,
+                address: address.line1 ?? '',
+                addressLine2: address.line2 ?? '',
+                area: address.area ?? '',
+                city: address.city ?? '',
+                state: address.state ?? '',
+                postalCode: address.postalCode ?? '',
+                landmark: address.landmark ?? '',
+            };
             setFormAndDraft(nextForm);
         }
     };

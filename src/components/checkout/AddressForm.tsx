@@ -51,6 +51,8 @@ export function AddressForm({
   const nameError = touched.name ? resolveErrorMessage(errors.name) : undefined;
   const phoneError = touched.phone ? resolveErrorMessage(errors.phone) : undefined;
   const addressError = touched.address ? resolveErrorMessage(errors.address) : undefined;
+  const cityError = touched.city ? resolveErrorMessage(errors.city) : undefined;
+  const postalError = touched.postalCode ? resolveErrorMessage(errors.postalCode) : undefined;
 
   return (
     <div className="rounded-3xl border border-emerald-100/60 bg-white/95 p-6 shadow-lg dark:border-emerald-900/60 dark:bg-slate-900/70">
@@ -115,18 +117,19 @@ export function AddressForm({
           </label>
           <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">
             {t('checkout.forms.addressLabel')}
-            <textarea
-              ref={registerField<HTMLTextAreaElement>('address')}
+            <input
+              ref={registerField<HTMLInputElement>('address')}
+              type="text"
               value={form.address}
               onChange={handleChange('address')}
               onBlur={handleBlur('address')}
-              autoComplete="street-address"
-              className={`mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950 ${addressError
-                ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600'
-                : 'border-emerald-200'
-                }`}
-              rows={3}
-              placeholder={t('checkout.forms.addressPlaceholder')}
+              autoComplete="address-line1"
+              className={`mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950 ${
+                addressError
+                  ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600'
+                  : 'border-emerald-200'
+              }`}
+              placeholder="House / street"
               required
               aria-invalid={Boolean(addressError)}
             />
@@ -134,6 +137,92 @@ export function AddressForm({
               <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">{addressError}</p>
             )}
           </label>
+          <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">
+            Address line 2 (optional)
+            <input
+              ref={registerField<HTMLInputElement>('addressLine2')}
+              type="text"
+              value={form.addressLine2}
+              onChange={handleChange('addressLine2')}
+              onBlur={handleBlur('addressLine2')}
+              autoComplete="address-line2"
+              className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950"
+              placeholder="Apartment, area, landmark"
+            />
+          </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">
+              City / Town
+              <input
+                ref={registerField<HTMLInputElement>('city')}
+                type="text"
+                value={form.city}
+                onChange={handleChange('city')}
+                onBlur={handleBlur('city')}
+                autoComplete="address-level2"
+                className={`mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950 ${
+                  cityError
+                    ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600'
+                    : 'border-emerald-200'
+                }`}
+                placeholder="City"
+                required
+                aria-invalid={Boolean(cityError)}
+              />
+              {cityError && (
+                <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">{cityError}</p>
+              )}
+            </label>
+            <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">
+              Postal code
+              <input
+                ref={registerField<HTMLInputElement>('postalCode')}
+                type="text"
+                value={form.postalCode}
+                onChange={handleChange('postalCode')}
+                onBlur={handleBlur('postalCode')}
+                autoComplete="postal-code"
+                className={`mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950 ${
+                  postalError
+                    ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600'
+                    : 'border-emerald-200'
+                }`}
+                placeholder="PIN / ZIP"
+                required
+                aria-invalid={Boolean(postalError)}
+              />
+              {postalError && (
+                <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">{postalError}</p>
+              )}
+            </label>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">
+              State (optional)
+              <input
+                ref={registerField<HTMLInputElement>('state')}
+                type="text"
+                value={form.state}
+                onChange={handleChange('state')}
+                onBlur={handleBlur('state')}
+                autoComplete="address-level1"
+                className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950"
+                placeholder="State"
+              />
+            </label>
+            <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">
+              Nearby landmark (optional)
+              <input
+                ref={registerField<HTMLInputElement>('landmark')}
+                type="text"
+                value={form.landmark}
+                onChange={handleChange('landmark')}
+                onBlur={handleBlur('landmark')}
+                className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950"
+                placeholder="Park, school, shop"
+              />
+            </label>
+          </div>
         </div>
       )}
       {user && (
@@ -182,17 +271,17 @@ export function AddressForm({
           {isEditingAddress && (
             <div className="rounded-2xl border border-emerald-100/80 bg-white/80 px-4 py-3 dark:border-emerald-900 dark:bg-slate-950/70">
               <p className="text-xs font-semibold uppercase text-emerald-600 dark:text-emerald-300">Delivery address</p>
-              <textarea
-                ref={registerField<HTMLTextAreaElement>('address')}
+              <input
+                ref={registerField<HTMLInputElement>('address')}
                 value={form.address}
                 onChange={handleChange('address')}
                 onBlur={handleBlur('address')}
-                autoComplete="street-address"
-                className={`mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950 ${addressError
-                  ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600'
-                  : 'border-emerald-200'
-                  }`}
-                rows={3}
+                autoComplete="address-line1"
+                className={`mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950 ${
+                  addressError
+                    ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600'
+                    : 'border-emerald-200'
+                }`}
                 placeholder={t('checkout.forms.addressPlaceholder')}
                 required
                 aria-invalid={Boolean(addressError)}
@@ -200,6 +289,86 @@ export function AddressForm({
               {addressError && (
                 <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">{addressError}</p>
               )}
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <input
+                  ref={registerField<HTMLInputElement>('addressLine2')}
+                  value={form.addressLine2}
+                  onChange={handleChange('addressLine2')}
+                  onBlur={handleBlur('addressLine2')}
+                  className="w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950"
+                  placeholder="Address line 2 (optional)"
+                  autoComplete="address-line2"
+                />
+                <input
+                  ref={registerField<HTMLInputElement>('landmark')}
+                  value={form.landmark}
+                  onChange={handleChange('landmark')}
+                  onBlur={handleBlur('landmark')}
+                  className="w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950"
+                  placeholder="Landmark (optional)"
+                />
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <input
+                    ref={registerField<HTMLInputElement>('city')}
+                    value={form.city}
+                    onChange={handleChange('city')}
+                    onBlur={handleBlur('city')}
+                    className={`w-full rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950 ${
+                      cityError
+                        ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600'
+                        : 'border-emerald-200'
+                    }`}
+                    placeholder="City / Town"
+                    required
+                    aria-invalid={Boolean(cityError)}
+                    autoComplete="address-level2"
+                  />
+                  {cityError && (
+                    <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">{cityError}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    ref={registerField<HTMLInputElement>('postalCode')}
+                    value={form.postalCode}
+                    onChange={handleChange('postalCode')}
+                    onBlur={handleBlur('postalCode')}
+                    className={`w-full rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950 ${
+                      postalError
+                        ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600'
+                        : 'border-emerald-200'
+                    }`}
+                    placeholder="PIN / ZIP"
+                    required
+                    aria-invalid={Boolean(postalError)}
+                    autoComplete="postal-code"
+                  />
+                  {postalError && (
+                    <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">{postalError}</p>
+                  )}
+                </div>
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <input
+                  ref={registerField<HTMLInputElement>('area')}
+                  value={form.area}
+                  onChange={handleChange('area')}
+                  onBlur={handleBlur('area')}
+                  className="w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950"
+                  placeholder="Area (optional)"
+                />
+                <input
+                  ref={registerField<HTMLInputElement>('state')}
+                  value={form.state}
+                  onChange={handleChange('state')}
+                  onBlur={handleBlur('state')}
+                  className="w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950"
+                  placeholder="State (optional)"
+                  autoComplete="address-level1"
+                />
+              </div>
               <label className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-emerald-800 dark:text-emerald-200">
                 <input
                   type="checkbox"

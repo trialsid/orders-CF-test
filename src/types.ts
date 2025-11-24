@@ -28,6 +28,12 @@ export interface OrderPayload {
     name: string;
     phone?: string;
     address?: string;
+    addressLine2?: string;
+    area?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    landmark?: string;
   };
   delivery?: {
     slot?: string;
@@ -47,6 +53,12 @@ export interface OrderResponse {
       name: string;
       phone?: string;
       address?: string;
+      addressLine2?: string;
+      area?: string;
+      city?: string;
+      state?: string;
+      postalCode?: string;
+      landmark?: string;
     };
     items: SubmittedOrderItem[];
     total: number;
@@ -110,6 +122,12 @@ export interface CheckoutFormValues {
   name: string;
   phone: string;
   address: string;
+  addressLine2: string;
+  area: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  landmark: string;
   slot: string;
   paymentMethod: string;
   instructions: string;

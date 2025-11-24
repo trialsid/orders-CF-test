@@ -1,4 +1,5 @@
 import { requireAuth, AuthError, jsonResponse } from "../_auth";
+import { sanitizeAddressPayload, listAddresses, setPrimaryAddress, mapAddress } from "../_addresses.js";
 
 function getDatabase(env) {
   return env && typeof env === "object" ? env.ORDERS_DB : undefined;
@@ -9,117 +10,6 @@ function handleAuthError(error) {
     return jsonResponse({ error: error.message }, error.status);
   }
   return null;
-}
-
-function normalizeText(value, max = 120) {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return undefined;
-  }
-  return trimmed.slice(0, max);
-}
-
-function normalizeDigits(value, max = 20) {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-  const digits = value.replace(/\D/g, "");
-  if (!digits.length) {
-    return undefined;
-  }
-  return digits.slice(0, max);
-}
-
-function mapAddress(row) {
-  return {
-    id: row.id,
-    label: row.label ?? null,
-    contactName: row.contact_name ?? null,
-    phone: row.phone ?? null,
-    line1: row.line1 ?? null,
-    line2: row.line2 ?? null,
-    area: row.area ?? null,
-    city: row.city ?? null,
-    state: row.state ?? null,
-    postalCode: row.postal_code ?? null,
-    landmark: row.landmark ?? null,
-    isDefault: row.is_default === 1,
-    createdAt: row.created_at ?? null,
-    updatedAt: row.updated_at ?? null,
-  };
-}
-
-function buildSnapshot(address) {
-  if (!address) {
-    return null;
-  }
-  return JSON.stringify({
-    id: address.id,
-    label: address.label ?? null,
-    contactName: address.contactName ?? null,
-    phone: address.phone ?? null,
-    line1: address.line1 ?? null,
-    line2: address.line2 ?? null,
-    area: address.area ?? null,
-    city: address.city ?? null,
-    state: address.state ?? null,
-    postalCode: address.postalCode ?? null,
-    landmark: address.landmark ?? null,
-  });
-}
-
-function sanitizeAddressPayload(payload) {
-  if (!payload || typeof payload !== "object") {
-    return null;
-  }
-  const line1 = normalizeText(payload.line1, 160);
-  if (!line1) {
-    return null;
-  }
-  return {
-    label: normalizeText(payload.label, 60) ?? null,
-    contactName: normalizeText(payload.contactName, 80) ?? null,
-    phone: normalizeDigits(payload.phone ?? "", 15) ?? null,
-    line1,
-    line2: normalizeText(payload.line2, 160) ?? null,
-    area: normalizeText(payload.area, 120) ?? null,
-    city: normalizeText(payload.city, 80) ?? null,
-    state: normalizeText(payload.state, 80) ?? null,
-    postalCode: normalizeText(payload.postalCode, 20) ?? null,
-    landmark: normalizeText(payload.landmark, 160) ?? null,
-    isDefault: Boolean(payload.isDefault),
-  };
-}
-
-async function listAddresses(db, userId) {
-  const { results } =
-    (await db
-      .prepare(
-        `SELECT * FROM user_addresses
-         WHERE user_id = ?
-         ORDER BY is_default DESC, datetime(created_at) DESC`
-      )
-      .bind(userId)
-      .all()) ?? {};
-  return (results ?? []).map(mapAddress);
-}
-
-async function setPrimaryAddress(db, userId, addressId) {
-  if (!addressId) {
-    await db.prepare("UPDATE users SET primary_address_json = NULL WHERE id = ?").bind(userId).run();
-    return;
-  }
-  const row = await db
-    .prepare("SELECT * FROM user_addresses WHERE id = ? AND user_id = ? LIMIT 1")
-    .bind(addressId, userId)
-    .first();
-  if (!row) {
-    return;
-  }
-  await db.prepare("UPDATE users SET primary_address_json = ? WHERE id = ?").bind(buildSnapshot(mapAddress(row)), userId).run();
 }
 
 export async function onRequest({ request, env }) {

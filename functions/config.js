@@ -1,10 +1,5 @@
 import { requireAuth, AuthError } from "./_auth";
-
-const DEFAULT_CONFIG = {
-  minimumOrderAmount: 100,
-  freeDeliveryThreshold: 299,
-  deliveryFeeBelowThreshold: 15,
-};
+import { DEFAULT_CONFIG, readConfig } from "./_config.js";
 
 function jsonResponse(payload, status = 200) {
   return new Response(JSON.stringify(payload), {
@@ -30,25 +25,6 @@ function handleAuthError(error) {
     return jsonResponse({ error: error.message }, error.status);
   }
   return null;
-}
-
-async function readConfig(db) {
-  const config = { ...DEFAULT_CONFIG };
-  try {
-    const { results } = await db.prepare("SELECT key, value FROM admin_config").all();
-    for (const row of results ?? []) {
-      if (row?.key && Object.prototype.hasOwnProperty.call(config, row.key)) {
-        const parsed = toNumber(row.value);
-        if (typeof parsed === "number") {
-          config[row.key] = parsed;
-        }
-      }
-    }
-    return config;
-  } catch (error) {
-    console.error("Failed to read admin config", error);
-    throw new Error("Unable to load configuration.");
-  }
 }
 
 async function writeConfig(db, updates) {

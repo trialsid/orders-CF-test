@@ -1,16 +1,13 @@
 import { requireAuth, AuthError } from "./_auth";
+import { readConfig } from "./_config.js";
+import { upsertAddressFromCheckout } from "./_addresses.js";
+import { validateOrderRequest, MAX_ITEM_QUANTITY, formatAddressSnapshot } from "../shared/order-schema.js";
 
 const DEFAULT_ORDER_STATUS = "pending";
 const ALLOWED_ORDER_STATUSES = new Set(["pending", "confirmed", "outForDelivery", "delivered", "cancelled"]);
 const STATUS_ALIASES = {
   "out_for_delivery": "outForDelivery",
   outfordelivery: "outForDelivery",
-};
-
-const DEFAULT_CONFIG = {
-  minimumOrderAmount: 100,
-  freeDeliveryThreshold: 299,
-  deliveryFeeBelowThreshold: 15,
 };
 
 function jsonResponse(payload, status = 200, extraHeaders = {}) {
@@ -28,28 +25,6 @@ function getDatabase(env) {
   return env && typeof env === "object" ? env.ORDERS_DB : undefined;
 }
 
-async function readConfig(db) {
-  const config = { ...DEFAULT_CONFIG };
-  if (!db) {
-    return config;
-  }
-  try {
-    const { results } = await db.prepare("SELECT key, value FROM admin_config").all();
-    for (const row of results ?? []) {
-      if (!row?.key) continue;
-      if (Object.prototype.hasOwnProperty.call(config, row.key)) {
-        const num = Number(row.value);
-        if (Number.isFinite(num) && num >= 0) {
-          config[row.key] = num;
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Failed to read admin config for order validation", error);
-  }
-  return config;
-}
-
 function handleAuthError(error) {
   if (error instanceof AuthError) {
     return jsonResponse({ error: error.message }, error.status);
@@ -65,86 +40,6 @@ async function getOptionalCustomerContext(request, env) {
   return requireAuth(request, env, ["customer", "admin"]);
 }
 
-async function upsertUserAddress(db, userId, summary) {
-  const statements = [];
-  let addressId = null;
-  
-  if (!db || !userId) {
-    return { deliveryAddressId: null, statements };
-  }
-  const addressLine = normalizeString(summary.customer?.address);
-  if (!addressLine) {
-    return { deliveryAddressId: null, statements };
-  }
-
-  const phone = normalizeDigits(summary.customer?.phone ?? "");
-  const contactName = normalizeString(summary.customer?.name);
-  const landmark = normalizeString(summary.delivery?.instructions);
-
-  try {
-    const existing = await db
-      .prepare(
-        `SELECT id FROM user_addresses
-         WHERE user_id = ? AND line1 = ? AND IFNULL(phone, '') = IFNULL(?, '')
-         LIMIT 1`
-      )
-      .bind(userId, addressLine, phone ?? null)
-      .first();
-      
-    if (existing?.id) {
-      addressId = existing.id;
-    } else {
-      const { total } =
-        (await db.prepare("SELECT COUNT(1) as total FROM user_addresses WHERE user_id = ?").bind(userId).first()) ?? {};
-      const isDefault = Number(total ?? 0) === 0 ? 1 : 0;
-
-      addressId = crypto.randomUUID();
-      
-      // If we are making this the default, first unset any existing default for this user.
-      // This helps mitigate race conditions where concurrent requests might both decide to set a default.
-      if (isDefault) {
-        statements.push(db.prepare("UPDATE user_addresses SET is_default = 0 WHERE user_id = ?").bind(userId));
-      }
-
-      statements.push(db
-        .prepare(
-          `INSERT INTO user_addresses (
-             id,
-             user_id,
-             contact_name,
-             phone,
-             line1,
-             line2,
-             area,
-             city,
-             state,
-             postal_code,
-             landmark,
-             is_default
-           )
-           VALUES (?1, ?2, ?3, ?4, ?5, NULL, NULL, NULL, NULL, NULL, ?6, ?7)`
-        )
-        .bind(addressId, userId, contactName ?? null, phone ?? null, addressLine, landmark ?? null, isDefault));
-
-      if (isDefault) {
-        const snapshot = JSON.stringify({
-          addressId,
-          contactName: contactName ?? null,
-          phone: phone ?? null,
-          line1: addressLine,
-          landmark: landmark ?? null,
-        });
-        statements.push(db.prepare("UPDATE users SET primary_address_json = ? WHERE id = ?").bind(snapshot, userId));
-      }
-    }
-
-    return { deliveryAddressId: addressId, statements };
-  } catch (error) {
-    console.error("Failed to prepare user address upsert statements", error);
-    return { deliveryAddressId: null, statements: [] };
-  }
-}
-
 function normalizeString(value) {
   if (typeof value !== "string") {
     return undefined;
@@ -153,13 +48,14 @@ function normalizeString(value) {
   return trimmed.length ? trimmed : undefined;
 }
 
-function normalizeDigits(value) {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-  const digits = value.replace(/\D/g, "");
-  return digits.length ? digits : undefined;
-}
+const FIELD_ERROR_MESSAGES = {
+  name: "Please include your name.",
+  phone: "Please include a contact phone number.",
+  address: "Please include a delivery address.",
+  slot: "Please choose a delivery slot.",
+  paymentMethod: "Please choose a payment method.",
+  invalidPhone: "Please provide a valid phone number.",
+};
 
 async function validateOrder(db, body) {
   if (!db) {
@@ -169,7 +65,7 @@ async function validateOrder(db, body) {
     return { error: "Invalid request body." };
   }
 
-  const { items = [], customer = {}, delivery = {}, payment = {} } = body;
+  const { items = [] } = body;
 
   if (!Array.isArray(items) || items.length === 0) {
     return { error: "Please include at least one item in your order." };
@@ -201,7 +97,7 @@ async function validateOrder(db, body) {
       return { error: `Item with id '${id}' is unavailable right now.` };
     }
     const qty = Number(quantity);
-    if (!Number.isFinite(qty) || qty <= 0 || qty > 20) {
+    if (!Number.isFinite(qty) || qty <= 0 || qty > MAX_ITEM_QUANTITY) {
       return { error: `Invalid quantity for ${item.name}.` };
     }
     if (typeof item.stock_quantity === "number" && item.stock_quantity < qty) {
@@ -219,32 +115,15 @@ async function validateOrder(db, body) {
     });
   }
 
-  const customerName = normalizeString(customer.name) ?? "Walk-in customer";
-  const customerPhone = normalizeString(customer.phone);
-  const customerAddress = normalizeString(customer.address);
-  const deliverySlot = normalizeString(delivery.slot);
-  const deliveryInstructions = normalizeString(delivery.instructions);
-  const paymentMethod = normalizeString(payment.method);
-
-  if (!customerPhone) {
-    return { error: "Please include a contact phone number." };
-  }
-
-  const phoneDigits = customerPhone.replace(/\D/g, "");
-  if (phoneDigits.length < 6) {
-    return { error: "Please provide a valid phone number." };
-  }
-
-  if (!customerAddress) {
-    return { error: "Please include a delivery address." };
-  }
-
-  if (!deliverySlot) {
-    return { error: "Please choose a delivery slot." };
-  }
-
-  if (!paymentMethod) {
-    return { error: "Please choose a payment method." };
+  const { normalizedForm, fieldErrors } = validateOrderRequest(body);
+  if (Object.keys(fieldErrors).length > 0) {
+    const firstKey = Object.keys(fieldErrors)[0];
+    const code = fieldErrors[firstKey];
+    const message =
+      code === "invalidPhone"
+        ? FIELD_ERROR_MESSAGES.invalidPhone
+        : FIELD_ERROR_MESSAGES[firstKey] ?? "Invalid order details.";
+    return { error: message };
   }
 
   const config = await readConfig(db);
@@ -252,20 +131,36 @@ async function validateOrder(db, body) {
     return { error: `Orders must be at least ₹${config.minimumOrderAmount}.` };
   }
 
+  const customerAddress = formatAddressSnapshot({
+    address: normalizedForm.address,
+    addressLine2: normalizedForm.addressLine2,
+    area: normalizedForm.area,
+    city: normalizedForm.city,
+    state: normalizedForm.state,
+    postalCode: normalizedForm.postalCode,
+    landmark: normalizedForm.landmark,
+  });
+
   return {
     customer: {
-      name: customerName,
-      phone: customerPhone,
+      name: normalizedForm.name,
+      phone: normalizedForm.phone,
       address: customerAddress,
+      addressLine2: normalizedForm.addressLine2,
+      area: normalizedForm.area,
+      city: normalizedForm.city,
+      state: normalizedForm.state,
+      postalCode: normalizedForm.postalCode,
+      landmark: normalizedForm.landmark,
     },
     items: processed,
     total,
     delivery: {
-      slot: deliverySlot,
-      instructions: deliveryInstructions,
+      slot: normalizedForm.slot,
+      instructions: normalizedForm.instructions,
     },
     payment: {
-      method: paymentMethod,
+      method: normalizedForm.paymentMethod,
     },
     config,
   };
@@ -434,7 +329,7 @@ export async function onRequestPost({ request, env }) {
   let deliveryAddressId = null;
   let addressStatements = [];
   if (shouldSaveAddress && userContext?.sub) {
-    const { deliveryAddressId: resolvedAddressId, statements } = await upsertUserAddress(db, userContext.sub, result);
+    const { deliveryAddressId: resolvedAddressId, statements } = await upsertAddressFromCheckout(db, userContext.sub, result);
     deliveryAddressId = resolvedAddressId;
     addressStatements = statements;
   }
