@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Moon, Phone, Menu, X, ShoppingCart, ChevronDown, UserCircle2, LogOut, Search, Settings, Languages, Compass, CreditCard, Package } from 'lucide-react';
+import { Moon, Phone, Menu, X, ShoppingCart, ChevronDown, UserCircle2, LogOut, Search, Settings, Languages, Compass, CreditCard, Package, Truck } from 'lucide-react';
 import { useTranslations, type Locale } from '../i18n/i18n';
 import { useAuth } from '../context/AuthContext';
 
@@ -70,15 +70,18 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
         : t('nav.account')
     : t('nav.signIn');
   const userDisplayName = user?.fullName ?? user?.displayName ?? user?.phone ?? '';
+  const isRider = user?.role === 'rider';
 
-  const navItems = useMemo(
-    () => [
+  const navItems = useMemo(() => {
+    if (user?.role === 'rider') {
+      return [{ label: t('nav.riderConsole'), to: '/rider', icon: <Truck className="h-4 w-4" /> }];
+    }
+    return [
       { label: t('nav.discover'), to: '/browse', icon: <Compass className="h-4 w-4" /> },
       { label: t('nav.checkout'), to: '/checkout', icon: <CreditCard className="h-4 w-4" /> },
       { label: t('nav.orders'), to: '/orders', icon: <Package className="h-4 w-4" /> },
-    ],
-    [t]
-  );
+    ];
+  }, [t, user?.role]);
 
   useEffect(() => {
     setOpen(false);
@@ -164,41 +167,53 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
           ))}
         </nav>
 
-        <form
-          onSubmit={handleSearchSubmit}
-          className="relative hidden flex-1 md:block md:ml-2 md:max-w-sm"
-        >
-          <label htmlFor="search-input" className="sr-only">{t('nav.search')}</label>
-          <input
-            id="search-input"
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={t('nav.searchPlaceholder')}
-            className="w-full rounded-full border border-emerald-200/70 bg-white py-2.5 pl-4 pr-10 text-sm shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
-          />
-          <button
-            type="submit"
-            className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-full text-emerald-700 hover:text-emerald-900 dark:text-emerald-200 dark:hover:text-emerald-50"
-            aria-label={t('nav.search')}
+        {!isRider && (
+          <form
+            onSubmit={handleSearchSubmit}
+            className="relative hidden flex-1 md:block md:ml-2 md:max-w-sm"
           >
-            <Search className="h-4 w-4" />
-          </button>
-        </form>
+            <label htmlFor="search-input" className="sr-only">{t('nav.search')}</label>
+            <input
+              id="search-input"
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={t('nav.searchPlaceholder')}
+              className="w-full rounded-full border border-emerald-200/70 bg-white py-2.5 pl-4 pr-10 text-sm shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
+            />
+            <button
+              type="submit"
+              className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-full text-emerald-700 hover:text-emerald-900 dark:text-emerald-200 dark:hover:text-emerald-50"
+              aria-label={t('nav.search')}
+            >
+              <Search className="h-4 w-4" />
+            </button>
+          </form>
+        )}
 
         <div className="ml-auto flex items-center gap-2">
-          <Link
-            to="/checkout"
-            className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200/70 bg-white text-emerald-700 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
-            aria-label={t('nav.openCart')}
-          >
-            <ShoppingCart className="h-5 w-5" />
-            {cartCount > 0 && (
-              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-500 px-1 text-xs font-semibold text-white">
-                {cartCount}
-              </span>
-            )}
-          </Link>
+          {isRider ? (
+            <Link
+              to="/rider"
+              className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200/70 bg-white text-emerald-700 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
+              aria-label={t('nav.riderConsole')}
+            >
+              <Truck className="h-5 w-5" />
+            </Link>
+          ) : (
+            <Link
+              to="/checkout"
+              className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200/70 bg-white text-emerald-700 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
+              aria-label={t('nav.openCart')}
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-500 px-1 text-xs font-semibold text-white">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          )}
 
           {isAuthReady && !user && (
             <Link
