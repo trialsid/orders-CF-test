@@ -12,13 +12,24 @@ export interface AdminProduct {
   stockQuantity: number;
 }
 
+export interface ProductPagination {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
 interface UseAdminProductsOptions {
   token?: string | null;
   enabled?: boolean;
+  page?: number;
+  limit?: number;
+  search?: string;
 }
 
-export function useAdminProducts({ token, enabled = true }: UseAdminProductsOptions) {
+export function useAdminProducts({ token, enabled = true, page = 1, limit = 50, search = '' }: UseAdminProductsOptions) {
   const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [pagination, setPagination] = useState<ProductPagination>({ page: 1, limit: 50, total: 0, pages: 1 });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string>();
 
@@ -29,7 +40,13 @@ export function useAdminProducts({ token, enabled = true }: UseAdminProductsOpti
     setError(undefined);
 
     try {
-      const res = await fetch('/admin/products', {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        search: search,
+      });
+
+      const res = await fetch(`/admin/products?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
         cache: force ? 'no-cache' : 'default',
       });
@@ -44,12 +61,15 @@ export function useAdminProducts({ token, enabled = true }: UseAdminProductsOpti
       if (!res.ok) throw new Error(data.error || 'Failed to fetch products');
 
       setProducts(data.items || []);
+      if (data.pagination) {
+        setPagination(data.pagination);
+      }
       setStatus('success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setStatus('error');
     }
-  }, [token, enabled]);
+  }, [token, enabled, page, limit, search]);
 
   useEffect(() => {
     loadProducts();
@@ -70,7 +90,6 @@ export function useAdminProducts({ token, enabled = true }: UseAdminProductsOpti
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Update failed');
 
-    // Optimistic update locally
     setProducts((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
     );
@@ -78,5 +97,51 @@ export function useAdminProducts({ token, enabled = true }: UseAdminProductsOpti
     return data;
   };
 
-  return { products, status, error, refresh: () => loadProducts(true), updateProduct };
+  const addProduct = async (product: Omit<AdminProduct, 'id'>) => {
+    if (!token) throw new Error('Not authenticated');
+
+    const res = await fetch('/admin/products', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(product),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create product');
+
+    // Reload to get the correct sort order and ID
+    loadProducts(true);
+    return data;
+  };
+
+  const deleteProduct = async (id: string) => {
+    if (!token) throw new Error('Not authenticated');
+
+    const res = await fetch(`/admin/products?id=${id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to delete product');
+
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+    return data;
+  };
+
+  return {
+    products,
+    pagination,
+    status,
+    error,
+    refresh: () => loadProducts(true),
+    updateProduct,
+    addProduct,
+    deleteProduct,
+  };
 }
