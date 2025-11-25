@@ -94,9 +94,16 @@ export async function listAddresses(db, userId) {
   return (results ?? []).map(mapAddress);
 }
 
+export function getPrimaryAddressUpdateStatement(db, userId, snapshotJson) {
+  if (snapshotJson === null) {
+    return db.prepare("UPDATE users SET primary_address_json = NULL WHERE id = ?").bind(userId);
+  }
+  return db.prepare("UPDATE users SET primary_address_json = ? WHERE id = ?").bind(snapshotJson, userId);
+}
+
 export async function setPrimaryAddress(db, userId, addressId) {
   if (!addressId) {
-    await db.prepare("UPDATE users SET primary_address_json = NULL WHERE id = ?").bind(userId).run();
+    await getPrimaryAddressUpdateStatement(db, userId, null).run();
     return;
   }
 
@@ -108,7 +115,7 @@ export async function setPrimaryAddress(db, userId, addressId) {
     return;
   }
 
-  await db.prepare("UPDATE users SET primary_address_json = ? WHERE id = ?").bind(buildSnapshot(mapAddress(row)), userId).run();
+  await getPrimaryAddressUpdateStatement(db, userId, buildSnapshot(mapAddress(row))).run();
 }
 
 /**

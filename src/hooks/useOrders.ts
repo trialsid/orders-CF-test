@@ -9,6 +9,8 @@ type UseOrdersOptions = {
   requireAuth?: boolean;
   searchTerm?: string;
   statusFilter?: OrderStatus | 'all';
+  pollIntervalMs?: number;
+  onlyWhenVisible?: boolean;
 };
 
 type UseOrdersResult = {
@@ -16,15 +18,25 @@ type UseOrdersResult = {
   status: OrdersStatus;
   error?: string;
   refresh: () => void;
+  lastUpdatedAt?: number;
 };
 
 const DEFAULT_ERROR_MESSAGE = 'Unable to load orders right now. Please try again later.';
 
 export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersResult {
-  const { token, enabled = true, requireAuth = false, searchTerm, statusFilter } = options ?? {};
+  const {
+    token,
+    enabled = true,
+    requireAuth = false,
+    searchTerm,
+    statusFilter,
+    pollIntervalMs,
+    onlyWhenVisible = true,
+  } = options ?? {};
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [status, setStatus] = useState<OrdersStatus>('idle');
   const [error, setError] = useState<string | undefined>();
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | undefined>();
 
   const loadOrders = useCallback(
     async (signal?: AbortSignal) => {
@@ -80,6 +92,7 @@ export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersRes
         if (!signal?.aborted) {
           setOrders(payload.orders ?? []);
           setStatus('success');
+          setLastUpdatedAt(Date.now());
         }
       } catch (fetchError) {
         if (signal?.aborted) {
@@ -102,6 +115,23 @@ export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersRes
     loadOrders(controller.signal);
     return () => controller.abort();
   }, [loadOrders, enabled]);
+
+  // Polling for auto-refresh, gated by visibility to reduce compute/network usage
+  useEffect(() => {
+    if (!enabled || !pollIntervalMs) {
+      return;
+    }
+
+    const tick = () => {
+      if (onlyWhenVisible && typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+        return;
+      }
+      loadOrders();
+    };
+
+    const id = window.setInterval(tick, pollIntervalMs);
+    return () => window.clearInterval(id);
+  }, [enabled, loadOrders, pollIntervalMs, onlyWhenVisible]);
 
   // Revalidate on Window Focus
   useEffect(() => {
@@ -128,5 +158,5 @@ export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersRes
     loadOrders();
   }, [loadOrders]);
 
-  return { orders, status, error, refresh };
+  return { orders, status, error, refresh, lastUpdatedAt };
 }

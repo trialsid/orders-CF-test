@@ -1,5 +1,5 @@
 import { requireAuth, AuthError, jsonResponse } from "../_auth";
-import { sanitizeAddressPayload, listAddresses, setPrimaryAddress, mapAddress } from "../_addresses.js";
+import { sanitizeAddressPayload, listAddresses, setPrimaryAddress, mapAddress, getPrimaryAddressUpdateStatement, buildSnapshot } from "../_addresses.js";
 
 function getDatabase(env) {
   return env && typeof env === "object" ? env.ORDERS_DB : undefined;
@@ -58,13 +58,16 @@ export async function onRequest({ request, env }) {
       const addressId = crypto.randomUUID();
       const shouldDefault = normalized.isDefault || Number(total ?? 0) === 0;
 
+      const statements = [];
+
       if (shouldDefault) {
-        await db.prepare("UPDATE user_addresses SET is_default = 0 WHERE user_id = ?").bind(auth.sub).run();
+        statements.push(db.prepare("UPDATE user_addresses SET is_default = 0 WHERE user_id = ?").bind(auth.sub));
       }
 
-      await db
-        .prepare(
-          `INSERT INTO user_addresses (
+      statements.push(
+        db
+          .prepare(
+            `INSERT INTO user_addresses (
              id,
              user_id,
              label,
@@ -80,27 +83,34 @@ export async function onRequest({ request, env }) {
              is_default
            )
            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)`
-        )
-        .bind(
-          addressId,
-          auth.sub,
-          normalized.label,
-          normalized.contactName,
-          normalized.phone,
-          normalized.line1,
-          normalized.line2,
-          normalized.area,
-          normalized.city,
-          normalized.state,
-          normalized.postalCode,
-          normalized.landmark,
-          shouldDefault ? 1 : 0
-        )
-        .run();
+          )
+          .bind(
+            addressId,
+            auth.sub,
+            normalized.label,
+            normalized.contactName,
+            normalized.phone,
+            normalized.line1,
+            normalized.line2,
+            normalized.area,
+            normalized.city,
+            normalized.state,
+            normalized.postalCode,
+            normalized.landmark,
+            shouldDefault ? 1 : 0
+          )
+      );
 
       if (shouldDefault) {
-        await setPrimaryAddress(db, auth.sub, addressId);
+        const snapshot = buildSnapshot({
+          id: addressId,
+          ...normalized,
+          isDefault: true,
+        });
+        statements.push(getPrimaryAddressUpdateStatement(db, auth.sub, snapshot));
       }
+
+      await db.batch(statements);
 
       const address = await db
         .prepare("SELECT * FROM user_addresses WHERE id = ? AND user_id = ? LIMIT 1")
@@ -139,13 +149,16 @@ export async function onRequest({ request, env }) {
         return jsonResponse({ error: "Address not found." }, 404);
       }
 
+      const statements = [];
+
       if (normalized.isDefault) {
-        await db.prepare("UPDATE user_addresses SET is_default = 0 WHERE user_id = ?").bind(auth.sub).run();
+        statements.push(db.prepare("UPDATE user_addresses SET is_default = 0 WHERE user_id = ?").bind(auth.sub));
       }
 
-      await db
-        .prepare(
-          `UPDATE user_addresses
+      statements.push(
+        db
+          .prepare(
+            `UPDATE user_addresses
            SET label = ?1,
                contact_name = ?2,
                phone = ?3,
@@ -158,27 +171,34 @@ export async function onRequest({ request, env }) {
                landmark = ?10,
                is_default = CASE WHEN ?11 = 1 THEN 1 ELSE is_default END
            WHERE id = ?12 AND user_id = ?13`
-        )
-        .bind(
-          normalized.label,
-          normalized.contactName,
-          normalized.phone,
-          normalized.line1,
-          normalized.line2,
-          normalized.area,
-          normalized.city,
-          normalized.state,
-          normalized.postalCode,
-          normalized.landmark,
-          normalized.isDefault ? 1 : 0,
-          payload.id,
-          auth.sub
-        )
-        .run();
+          )
+          .bind(
+            normalized.label,
+            normalized.contactName,
+            normalized.phone,
+            normalized.line1,
+            normalized.line2,
+            normalized.area,
+            normalized.city,
+            normalized.state,
+            normalized.postalCode,
+            normalized.landmark,
+            normalized.isDefault ? 1 : 0,
+            payload.id,
+            auth.sub
+          )
+      );
 
       if (normalized.isDefault) {
-        await setPrimaryAddress(db, auth.sub, payload.id);
+        const snapshot = buildSnapshot({
+          id: payload.id,
+          ...normalized,
+          isDefault: true,
+        });
+        statements.push(getPrimaryAddressUpdateStatement(db, auth.sub, snapshot));
       }
+
+      await db.batch(statements);
 
       const address = await db
         .prepare("SELECT * FROM user_addresses WHERE id = ? AND user_id = ? LIMIT 1")
@@ -211,9 +231,14 @@ export async function onRequest({ request, env }) {
         return jsonResponse({ error: "Address not found." }, 404);
       }
 
-      await db.prepare("UPDATE user_addresses SET is_default = 0 WHERE user_id = ?").bind(auth.sub).run();
-      await db.prepare("UPDATE user_addresses SET is_default = 1 WHERE id = ? AND user_id = ?").bind(payload.id, auth.sub).run();
-      await setPrimaryAddress(db, auth.sub, payload.id);
+      const statements = [];
+      statements.push(db.prepare("UPDATE user_addresses SET is_default = 0 WHERE user_id = ?").bind(auth.sub));
+      statements.push(db.prepare("UPDATE user_addresses SET is_default = 1 WHERE id = ? AND user_id = ?").bind(payload.id, auth.sub));
+
+      const snapshot = buildSnapshot(mapAddress({ ...existing, is_default: 1 }));
+      statements.push(getPrimaryAddressUpdateStatement(db, auth.sub, snapshot));
+
+      await db.batch(statements);
 
       return jsonResponse({ success: true });
     } catch (error) {
@@ -242,25 +267,30 @@ export async function onRequest({ request, env }) {
         return jsonResponse({ error: "Address not found." }, 404);
       }
 
-      await db.prepare("DELETE FROM user_addresses WHERE id = ? AND user_id = ?").bind(payload.id, auth.sub).run();
+      const statements = [];
+      statements.push(db.prepare("DELETE FROM user_addresses WHERE id = ? AND user_id = ?").bind(payload.id, auth.sub));
 
       if (existing.is_default === 1) {
         const fallback = await db
           .prepare(
-            `SELECT id FROM user_addresses
-             WHERE user_id = ?
+            `SELECT * FROM user_addresses
+             WHERE user_id = ? AND id != ?
              ORDER BY datetime(created_at) DESC
              LIMIT 1`
           )
-          .bind(auth.sub)
+          .bind(auth.sub, payload.id)
           .first();
+
         if (fallback?.id) {
-          await db.prepare("UPDATE user_addresses SET is_default = 1 WHERE id = ?").bind(fallback.id).run();
-          await setPrimaryAddress(db, auth.sub, fallback.id);
+          statements.push(db.prepare("UPDATE user_addresses SET is_default = 1 WHERE id = ?").bind(fallback.id));
+          const fallbackSnapshot = buildSnapshot(mapAddress({ ...fallback, is_default: 1 }));
+          statements.push(getPrimaryAddressUpdateStatement(db, auth.sub, fallbackSnapshot));
         } else {
-          await setPrimaryAddress(db, auth.sub, null);
+          statements.push(getPrimaryAddressUpdateStatement(db, auth.sub, null));
         }
       }
+
+      await db.batch(statements);
 
       return jsonResponse({ success: true });
     } catch (error) {
