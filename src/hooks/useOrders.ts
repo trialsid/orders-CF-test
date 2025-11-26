@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
+import { useApiClient } from './useApiClient';
 import type { OrderRecord, OrdersResponse, OrderStatus } from '../types';
 
 type OrdersStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -33,6 +34,7 @@ export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersRes
     pollIntervalMs,
     onlyWhenVisible = true,
   } = options ?? {};
+  const { apiFetch } = useApiClient();
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [status, setStatus] = useState<OrdersStatus>('idle');
   const [error, setError] = useState<string | undefined>();
@@ -63,13 +65,9 @@ export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersRes
           params.append('status', statusFilter);
         }
 
-        const response = await fetch(`/order?${params.toString()}`, {
+        const response = await apiFetch(`/order?${params.toString()}`, {
           signal,
-          headers: token
-            ? {
-                Authorization: `Bearer ${token}`,
-              }
-            : undefined,
+          tokenOverride: token ?? undefined,
         });
         
         if (response.status === 304) {
@@ -103,7 +101,7 @@ export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersRes
         setStatus('error');
       }
     },
-    [limit, token, enabled, requireAuth, searchTerm, statusFilter]
+    [limit, token, enabled, requireAuth, searchTerm, statusFilter, apiFetch]
   );
 
   // Initial Load

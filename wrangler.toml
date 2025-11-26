@@ -6,3 +6,8 @@ pages_build_output_dir = "dist"
 binding = "ORDERS_DB"
 database_name = "order_ieeja_orders"
 database_id = "0eaea965-4467-4aee-89a9-28aed83e4c79"
+
+[[kv_namespaces]]
+binding = "LOGIN_RATE_LIMIT_KV"
+id = "5e8638dfbd414219947a22aa476944cf"
+preview_id = "f059e5f6774f4e7ca9db0d7bf80841fd"

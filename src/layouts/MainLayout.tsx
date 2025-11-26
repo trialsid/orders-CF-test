@@ -7,6 +7,7 @@ import Toast, { type ToastMessage } from '../components/Toast';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../context/AuthContext';
+import { useApiClient } from '../hooks/useApiClient';
 import type { CheckoutFormValues, OrderResponse } from '../types';
 import { createEmptyCheckoutForm, prepareOrderPayload, MAX_ITEM_QUANTITY } from '../utils/checkout';
 import {
@@ -67,6 +68,7 @@ function MainLayout(): JSX.Element {
   const products = useProducts();
   const cart = useCart();
   const { token } = useAuth();
+  const { apiFetch } = useApiClient();
   const location = useLocation();
   const [theme, setTheme] = useState<Theme>(() => getPreferredTheme());
   const [locale, setLocale] = useState<Locale>(() => getPreferredLocale());
@@ -224,10 +226,11 @@ function MainLayout(): JSX.Element {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await fetch('/order', {
+      const response = await apiFetch('/order', {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
+        tokenOverride: token ?? undefined,
       });
 
       const result = (await response.json()) as OrderResponse;

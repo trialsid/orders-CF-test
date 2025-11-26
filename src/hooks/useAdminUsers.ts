@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { User } from '../types';
+import { useApiClient } from './useApiClient';
 
 type AdminUsersHook = {
   users: User[];
@@ -11,6 +12,7 @@ type AdminUsersHook = {
 };
 
 export function useAdminUsers(token?: string): AdminUsersHook {
+  const { apiFetch } = useApiClient();
   const [users, setUsers] = useState<User[]>([]);
   const [status, setStatus] = useState<'loading' | 'idle' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -25,11 +27,12 @@ export function useAdminUsers(token?: string): AdminUsersHook {
     setStatus('loading');
     setError(null);
     try {
-      const response = await fetch('/admin/users', {
+      const response = await apiFetch('/admin/users', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
         cache: force ? 'no-cache' : 'default',
+        tokenOverride: token ?? undefined,
       });
 
       if (response.status === 304) {
@@ -50,19 +53,20 @@ export function useAdminUsers(token?: string): AdminUsersHook {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setStatus('error');
     }
-  }, [token]);
+  }, [token, apiFetch]);
 
   const updateUser = useCallback(async (userId: string, updates: Partial<User>) => {
     if (!token) return;
 
     try {
-      const response = await fetch(`/admin/users`, {
+      const response = await apiFetch(`/admin/users`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ id: userId, ...updates }),
+        tokenOverride: token ?? undefined,
       });
 
       if (!response.ok) {
@@ -77,7 +81,7 @@ export function useAdminUsers(token?: string): AdminUsersHook {
       setError(err instanceof Error ? err.message : 'Unknown error');
       throw err; // Re-throw to allow UI to handle error
     }
-  }, [token, fetchUsers]);
+  }, [token, fetchUsers, apiFetch]);
 
   const updateUserRole = useCallback(async (userId: string, role: User['role']) => {
     await updateUser(userId, { role });

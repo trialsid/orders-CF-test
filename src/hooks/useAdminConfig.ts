@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { AdminConfig } from '../types';
+import { useApiClient } from './useApiClient';
 
 type FetchStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -15,6 +16,7 @@ type UseAdminConfigResult = {
 const DEFAULT_ERROR = 'Unable to load configuration right now.';
 
 export function useAdminConfig(authToken?: string): UseAdminConfigResult {
+  const { apiFetch } = useApiClient();
   const [config, setConfig] = useState<AdminConfig>();
   const [status, setStatus] = useState<FetchStatus>('idle');
   const [error, setError] = useState<string>();
@@ -25,12 +27,13 @@ export function useAdminConfig(authToken?: string): UseAdminConfigResult {
     setError(undefined);
 
     try {
-      const response = await fetch('/config', {
+      const response = await apiFetch('/config', {
         headers: authToken
           ? {
               Authorization: `Bearer ${authToken}`,
             }
           : undefined,
+        tokenOverride: authToken ?? undefined,
       });
       const payload = await response.json();
 
@@ -45,7 +48,7 @@ export function useAdminConfig(authToken?: string): UseAdminConfigResult {
       setError(message);
       setStatus('error');
     }
-  }, [authToken]);
+  }, [authToken, apiFetch]);
 
   useEffect(() => {
     load();
@@ -60,13 +63,14 @@ export function useAdminConfig(authToken?: string): UseAdminConfigResult {
       setSaving(true);
       setError(undefined);
       try {
-        const response = await fetch('/config', {
+        const response = await apiFetch('/config', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
           body: JSON.stringify(updates),
+          tokenOverride: authToken ?? undefined,
         });
         const payload = await response.json();
 
@@ -85,7 +89,7 @@ export function useAdminConfig(authToken?: string): UseAdminConfigResult {
         setSaving(false);
       }
     },
-    [authToken]
+    [authToken, apiFetch]
   );
 
   return { config, status, error, refresh, saveConfig, saving };

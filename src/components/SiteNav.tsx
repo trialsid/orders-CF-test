@@ -261,7 +261,10 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
             )}
 
             {utilityOpen && (
-              <div className="absolute right-0 top-[calc(100%+0.5rem)] w-80 overflow-hidden rounded-3xl border border-emerald-100/70 bg-white p-3 shadow-xl shadow-emerald-200/50 ring-1 ring-emerald-100/60 dark:border-emerald-900/70 dark:bg-slate-950 dark:shadow-emerald-950/40 dark:ring-emerald-900/60">
+              <div 
+                className="absolute right-0 top-[calc(100%+0.5rem)] w-80 overflow-hidden rounded-3xl border border-emerald-100/70 bg-white p-3 shadow-xl shadow-emerald-200/50 ring-1 ring-emerald-100/60 dark:border-emerald-900/70 dark:bg-slate-950 dark:shadow-emerald-950/40 dark:ring-emerald-900/60 transition-all duration-300 ease-out transform opacity-0 scale-95 data-[state=open]:opacity-100 data-[state=open]:scale-100"
+                data-state={utilityOpen ? 'open' : 'closed'}
+              >
                 {user && (
                   <>
                     <div className="mb-2 rounded-2xl bg-emerald-50/50 p-4 dark:bg-emerald-900/20">
@@ -360,7 +363,10 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
       </div>
 
       {open && (
-        <div className="absolute inset-x-0 top-full z-50 px-4 pb-6 md:hidden">
+        <div 
+          className="absolute inset-x-0 top-full z-50 px-4 pb-6 md:hidden transition-all duration-300 ease-out transform opacity-0 -translate-y-4 data-[state=open]:opacity-100 data-[state=open]:translate-y-0"
+          data-state={open ? 'open' : 'closed'}
+        >
           <div className="flex max-h-[calc(100vh-6rem)] flex-col gap-3 overflow-y-auto rounded-3xl border border-emerald-100/70 bg-white p-5 text-base shadow-xl shadow-emerald-200/50 ring-1 ring-emerald-100/60 dark:border-emerald-900/60 dark:bg-slate-950 dark:shadow-emerald-950/40 dark:ring-emerald-900/60 dark:text-emerald-100">
             {navItems.map((item) => (
               <NavLink

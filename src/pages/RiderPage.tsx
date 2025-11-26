@@ -3,6 +3,7 @@ import { CheckCircle, Clock, MapPin, Navigation, PackageCheck, Phone, RefreshCw,
 import PageSection from '../components/PageSection';
 import MobileStickyAction from '../components/MobileStickyAction';
 import { useOrders } from '../hooks/useOrders';
+import { useApiClient } from '../hooks/useApiClient';
 import type { OrderRecord, OrderStatus } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
 import { updateOrderStatus as updateOrderStatusRequest } from '../utils/updateOrderStatus';
@@ -63,6 +64,7 @@ const isUrgent = (order: OrderRecord) => {
 
 function RiderPage(): JSX.Element {
   const { token, user } = useAuth();
+  const { apiFetch } = useApiClient();
   const { orders, status, error, refresh, lastUpdatedAt } = useOrders(50, {
     token,
     requireAuth: true,
@@ -101,7 +103,7 @@ function RiderPage(): JSX.Element {
     setStatusError(undefined);
     setUpdating((prev) => ({ ...prev, [order.id]: true }));
     try {
-      await updateOrderStatusRequest(order.id, nextStatus, token);
+      await updateOrderStatusRequest(order.id, nextStatus, token, apiFetch);
       refresh();
     } catch (updateError) {
       const message = updateError instanceof Error ? updateError.message : 'Unable to update order right now.';

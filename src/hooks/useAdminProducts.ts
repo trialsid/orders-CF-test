@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useApiClient } from './useApiClient';
 
 export interface AdminProduct {
   id: string;
@@ -28,6 +29,7 @@ interface UseAdminProductsOptions {
 }
 
 export function useAdminProducts({ token, enabled = true, page = 1, limit = 50, search = '' }: UseAdminProductsOptions) {
+  const { apiFetch } = useApiClient();
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [pagination, setPagination] = useState<ProductPagination>({ page: 1, limit: 50, total: 0, pages: 1 });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -46,9 +48,10 @@ export function useAdminProducts({ token, enabled = true, page = 1, limit = 50, 
         search: search,
       });
 
-      const res = await fetch(`/admin/products?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await apiFetch(`/admin/products?${params.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         cache: force ? 'no-cache' : 'default',
+        tokenOverride: token ?? undefined,
       });
 
       if (res.status === 304) {
@@ -69,7 +72,7 @@ export function useAdminProducts({ token, enabled = true, page = 1, limit = 50, 
       setError(err instanceof Error ? err.message : 'Unknown error');
       setStatus('error');
     }
-  }, [token, enabled, page, limit, search]);
+  }, [token, enabled, page, limit, search, apiFetch]);
 
   useEffect(() => {
     loadProducts();
@@ -78,13 +81,14 @@ export function useAdminProducts({ token, enabled = true, page = 1, limit = 50, 
   const updateProduct = async (id: string, updates: Partial<AdminProduct>) => {
     if (!token) throw new Error('Not authenticated');
 
-    const res = await fetch('/admin/products', {
+    const res = await apiFetch('/admin/products', {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ id, ...updates }),
+      tokenOverride: token ?? undefined,
     });
 
     const data = await res.json();
@@ -100,13 +104,14 @@ export function useAdminProducts({ token, enabled = true, page = 1, limit = 50, 
   const addProduct = async (product: Omit<AdminProduct, 'id'>) => {
     if (!token) throw new Error('Not authenticated');
 
-    const res = await fetch('/admin/products', {
+    const res = await apiFetch('/admin/products', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(product),
+      tokenOverride: token ?? undefined,
     });
 
     const data = await res.json();
@@ -120,11 +125,12 @@ export function useAdminProducts({ token, enabled = true, page = 1, limit = 50, 
   const deleteProduct = async (id: string) => {
     if (!token) throw new Error('Not authenticated');
 
-    const res = await fetch(`/admin/products?id=${id}`, {
+    const res = await apiFetch(`/admin/products?id=${id}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
       },
+      tokenOverride: token ?? undefined,
     });
 
     const data = await res.json();

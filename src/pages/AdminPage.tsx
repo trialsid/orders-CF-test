@@ -25,6 +25,7 @@ import { useAuth } from '../context/AuthContext';
 import { OrderDetailsDrawer } from '../components/admin/OrderDetailsDrawer';
 import { ProductCatalog } from '../components/admin/ProductCatalog';
 import { useAdminUsers } from '../hooks/useAdminUsers';
+import { useApiClient } from '../hooks/useApiClient';
 
 const DEFAULT_STATUS: OrderStatus = 'pending';
 
@@ -104,6 +105,7 @@ type Tab = 'dashboard' | 'orders' | 'catalog' | 'settings' | 'users';
 
 function AdminPage(): JSX.Element {
   const { token, user } = useAuth();
+  const { apiFetch } = useApiClient();
   const { orders, status, error, refresh } = useOrders(100, { token, requireAuth: true });
   const { users, status: usersStatus, error: usersError, refresh: refreshUsers, updateUserRole, updateUserStatus } = useAdminUsers(token ?? undefined);
   const {
@@ -234,7 +236,7 @@ function AdminPage(): JSX.Element {
   const handleStatusChange = async (orderId: string, nextStatus: OrderStatus) => {
     setStatusUpdateError(undefined);
     try {
-      await updateOrderStatusRequest(orderId, nextStatus, token);
+      await updateOrderStatusRequest(orderId, nextStatus, token, apiFetch);
       await refresh(); // Refresh list to reflect changes
     } catch (updateError) {
       const message = updateError instanceof Error ? updateError.message : 'Unable to update order status right now.';

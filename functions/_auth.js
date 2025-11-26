@@ -1,12 +1,18 @@
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
-const TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const ACCESS_TOKEN_TTL_SECONDS = 60 * 15; // 15 minutes
+const REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const REFRESH_COOKIE_NAME = "refresh_token";
 const PHONE_REGEX = /^[0-9]{6,15}$/;
+const LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 5;
+const LOGIN_RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const LOGIN_RATE_LIMIT_BLOCK_MS = 15 * 60_000; // 15 minutes
 // Cloudflare's SubtleCrypto PBKDF2 caps iterations at 100k; stay within to avoid runtime errors.
 const PBKDF2_ITERATIONS = 100000;
 const AUTH_CACHE_TTL_MS = 90_000; // 90s in-memory cache to avoid repeat D1 reads on hot paths
 const authCache = new Map();
+let rateLimitWarningLogged = false;
 
 export class AuthError extends Error {
   constructor(message, status = 401) {
@@ -36,6 +42,89 @@ function getAuthSecret(env) {
     return undefined;
   }
   return env.AUTH_SECRET;
+}
+
+function getTokenVersion(user) {
+  return typeof user?.token_version === "number" ? user.token_version : 1;
+}
+
+function parseCookies(header) {
+  if (!header || typeof header !== "string") {
+    return {};
+  }
+  return header.split(";").reduce((acc, part) => {
+    const [name, ...rest] = part.trim().split("=");
+    if (!name) {
+      return acc;
+    }
+    acc[name] = rest.join("=");
+    return acc;
+  }, {});
+}
+
+function readRefreshToken(request) {
+  const cookies = parseCookies(request.headers.get("Cookie") || "");
+  const value = cookies[REFRESH_COOKIE_NAME];
+  if (!value) {
+    return null;
+  }
+  try {
+    return decodeURIComponent(value);
+  } catch (error) {
+    console.warn("Failed to decode refresh token cookie", error);
+    return value;
+  }
+}
+
+function createRefreshCookie(token) {
+  const encoded = token ? encodeURIComponent(token) : "";
+  const parts = [
+    `${REFRESH_COOKIE_NAME}=${encoded}`,
+    "HttpOnly",
+    "SameSite=Lax",
+    "Path=/auth",
+    `Max-Age=${token ? REFRESH_TOKEN_TTL_SECONDS : 0}`,
+    "Secure",
+  ];
+  return parts.join("; ");
+}
+
+function clearRefreshCookie() {
+  return createRefreshCookie("");
+}
+
+function getClientIp(request) {
+  const cfIp = request.headers.get("CF-Connecting-IP");
+  if (cfIp) {
+    return cfIp;
+  }
+  const forwarded = request.headers.get("X-Forwarded-For");
+  if (forwarded) {
+    const [first] = forwarded.split(",");
+    if (first) {
+      return first.trim();
+    }
+  }
+  return null;
+}
+
+function getRateLimitStore(env) {
+  if (!env || typeof env !== "object") {
+    return null;
+  }
+  const store = env.LOGIN_RATE_LIMIT_KV;
+  if (!store || typeof store.get !== "function") {
+    if (!rateLimitWarningLogged) {
+      console.warn("LOGIN_RATE_LIMIT_KV binding missing; login rate limiting is disabled.");
+      rateLimitWarningLogged = true;
+    }
+    return null;
+  }
+  return store;
+}
+
+function getLoginRateLimitKey(ip) {
+  return `rl:login:${ip}`;
 }
 
 function normalizePhone(value) {
@@ -197,7 +286,7 @@ async function createHmac(message, secret) {
   return base64UrlEncode(signature);
 }
 
-async function signToken(payload, secret, ttlSeconds = TOKEN_TTL_SECONDS) {
+async function signToken(payload, secret, ttlSeconds = ACCESS_TOKEN_TTL_SECONDS) {
   const header = { alg: "HS256", typ: "JWT" };
   const issuedAt = Math.floor(Date.now() / 1000);
   const body = {
@@ -227,6 +316,35 @@ async function verifyToken(token, secret) {
     throw new Error("Token expired.");
   }
   return payload;
+}
+
+async function createAccessTokenForUser(user, secret) {
+  const tokenVersion = getTokenVersion(user);
+  return signToken(
+    { sub: user.id, role: user.role, phone: user.phone, token_version: tokenVersion, type: "access" },
+    secret,
+    ACCESS_TOKEN_TTL_SECONDS
+  );
+}
+
+async function createRefreshTokenForUser(user, secret) {
+  const tokenVersion = getTokenVersion(user);
+  return signToken(
+    { sub: user.id, token_version: tokenVersion, jti: crypto.randomUUID(), type: "refresh" },
+    secret,
+    REFRESH_TOKEN_TTL_SECONDS
+  );
+}
+
+async function issueTokensForUser(user, secret) {
+  const accessToken = await createAccessTokenForUser(user, secret);
+  const refreshToken = await createRefreshTokenForUser(user, secret);
+  return {
+    accessToken,
+    refreshToken,
+    refreshCookie: createRefreshCookie(refreshToken),
+    tokenVersion: getTokenVersion(user),
+  };
 }
 
 export function publicUser(user) {
@@ -262,6 +380,94 @@ async function readBody(request) {
     return await request.json();
   } catch (error) {
     return null;
+  }
+}
+
+function getRateLimitContext(env, request) {
+  const store = getRateLimitStore(env);
+  const ip = getClientIp(request);
+  if (!store || !ip) {
+    return null;
+  }
+  return { store, key: getLoginRateLimitKey(ip) };
+}
+
+async function readRateLimitRecord(ctx) {
+  if (!ctx) {
+    return null;
+  }
+  try {
+    const raw = await ctx.store.get(ctx.key);
+    if (!raw) {
+      return null;
+    }
+    return JSON.parse(raw);
+  } catch (error) {
+    console.warn("Failed to read login rate limit record", error);
+    return null;
+  }
+}
+
+async function isLoginBlocked(ctx) {
+  if (!ctx) {
+    return { blocked: false };
+  }
+  const now = Date.now();
+  const record = await readRateLimitRecord(ctx);
+  if (!record) {
+    return { blocked: false };
+  }
+  if (record.blockedUntil && now < record.blockedUntil) {
+    return { blocked: true, retryAfterSeconds: Math.ceil((record.blockedUntil - now) / 1000) };
+  }
+  return { blocked: false };
+}
+
+async function recordLoginFailure(ctx) {
+  if (!ctx) {
+    return { blocked: false };
+  }
+  const now = Date.now();
+  let record = await readRateLimitRecord(ctx);
+  if (record && record.resetAt && now > record.resetAt && (!record.blockedUntil || now > record.blockedUntil)) {
+    record = null;
+  }
+
+  const nextCount = (record?.count ?? 0) + 1;
+  const resetAt = record?.resetAt && now <= record.resetAt ? record.resetAt : now + LOGIN_RATE_LIMIT_WINDOW_MS;
+  let blockedUntil = record?.blockedUntil && now < record.blockedUntil ? record.blockedUntil : 0;
+  if (nextCount >= LOGIN_RATE_LIMIT_MAX_ATTEMPTS) {
+    blockedUntil = now + LOGIN_RATE_LIMIT_BLOCK_MS;
+  }
+
+  const ttlTarget = blockedUntil || resetAt;
+  // Cloudflare KV requires expiration_ttl >= 60 seconds; clamp to avoid 400 errors on near-expiry writes.
+  const ttlSeconds = Math.max(60, Math.ceil((ttlTarget - now) / 1000));
+  try {
+    await ctx.store.put(
+      ctx.key,
+      JSON.stringify({ count: nextCount, resetAt, blockedUntil }),
+      { expirationTtl: ttlSeconds }
+    );
+  } catch (error) {
+    console.warn("Failed to persist login rate limit record", error);
+  }
+
+  const blocked = blockedUntil > now;
+  return {
+    blocked,
+    retryAfterSeconds: blocked ? Math.ceil((blockedUntil - now) / 1000) : null,
+  };
+}
+
+async function clearLoginAttempts(ctx) {
+  if (!ctx) {
+    return;
+  }
+  try {
+    await ctx.store.delete(ctx.key);
+  } catch (error) {
+    console.warn("Failed to clear login attempts", error);
   }
 }
 
@@ -316,29 +522,33 @@ export async function handleRegister({ request, env }) {
       return jsonResponse({ error: "AUTH_SECRET is not configured." }, 501);
     }
 
-    // Include token_version: 1 (default for new users)
-    const token = await signToken({ sub: userId, role: "customer", phone, token_version: 1 }, secret);
+    const userRecord = {
+      id: userId,
+      phone,
+      role: "customer",
+      status: "active",
+      display_name: normalizedDisplayName,
+      full_name: fullName,
+      token_version: 1,
+      created_at: new Date().toISOString(),
+    };
+
+    const tokens = await issueTokensForUser(userRecord, secret);
+
     // Warm the in-memory cache for this user
     authCache.set(userId, {
       role: "customer",
       status: "active",
-      version: 1,
+      version: tokens.tokenVersion,
       exp: Date.now() + AUTH_CACHE_TTL_MS,
     });
     return jsonResponse(
       {
-        user: publicUser({
-          id: userId,
-          phone,
-          role: "customer",
-          status: "active",
-          display_name: normalizedDisplayName,
-          full_name: fullName,
-          created_at: new Date().toISOString(),
-        }),
-        token,
+        user: publicUser(userRecord),
+        token: tokens.accessToken,
       },
-      201
+      201,
+      { "Set-Cookie": tokens.refreshCookie }
     );
   } catch (error) {
     console.error("Failed to register user", error);
@@ -354,6 +564,13 @@ export async function handleLogin({ request, env }) {
   const secret = getAuthSecret(env);
   if (!secret) {
     return jsonResponse({ error: "AUTH_SECRET is not configured." }, 501);
+  }
+
+  const rateLimitCtx = getRateLimitContext(env, request);
+  const precheck = await isLoginBlocked(rateLimitCtx);
+  if (precheck.blocked) {
+    const headers = precheck.retryAfterSeconds ? { "Retry-After": String(precheck.retryAfterSeconds) } : {};
+    return jsonResponse({ error: "Too many login attempts. Please try again later." }, 429, headers);
   }
 
   const body = await readBody(request);
@@ -378,23 +595,92 @@ export async function handleLogin({ request, env }) {
   }
 
   if (!user || user.status !== "active") {
-    return jsonResponse({ error: "Invalid credentials." }, 401);
+    const failure = await recordLoginFailure(rateLimitCtx);
+    const status = failure.blocked ? 429 : 401;
+    const headers = failure.retryAfterSeconds ? { "Retry-After": String(failure.retryAfterSeconds) } : {};
+    return jsonResponse({ error: "Invalid credentials." }, status, headers);
   }
 
   const passwordOk = await verifyPassword(body.password, user.password_hash);
   if (!passwordOk) {
-    return jsonResponse({ error: "Invalid credentials." }, 401);
+    const failure = await recordLoginFailure(rateLimitCtx);
+    const status = failure.blocked ? 429 : 401;
+    const headers = failure.retryAfterSeconds ? { "Retry-After": String(failure.retryAfterSeconds) } : {};
+    return jsonResponse({ error: "Invalid credentials." }, status, headers);
   }
 
-  const tokenVersion = user.token_version || 1;
-  const token = await signToken({ sub: user.id, role: user.role, phone: user.phone, token_version: tokenVersion }, secret);
+  await clearLoginAttempts(rateLimitCtx);
+
+  const tokens = await issueTokensForUser(user, secret);
   authCache.set(user.id, {
     role: user.role,
     status: user.status,
-    version: tokenVersion,
+    version: tokens.tokenVersion,
     exp: Date.now() + AUTH_CACHE_TTL_MS,
   });
-  return jsonResponse({ user: publicUser(user), token });
+  return jsonResponse(
+    { user: publicUser(user), token: tokens.accessToken },
+    200,
+    { "Set-Cookie": tokens.refreshCookie }
+  );
+}
+
+export async function handleRefresh({ request, env }) {
+  const secret = getAuthSecret(env);
+  if (!secret) {
+    return jsonResponse({ error: "AUTH_SECRET is not configured." }, 501);
+  }
+
+  const refreshToken = readRefreshToken(request);
+  if (!refreshToken) {
+    return jsonResponse({ error: "Refresh token missing." }, 401, { "Set-Cookie": clearRefreshCookie() });
+  }
+
+  let payload;
+  try {
+    payload = await verifyToken(refreshToken, secret);
+  } catch (error) {
+    return jsonResponse({ error: "Invalid or expired refresh token." }, 401, { "Set-Cookie": clearRefreshCookie() });
+  }
+
+  if (payload.type !== "refresh" || !payload.sub) {
+    return jsonResponse({ error: "Invalid refresh token." }, 401, { "Set-Cookie": clearRefreshCookie() });
+  }
+
+  const db = getDatabase(env);
+  if (!db) {
+    return jsonResponse({ error: "ORDERS_DB binding is not configured." }, 501);
+  }
+
+  try {
+    const user = await db.prepare("SELECT * FROM users WHERE id = ? LIMIT 1").bind(payload.sub).first();
+    if (!user || user.status !== "active") {
+      authCache.delete(payload.sub);
+      return jsonResponse({ error: "Session expired. Please log in again." }, 401, { "Set-Cookie": clearRefreshCookie() });
+    }
+
+    const tokenVersion = getTokenVersion(user);
+    if (payload.token_version !== tokenVersion) {
+      authCache.delete(payload.sub);
+      return jsonResponse({ error: "Session expired. Please log in again." }, 401, { "Set-Cookie": clearRefreshCookie() });
+    }
+
+    const tokens = await issueTokensForUser(user, secret);
+    authCache.set(user.id, {
+      role: user.role,
+      status: user.status,
+      version: tokens.tokenVersion,
+      exp: Date.now() + AUTH_CACHE_TTL_MS,
+    });
+    return jsonResponse(
+      { token: tokens.accessToken, user: publicUser(user) },
+      200,
+      { "Set-Cookie": tokens.refreshCookie }
+    );
+  } catch (error) {
+    console.error("Failed to refresh session", error);
+    return jsonResponse({ error: "Unable to refresh session right now." }, 500);
+  }
 }
 
 export async function handleProfile({ request, env }) {
@@ -457,6 +743,10 @@ export async function requireAuth(request, env, roles) {
     payload = await verifyToken(token, secret);
   } catch (error) {
     throw new AuthError("Invalid or expired token.");
+  }
+
+  if (payload.type && payload.type !== "access") {
+    throw new AuthError("Invalid token type.");
   }
 
   // In-memory cache to avoid hitting D1 on every request
@@ -544,11 +834,15 @@ export async function handleRevoke({ request, env }) {
     // Increment token_version to invalidate all existing tokens
     await db.prepare("UPDATE users SET token_version = IFNULL(token_version, 1) + 1 WHERE id = ?").bind(payload.sub).run();
     authCache.delete(payload.sub);
-    return jsonResponse({ message: "All sessions revoked." });
+    return jsonResponse({ message: "All sessions revoked." }, 200, { "Set-Cookie": clearRefreshCookie() });
   } catch (error) {
     console.error("Failed to revoke sessions", error);
     return jsonResponse({ error: "Unable to revoke sessions right now." }, 500);
   }
+}
+
+export async function handleLogout() {
+  return jsonResponse({ message: "Logged out" }, 200, { "Set-Cookie": clearRefreshCookie() });
 }
 
 export { jsonResponse };

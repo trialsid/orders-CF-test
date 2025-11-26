@@ -1,9 +1,12 @@
 import type { OrderStatus } from '../types';
 
+type FetchLike = (input: RequestInfo | URL, init?: RequestInit & { tokenOverride?: string | null }) => Promise<Response>;
+
 export async function updateOrderStatus(
   orderId: string,
   status: OrderStatus,
-  token?: string | null
+  token?: string | null,
+  fetchImpl: FetchLike = fetch
 ): Promise<{ orderId: string; status: OrderStatus }> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -12,11 +15,12 @@ export async function updateOrderStatus(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch('/order', {
+  const response = await fetchImpl('/order', {
     method: 'PATCH',
     headers,
     body: JSON.stringify({ orderId, status }),
-  });
+    tokenOverride: token ?? undefined,
+  } as RequestInit & { tokenOverride?: string | null });
 
   const payload = await response.json();
   if (!response.ok || payload.error) {

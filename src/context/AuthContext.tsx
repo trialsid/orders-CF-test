@@ -30,126 +30,67 @@ type AuthContextValue = {
   register: (payload: RegisterInput) => Promise<AuthUser>;
   logout: () => void;
   revokeSessions: () => Promise<void>;
+  refreshSession: () => Promise<string | null>;
 };
 
-type StoredAuthState = {
-  token: string;
-  user?: AuthUser | null;
-};
-
-const STORAGE_KEY = 'order-ieeja::auth';
-
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-const readStoredAuth = (): StoredAuthState | null => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-    return JSON.parse(raw) as StoredAuthState;
-  } catch (error) {
-    console.warn('Failed to read stored auth state', error);
-    return null;
-  }
-};
+export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }): JSX.Element {
-  const stored = typeof window !== 'undefined' ? readStoredAuth() : null;
-  const [token, setToken] = useState<string | null>(stored?.token ?? null);
-  const [user, setUser] = useState<AuthUser | null>(stored?.user ?? null);
-  const [status, setStatus] = useState<AuthStatus>(() => (stored?.token ? 'checking' : 'ready'));
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [status, setStatus] = useState<AuthStatus>('checking');
   const [authError, setAuthError] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const profileEtagRef = useRef<string | null>(null);
-
-  const persistAuth = useCallback((nextToken: string | null, nextUser: AuthUser | null) => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    if (!nextToken) {
-      window.localStorage.removeItem(STORAGE_KEY);
-      return;
-    }
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        token: nextToken,
-        user: nextUser,
-      })
-    );
-  }, []);
+  const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
 
   const clearAuth = useCallback(() => {
     setToken(null);
     setUser(null);
     setStatus('ready');
     setAuthError(null);
-    profileEtagRef.current = null;
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
   }, []);
 
-  useEffect(() => {
-    persistAuth(token, user);
-  }, [persistAuth, token, user]);
-
-  useEffect(() => {
-    if (!token) {
-      setStatus('ready');
-      return;
+  const refreshSession = useCallback(async (): Promise<string | null> => {
+    if (refreshPromiseRef.current) {
+      return refreshPromiseRef.current;
     }
-    let cancelled = false;
-    const controller = new AbortController();
-    const shouldShowSpinner = !user;
-    if (shouldShowSpinner) {
-      setStatus('checking');
-    }
-
-    (async () => {
+    const promise = (async () => {
       try {
-        const response = await fetch('/auth/me', {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            ...(profileEtagRef.current ? { 'If-None-Match': profileEtagRef.current } : {}),
-          },
-          signal: controller.signal,
-        });
-        if (response.status === 304) {
-          if (!cancelled) {
-            setStatus('ready');
-          }
-          return;
-        }
+        const response = await fetch('/auth/refresh', { method: 'POST' });
         const payload = await response.json();
-        if (!response.ok || payload.error) {
-          throw new Error(payload.error || 'Unable to refresh session.');
+        if (!response.ok || payload.error || !payload.token) {
+          clearAuth();
+          return null;
         }
-        if (cancelled) {
-          return;
+        setToken(payload.token as string);
+        if (payload.user) {
+          setUser(payload.user as AuthUser);
         }
-        profileEtagRef.current = response.headers.get('ETag');
-        setUser(payload.user as AuthUser);
         setStatus('ready');
+        return payload.token as string;
       } catch (error) {
-        if (cancelled) {
-          return;
-        }
-        console.warn('Auth session refresh failed', error);
         clearAuth();
+        return null;
+      } finally {
+        refreshPromiseRef.current = null;
       }
     })();
+    refreshPromiseRef.current = promise;
+    return promise;
+  }, [clearAuth]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await refreshSession();
+      if (!cancelled) {
+        setStatus('ready');
+      }
+    })();
     return () => {
       cancelled = true;
-      controller.abort();
     };
-  }, [token, clearAuth]);
+  }, [refreshSession]);
 
   const submitAuthRequest = useCallback(async (path: string, body: Record<string, unknown>) => {
     const response = await fetch(path, {
@@ -208,16 +149,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     [submitAuthRequest]
   );
 
+  const logout = useCallback(async () => {
+    try {
+      await fetch('/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.warn('Logout request failed', error);
+    } finally {
+      clearAuth();
+    }
+  }, [clearAuth]);
+
   const revokeSessions = useCallback(async () => {
-    if (!token) return;
     setIsAuthenticating(true);
     setAuthError(null);
     try {
+      const activeToken = token ?? (await refreshSession());
+      if (!activeToken) {
+        throw new Error('Session expired. Please log in again.');
+      }
       const response = await fetch('/auth/revoke', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${activeToken}`,
         },
       });
       const payload = await response.json();
@@ -243,10 +197,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       isAuthenticating,
       login,
       register,
-      logout: clearAuth,
+      logout,
       revokeSessions,
+      refreshSession,
     }),
-    [user, token, status, authError, isAuthenticating, login, register, clearAuth, revokeSessions]
+    [user, token, status, authError, isAuthenticating, login, register, logout, revokeSessions, refreshSession]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

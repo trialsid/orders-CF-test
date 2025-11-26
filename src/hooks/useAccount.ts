@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import type { AuthUser, UserAddress } from '../types';
-import { useMemo } from 'react';
+import { useApiClient } from './useApiClient';
 
 type AccountStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -14,6 +14,7 @@ type AccountData = {
 
 export function useAccountData() {
   const { token } = useAuth();
+  const { apiFetch } = useApiClient();
   const [profile, setProfile] = useState<AuthUser | null>(null);
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [status, setStatus] = useState<AccountStatus>('idle');
@@ -41,7 +42,7 @@ export function useAccountData() {
     setStatus('loading');
     setError(undefined);
     try {
-      const response = await fetch('/account', { headers });
+      const response = await apiFetch('/account', { headers, tokenOverride: token ?? undefined });
       const payload = await response.json();
       if (!response.ok || payload.error) {
         throw new Error(payload.error || 'Unable to load account details.');
@@ -54,7 +55,7 @@ export function useAccountData() {
       setError(message);
       setStatus('error');
     }
-  }, [headers]);
+  }, [headers, apiFetch, token]);
 
   useEffect(() => {
     fetchAccount();
@@ -66,10 +67,11 @@ export function useAccountData() {
         throw new Error('Not authenticated.');
       }
       const body = JSON.stringify(updates);
-      const response = await fetch('/account/profile', {
+      const response = await apiFetch('/account/profile', {
         method: 'PUT',
         headers,
         body,
+        tokenOverride: token ?? undefined,
       });
       const payload = await response.json();
       if (!response.ok || payload.error) {
@@ -77,7 +79,7 @@ export function useAccountData() {
       }
       await fetchAccount();
     },
-    [headers, fetchAccount]
+    [headers, fetchAccount, apiFetch, token]
   );
 
   const createAddress = useCallback(
@@ -85,10 +87,11 @@ export function useAccountData() {
       if (!headers) {
         throw new Error('Not authenticated.');
       }
-      const response = await fetch('/account/addresses', {
+      const response = await apiFetch('/account/addresses', {
         method: 'POST',
         headers,
         body: JSON.stringify(address),
+        tokenOverride: token ?? undefined,
       });
       const payload = await response.json();
       if (!response.ok || payload.error) {
@@ -97,7 +100,7 @@ export function useAccountData() {
       await fetchAccount();
       return payload.address as UserAddress;
     },
-    [headers, fetchAccount]
+    [headers, fetchAccount, apiFetch, token]
   );
 
   const updateAddress = useCallback(
@@ -105,10 +108,11 @@ export function useAccountData() {
       if (!headers) {
         throw new Error('Not authenticated.');
       }
-      const response = await fetch('/account/addresses', {
+      const response = await apiFetch('/account/addresses', {
         method: 'PUT',
         headers,
         body: JSON.stringify(address),
+        tokenOverride: token ?? undefined,
       });
       const payload = await response.json();
       if (!response.ok || payload.error) {
@@ -117,7 +121,7 @@ export function useAccountData() {
       await fetchAccount();
       return payload.address as UserAddress;
     },
-    [headers, fetchAccount]
+    [headers, fetchAccount, apiFetch, token]
   );
 
   const deleteAddress = useCallback(
@@ -125,10 +129,11 @@ export function useAccountData() {
       if (!headers) {
         throw new Error('Not authenticated.');
       }
-      const response = await fetch('/account/addresses', {
+      const response = await apiFetch('/account/addresses', {
         method: 'DELETE',
         headers,
         body: JSON.stringify({ id }),
+        tokenOverride: token ?? undefined,
       });
       const payload = await response.json();
       if (!response.ok || payload.error) {
@@ -136,7 +141,7 @@ export function useAccountData() {
       }
       await fetchAccount();
     },
-    [headers, fetchAccount]
+    [headers, fetchAccount, apiFetch, token]
   );
 
   const setDefaultAddress = useCallback(
@@ -144,10 +149,11 @@ export function useAccountData() {
       if (!headers) {
         throw new Error('Not authenticated.');
       }
-      const response = await fetch('/account/addresses', {
+      const response = await apiFetch('/account/addresses', {
         method: 'PATCH',
         headers,
         body: JSON.stringify({ id }),
+        tokenOverride: token ?? undefined,
       });
       const payload = await response.json();
       if (!response.ok || payload.error) {
@@ -155,7 +161,7 @@ export function useAccountData() {
       }
       await fetchAccount();
     },
-    [headers, fetchAccount]
+    [headers, fetchAccount, apiFetch, token]
   );
 
   return {
