@@ -86,6 +86,53 @@ npx wrangler d1 migrations apply order_ieeja_orders --remote
 
 MSG91-driven OTP verification will be layered on top of this flow in a future update.
 
+## Database Management & Fresh Start
+
+### 1. Reset & Setup Local Environment
+Cleans the project and creates a fresh local database with seed data.
+```powershell
+npm run clean
+npm run db:migrate
+```
+
+### 2. Reset & Setup Preview Environment
+**Wipes the remote preview database** and forces it to match your fresh local database exactly.
+```powershell
+npm run db:sync:preview
+```
+*(Use `npm run db:migrate:preview` instead if you only want to apply schema changes without wiping data)*
+
+### 3. Setup Production Database
+Applies migrations to production (preserves data, ensures schema is up to date).
+```powershell
+npm run db:migrate:prod
+```
+
+### 4. Deploy Application
+Build and deploy to Cloudflare Pages.
+```powershell
+npm run pages:deploy:preview
+npm run pages:deploy:prod
+```
+
+### 5. Creating an Admin User
+Since the database reset wipes all users, follow these steps to create a new admin:
+
+**Local and Preview Environments:**
+1. Go to `http://localhost:5173/auth` and register a new user (e.g., Phone: `9999999999`).
+2. Run this command to promote them locally:
+   ```powershell
+   npm run db:exec -- "UPDATE users SET role = 'admin' WHERE phone = '9999999999';"
+   ```
+3. To reflect this admin user in the **Preview Environment**, run `npm run db:sync:preview` (from step 2 of "Database Management & Fresh Start"). This will completely sync your local database to the preview.
+
+**Production Environment:**
+1. Register the user on the live Production site (e.g., `https://order.ieeja.com/auth`).
+2. Run the remote promotion command:
+   ```powershell
+   npm run db:exec:prod -- "UPDATE users SET role = 'admin' WHERE phone = '9999999999';"
+   ```
+
 ## Next steps
 
 - Tweak the inventory for real products and pricing.
