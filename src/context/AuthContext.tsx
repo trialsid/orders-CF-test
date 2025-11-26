@@ -57,10 +57,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     const promise = (async () => {
       try {
         const response = await fetch('/auth/refresh', { method: 'POST' });
+        
+        if (response.status === 401) {
+           clearAuth();
+           return null;
+        }
+
         const payload = await response.json();
         if (!response.ok || payload.error || !payload.token) {
-          clearAuth();
-          return null;
+          // If it's not a 401 but failed (e.g. 500), we probably shouldn't log out immediately
+          // unless the error specifically indicates session invalidity.
+          // For now, we return null so the caller knows it failed, but we keep the local state
+          // in case it's a temporary network blip.
+           return null;
         }
         setToken(payload.token as string);
         if (payload.user) {
@@ -69,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
         setStatus('ready');
         return payload.token as string;
       } catch (error) {
-        clearAuth();
+        // Network errors or JSON parsing errors shouldn't log the user out
         return null;
       } finally {
         refreshPromiseRef.current = null;

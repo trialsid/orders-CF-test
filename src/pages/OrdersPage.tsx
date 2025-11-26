@@ -23,7 +23,7 @@ function OrdersPage(): JSX.Element {
   const isAuthenticated = Boolean(user && token);
   const isAdmin = user?.role === 'admin';
 
-  const { orders, status, error, refresh } = useOrders(25, { token, enabled: isAuthenticated, requireAuth: true });
+  const { orders, status, error, refresh } = useOrders(25, { enabled: isAuthenticated, requireAuth: true });
 
   const isLoading = status === 'loading';
   const isError = status === 'error';

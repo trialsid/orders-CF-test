@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { useApiClient } from './useApiClient';
 
 export interface AdminProduct {
@@ -21,14 +22,14 @@ export interface ProductPagination {
 }
 
 interface UseAdminProductsOptions {
-  token?: string | null;
   enabled?: boolean;
   page?: number;
   limit?: number;
   search?: string;
 }
 
-export function useAdminProducts({ token, enabled = true, page = 1, limit = 50, search = '' }: UseAdminProductsOptions) {
+export function useAdminProducts({ enabled = true, page = 1, limit = 50, search = '' }: UseAdminProductsOptions) {
+  const { token } = useAuth();
   const { apiFetch } = useApiClient();
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [pagination, setPagination] = useState<ProductPagination>({ page: 1, limit: 50, total: 0, pages: 1 });
@@ -49,9 +50,7 @@ export function useAdminProducts({ token, enabled = true, page = 1, limit = 50, 
       });
 
       const res = await apiFetch(`/admin/products?${params.toString()}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         cache: force ? 'no-cache' : 'default',
-        tokenOverride: token ?? undefined,
       });
 
       if (res.status === 304) {
@@ -72,7 +71,7 @@ export function useAdminProducts({ token, enabled = true, page = 1, limit = 50, 
       setError(err instanceof Error ? err.message : 'Unknown error');
       setStatus('error');
     }
-  }, [token, enabled, page, limit, search, apiFetch]);
+  }, [enabled, page, limit, search, apiFetch, token]);
 
   useEffect(() => {
     loadProducts();
@@ -85,10 +84,8 @@ export function useAdminProducts({ token, enabled = true, page = 1, limit = 50, 
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ id, ...updates }),
-      tokenOverride: token ?? undefined,
     });
 
     const data = await res.json();
@@ -108,10 +105,8 @@ export function useAdminProducts({ token, enabled = true, page = 1, limit = 50, 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(product),
-      tokenOverride: token ?? undefined,
     });
 
     const data = await res.json();
@@ -127,10 +122,6 @@ export function useAdminProducts({ token, enabled = true, page = 1, limit = 50, 
 
     const res = await apiFetch(`/admin/products?id=${id}`, {
       method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      tokenOverride: token ?? undefined,
     });
 
     const data = await res.json();

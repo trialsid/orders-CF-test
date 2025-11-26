@@ -55,7 +55,7 @@ export function useAccountData() {
       setError(message);
       setStatus('error');
     }
-  }, [headers, apiFetch, token]);
+  }, [headers, apiFetch]);
 
   useEffect(() => {
     fetchAccount();
@@ -79,7 +79,7 @@ export function useAccountData() {
       }
       await fetchAccount();
     },
-    [headers, fetchAccount, apiFetch, token]
+    [headers, fetchAccount, apiFetch]
   );
 
   const createAddress = useCallback(
@@ -100,7 +100,7 @@ export function useAccountData() {
       await fetchAccount();
       return payload.address as UserAddress;
     },
-    [headers, fetchAccount, apiFetch, token]
+    [headers, fetchAccount, apiFetch]
   );
 
   const updateAddress = useCallback(
@@ -121,7 +121,7 @@ export function useAccountData() {
       await fetchAccount();
       return payload.address as UserAddress;
     },
-    [headers, fetchAccount, apiFetch, token]
+    [headers, fetchAccount, apiFetch]
   );
 
   const deleteAddress = useCallback(
@@ -141,7 +141,7 @@ export function useAccountData() {
       }
       await fetchAccount();
     },
-    [headers, fetchAccount, apiFetch, token]
+    [headers, fetchAccount, apiFetch]
   );
 
   const setDefaultAddress = useCallback(
@@ -161,7 +161,7 @@ export function useAccountData() {
       }
       await fetchAccount();
     },
-    [headers, fetchAccount, apiFetch, token]
+    [headers, fetchAccount, apiFetch]
   );
 
   return {

@@ -106,8 +106,8 @@ type Tab = 'dashboard' | 'orders' | 'catalog' | 'settings' | 'users';
 function AdminPage(): JSX.Element {
   const { token, user } = useAuth();
   const { apiFetch } = useApiClient();
-  const { orders, status, error, refresh } = useOrders(100, { token, requireAuth: true });
-  const { users, status: usersStatus, error: usersError, refresh: refreshUsers, updateUserRole, updateUserStatus } = useAdminUsers(token ?? undefined);
+  const { orders, status, error, refresh } = useOrders(100, { requireAuth: true });
+  const { users, status: usersStatus, error: usersError, refresh: refreshUsers, updateUserRole, updateUserStatus } = useAdminUsers();
   const {
     config,
     status: configStatus,
@@ -115,7 +115,7 @@ function AdminPage(): JSX.Element {
     refresh: refreshConfig,
     saveConfig,
     saving,
-  } = useAdminConfig(token ?? undefined);
+  } = useAdminConfig();
 
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -754,7 +754,7 @@ function AdminPage(): JSX.Element {
         {activeTab === 'catalog' && (
            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
              <section className="min-w-0 rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60">
-               <ProductCatalog token={token} />
+               <ProductCatalog />
              </section>
            </div>
         )}
@@ -984,7 +984,6 @@ function AdminPage(): JSX.Element {
       {selectedOrder && (
         <OrderDetailsDrawer
           order={selectedOrder}
-          authToken={token}
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrderId(null)}
           onStatusChange={handleStatusChange}

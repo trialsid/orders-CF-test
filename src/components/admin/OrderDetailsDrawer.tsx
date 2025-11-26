@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Phone, MapPin, Truck, CheckCircle2, Clock, Ban, MessageCircle } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatCurrency';
 import type { OrderRecord, OrderStatus } from '../../types';
+import { useApiClient } from '../../hooks/useApiClient';
 
 interface OrderDetailsDrawerProps {
   order: OrderRecord;
-  authToken?: string | null;
   isOpen: boolean;
   onClose: () => void;
-  onStatusChange: (orderId: string, status: OrderStatus) => Promise<void>;
+  onStatusChange: (orderId: string, nextStatus: OrderStatus) => Promise<void>;
 }
 
 const STATUS_CONFIG: Record<OrderStatus, { color: string; icon: React.ElementType; label: string }> = {
@@ -27,7 +27,8 @@ const ORDER_STATUS_OPTIONS: Array<{ value: OrderStatus; label: string }> = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-export function OrderDetailsDrawer({ order, authToken, isOpen, onClose, onStatusChange }: OrderDetailsDrawerProps) {
+export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: OrderDetailsDrawerProps) {
+  const { apiFetch } = useApiClient();
   const [isUpdating, setIsUpdating] = useState(false);
   const [resolvedOrder, setResolvedOrder] = useState<OrderRecord>(order);
   const orderEtagsRef = useRef<Record<string, string>>({});
@@ -48,9 +49,8 @@ export function OrderDetailsDrawer({ order, authToken, isOpen, onClose, onStatus
 
     (async () => {
       try {
-        const response = await fetch(`/order?id=${encodeURIComponent(order.id)}`, {
+        const response = await apiFetch(`/order?id=${encodeURIComponent(order.id)}`, {
           headers: {
-            Authorization: `Bearer ${authToken}`,
             ...(guessEtag ? { 'If-None-Match': guessEtag } : {}),
           },
           signal: controller.signal,
@@ -80,7 +80,7 @@ export function OrderDetailsDrawer({ order, authToken, isOpen, onClose, onStatus
     })();
 
     return () => controller.abort();
-  }, [authToken, isOpen, order]);
+  }, [isOpen, order, apiFetch]);
 
   const statusConfig = STATUS_CONFIG[resolvedOrder.status as OrderStatus] || STATUS_CONFIG.pending;
   const StatusIcon = statusConfig.icon;

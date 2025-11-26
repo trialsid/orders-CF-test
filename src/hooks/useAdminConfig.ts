@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import type { AdminConfig } from '../types';
 import { useApiClient } from './useApiClient';
 
@@ -15,7 +16,8 @@ type UseAdminConfigResult = {
 
 const DEFAULT_ERROR = 'Unable to load configuration right now.';
 
-export function useAdminConfig(authToken?: string): UseAdminConfigResult {
+export function useAdminConfig(): UseAdminConfigResult {
+  const { token } = useAuth();
   const { apiFetch } = useApiClient();
   const [config, setConfig] = useState<AdminConfig>();
   const [status, setStatus] = useState<FetchStatus>('idle');
@@ -23,18 +25,15 @@ export function useAdminConfig(authToken?: string): UseAdminConfigResult {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
+    if (!token) {
+       setStatus('idle');
+       return;
+    }
     setStatus('loading');
     setError(undefined);
 
     try {
-      const response = await apiFetch('/config', {
-        headers: authToken
-          ? {
-              Authorization: `Bearer ${authToken}`,
-            }
-          : undefined,
-        tokenOverride: authToken ?? undefined,
-      });
+      const response = await apiFetch('/config', {});
       const payload = await response.json();
 
       if (!response.ok || payload.error) {
@@ -48,7 +47,7 @@ export function useAdminConfig(authToken?: string): UseAdminConfigResult {
       setError(message);
       setStatus('error');
     }
-  }, [authToken, apiFetch]);
+  }, [apiFetch, token]);
 
   useEffect(() => {
     load();
@@ -60,6 +59,7 @@ export function useAdminConfig(authToken?: string): UseAdminConfigResult {
 
   const saveConfig = useCallback(
     async (updates: Partial<AdminConfig>) => {
+      if (!token) throw new Error('Not authenticated');
       setSaving(true);
       setError(undefined);
       try {
@@ -67,10 +67,8 @@ export function useAdminConfig(authToken?: string): UseAdminConfigResult {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
           body: JSON.stringify(updates),
-          tokenOverride: authToken ?? undefined,
         });
         const payload = await response.json();
 
@@ -89,7 +87,7 @@ export function useAdminConfig(authToken?: string): UseAdminConfigResult {
         setSaving(false);
       }
     },
-    [authToken, apiFetch]
+    [apiFetch, token]
   );
 
   return { config, status, error, refresh, saveConfig, saving };

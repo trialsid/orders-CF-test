@@ -4,17 +4,15 @@ import { useAdminProducts, AdminProduct } from '../../hooks/useAdminProducts';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 interface ProductCatalogProps {
-  token?: string | null;
 }
 
-export function ProductCatalog({ token }: ProductCatalogProps) {
+export function ProductCatalog({ }: ProductCatalogProps) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   // Use a debounced search term for the hook if desired, or just pass directly
   // For simplicity, we pass search directly, but ideally debounce user input.
   
   const { products, pagination, status, error, updateProduct, addProduct, deleteProduct, refresh } = useAdminProducts({ 
-    token, 
     page, 
     limit: 10,
     search 

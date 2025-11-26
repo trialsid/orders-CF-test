@@ -34,6 +34,8 @@
     "db:exec:remote": "npx wrangler d1 execute order_ieeja_orders --remote --command",
     "db:inspect": "npx wrangler d1 execute order_ieeja_orders --local --command \"SELECT name FROM sqlite_master WHERE type='table'; SELECT 'orders' as table_name, count(*) as count FROM orders UNION SELECT 'users', count(*) FROM users;\"",
     "logs:tail": "npx wrangler pages deployment tail",
+    "logs:tail:preview": "npx wrangler pages deployment tail --environment preview",
+    "logs:tail:prod": "npx wrangler pages deployment tail --environment production",
     "dev:lan": "vite --host",
     "clean": "node -e \"['dist', '.wrangler'].forEach(dir => require('fs').rmSync(dir, { recursive: true, force: true }));\""
   },
