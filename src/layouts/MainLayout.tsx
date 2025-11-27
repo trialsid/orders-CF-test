@@ -67,7 +67,7 @@ export type AppOutletContext = {
 function MainLayout(): JSX.Element {
   const products = useProducts();
   const cart = useCart();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { apiFetch } = useApiClient();
   const location = useLocation();
   const [theme, setTheme] = useState<Theme>(() => getPreferredTheme());
@@ -90,6 +90,10 @@ function MainLayout(): JSX.Element {
   const resetCheckoutDraft = useCallback(() => {
     setCheckoutDraft({ form: createEmptyCheckoutForm(), stepIndex: 0 });
   }, []);
+
+  useEffect(() => {
+    resetCheckoutDraft();
+  }, [user, resetCheckoutDraft]);
 
   useEffect(() => {
     if (typeof document === 'undefined') {
