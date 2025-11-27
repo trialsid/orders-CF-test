@@ -45,7 +45,7 @@ export const Default: Story = () => {
         return () => { window.fetch = originalFetch; };
     }, []);
 
-    return <ProductCatalog token="mock-token" />;
+    return <ProductCatalog />;
 };
 
 export const Loading: Story = () => {
@@ -54,7 +54,7 @@ export const Loading: Story = () => {
         window.fetch = async () => new Promise(() => {}); // Never resolves
         return () => { window.fetch = originalFetch; };
     }, []);
-    return <ProductCatalog token="mock-token" />;
+    return <ProductCatalog />;
 };
 
 export const Error: Story = () => {
@@ -63,5 +63,5 @@ export const Error: Story = () => {
         window.fetch = async () => { throw new Error("Failed to fetch"); };
         return () => { window.fetch = originalFetch; };
     }, []);
-    return <ProductCatalog token="mock-token" />;
+    return <ProductCatalog />;
 };
