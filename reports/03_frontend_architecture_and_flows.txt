@@ -1,0 +1,26 @@
+Topic: Frontend Architecture and Flows
+
+Think of the UI as a routed neighborhood: MainLayout is the town square where contexts meet, routes are streets, and hooks are the utilities running underneath.
+
+Entry/Layout
+- `src/main.tsx` mounts `App` inside `AuthProvider`.
+- `MainLayout` wires products/cart hooks, checkout draft state, theme/locale toggles, toast stack, translation provider, and exposes `submitOrder` in the outlet context.
+
+Routing (`src/App.tsx`)
+- Streets: `/` Home, `/browse`, `/products/:productId`, `/checkout`, `/checkout/success`, `/orders`, `/admin` (RequireAuth admin), `/rider` (RequireAuth rider/admin), `/account` (RequireAuth customer/admin/rider), `/auth/login`, `/auth/register`; wildcard redirects to `/`.
+
+State/Hooks (utilities)
+- `useProducts`: fetches `/products` with ETag/304 handling; builds departments, filter state, store note.
+- `useCart`: localStorage-backed `order-ieeja-cart`, caps quantity at MAX_ITEM_QUANTITY=20.
+- `useOrders`: fetches `/order` with optional search/status, supports polling/focus revalidation, honors 304.
+- Admin/Account: `useAdminProducts`, `useAdminUsers`, `useAdminConfig`, `useAccountData` wrap respective APIs with auth headers and refresh.
+- `AuthContext`: keeps token/user, auto-refreshes via `/auth/refresh`, exposes login/register/logout/revoke/refreshSession.
+- `useApiClient`: attaches Authorization, retries once on 401 via refresh, otherwise logs out.
+
+Pages/UX (landmarks)
+- Browse: department chips + search; inline quantity controls; store note from `/products`.
+- Checkout: saved-address selection, optional “save address,” shared-schema validation; auth required to submit.
+- Orders: list view for all; admin-only table toggle.
+- Admin: metrics, order drawer, delivery config form, catalog CRUD, user role/status updates.
+- Rider: queues for confirmed/outForDelivery with status advance, call/map links.
+- Account: profile name updates; full address CRUD with default handling and primary snapshot.

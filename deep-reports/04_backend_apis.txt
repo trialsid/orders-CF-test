@@ -1,0 +1,69 @@
+Topic: Backend APIs (Cloudflare Pages Functions) — Exhaustive Deep Report
+
+Conventions
+- Modules: ES modules under `functions/` export `onRequest` or method-specific handlers; all use `env` bindings (`ORDERS_DB`, `LOGIN_RATE_LIMIT_KV`, `AUTH_SECRET`). Missing ORDERS_DB returns 501 `{ error: "ORDERS_DB binding is not configured." }`.
+- Responses: JSON with `Content-Type: application/json`. Default cache `no-store` unless noted; ETag paths return 304 when If-None-Match matches and apply targeted Cache-Control.
+- Auth: `requireAuth(request, env, roles)` validates JWT access tokens signed with `AUTH_SECRET` and enforces role allow-list. `AuthError` → status (401/403). Refresh token is HttpOnly cookie at `/auth`; access token stays client-side in memory.
+- IDs: Orders: `ORD-<12 uppercase hex from uuid>`; order_items: `crypto.randomUUID()`; products (admin create): `crypto.randomUUID()`.
+
+/products (`functions/products.js`)
+- Method: GET (public).
+- Request: no params.
+- DB: selects active products (`is_active = 1`) returning id/name/description/department/category/price/mrp/raw_selling_price.
+- Response: `{ items, config, message }` where `config` comes from `admin_config` or defaults; `message` is computed delivery copy using config thresholds.
+- Caching: global ETag `W/"<count>-<products.max_updated_at>-<config.max_updated_at>"`; headers `Cache-Control: public, max-age=60, stale-while-revalidate=600`; 304 on match.
+- Failure: 503 when ORDERS_DB missing, 500 on DB error.
+
+/order (`functions/order.js`)
+- POST (roles: customer|admin)
+  - Body: `{ items: [{ id, quantity }], name, phone, address, addressLine2?, area?, city?, state?, postalCode?, landmark?, slot, instructions?, paymentMethod, saveAddress? }`.
+  - Validation: `validateOrderRequest` (shared schema) for required fields, phone format; DB lookups ensure items exist/active, quantity >0 and ≤ `MAX_ITEM_QUANTITY`, stock sufficient, and total ≥ `minimumOrderAmount` from `admin_config`.
+  - Address: snapshots formatted address into order; if `saveAddress !== false` and user authed, `upsertAddressFromCheckout` creates/updates `user_addresses` and returns `deliveryAddressId`.
+  - Persistence: builds order id; prepares insert into `orders` (status `pending`, currency INR, items_json payload), inserts normalized rows into `order_items`, decrements stock (`products.stock_quantity -= quantity`), batches with address statements in `db.batch` for atomicity.
+  - Response: 200 `{ message, orderId, summary }` where summary echoes validated payload + status `pending`.
+  - Failure codes: 400 for validation (empty items, invalid qty, bad phone, below min order, missing fields); 500 for DB batch errors; 501 when DB missing.
+- GET (roles: admin|rider|customer)
+  - Query: `id` (specific order), `limit` (default 100, min 1, max 1000), `search` (LIKE on lower name/phone/id), `status` (normalized with aliases: `out_for_delivery`/`outfordelivery` → `outForDelivery`).
+  - Access: admins/riders unrestricted; customers filtered `user_id = sub`.
+  - Single fetch (with `id`): builds ETag `W/"order-<id>-<updated_at>"`; returns 304 on match; otherwise returns `{ orders: [order] }` with private cache headers on ETag path.
+  - List fetch: optional filters; orders sorted `created_at DESC`; items parsed from `items_json`; when unfiltered customer scope, builds global ETag `W/"<sub>-<count>-<last_modified>"` and returns 304 on match; else `Cache-Control: no-store`.
+  - Failure: 404 when specific order missing (respecting scope); 500 on DB errors; 400 for bad status/orderId in PATCH; 501 when DB missing.
+- PATCH (roles: admin|rider)
+  - Body: `{ orderId, status }`; status must be in set {pending, confirmed, outForDelivery, delivered, cancelled} or alias.
+  - Effect: updates `orders.status`, sets `updated_at = datetime('now')`; returns `{ orderId, status }`; 404 if not found.
+
+/config (`functions/config.js`)
+- Methods: GET, PUT, PATCH (roles: admin).
+- GET: returns `{ config }` merged from `admin_config` or defaults.
+- PUT/PATCH: Body may include any of `minimumOrderAmount`, `freeDeliveryThreshold`, `deliveryFeeBelowThreshold`; values parsed numeric ≥0; unknown keys ignored. Writes via UPSERT into `admin_config`, then re-reads and returns `{ config }`.
+- Errors: 400 invalid JSON or invalid values/no valid keys; 501 missing DB; 500 on DB write.
+
+/auth (functions/auth/*.js, `_auth.js`)
+- Shared: PHONE_REGEX digits 6–15; password ≥8 chars. PBKDF2 iterations 100k. Access token TTL ~15m; refresh token TTL ~7d. Refresh cookie: HttpOnly; SameSite=Lax; Secure; Path=/auth.
+- `/auth/register` POST: Body `{ phone, password, displayName? }`; validates phone/password; hashes password; inserts user (role `customer`, status `active`, display_name); returns `{ token, user }` and sets refresh cookie. 400 on validation/duplicate phone; 500 on DB; 501 missing DB or secret.
+- `/auth/login` POST: Body `{ phone, password }`; rate limits per IP via KV key `rl:login:<ip>` (5 failures/min → 15m block, returns 429 with `Retry-After`); successful login clears failures. Returns `{ token, user }` + refresh cookie. 401 invalid credentials; 400 invalid input; 500 on DB/KV issues; 501 missing DB/secret.
+- `/auth/refresh` POST: Reads refresh cookie; verifies signature, expiry, token_version against DB; issues new access + refresh cookie. 401 on missing/invalid/rotated token (also clears cookie); 500 on errors; 501 missing DB/secret.
+- `/auth/logout` POST: Clears refresh cookie (Max-Age=0); always 200 `{ success: true }`.
+- `/auth/revoke` POST (auth required): Increments `users.token_version` to invalidate all refresh tokens; clears cookie; 200 `{ success: true }`; 401/403 on auth failure.
+- `/auth/me` GET (auth required): Returns public user fields `{ id, phone, role, status, displayName, fullName, primaryAddress }`; per-user ETag based on `COUNT/updated_at` for that user, returns 304 when match; 501 missing DB.
+
+/account (`functions/account/*.js`)
+- `/account` GET (roles: customer|admin|rider): returns `{ user: publicUser(row), addresses: [...] }`. Addresses ordered by `is_default DESC, created_at DESC`. 501 missing DB; 500 on DB errors.
+- `/account/profile` PUT (roles: customer|admin|rider): Body `{ displayName?, fullName? }`; trims, caps lengths (displayName ≤80, fullName ≤120); requires at least one field; updates `users` row; 200 `{ success: true }`; 400 invalid/empty; 501 missing DB; 500 on write.
+- `/account/addresses` (roles: customer|admin|rider):
+  - GET: list addresses for user.
+  - POST: Body includes label/contactName/phone/line1(required)/line2/area/city/state/postalCode/landmark/isDefault. Inserts address; enforces single default (demotes others when isDefault true); updates `users.primary_address_json`. Returns `{ id }`/success.
+  - PUT: Body includes `id` + updatable fields; verifies ownership; updates row; maintains default invariant when `isDefault` toggled.
+  - PATCH: Body `{ id, isDefault }`; when true, sets default for id and clears others; updates primary snapshot.
+  - DELETE: Query/body id (depending on implementation) removes address; if others exist, promotes most recent as default; updates primary snapshot. Rejects deleting last address? (behavior: ensures default remains if others exist).
+  - Errors: 400 invalid input; 404 not found/unauthorized address id; 501 missing DB; 500 on DB errors.
+
+/admin (`functions/admin/*.js`)
+- `/admin/products` (role: admin):
+  - GET: Query `page` (>=1), `limit` (<=100), `search` optional (name LIKE); returns `{ items, pagination: { page, limit, total, pages } }`. Items include id/name/description/department/category/price/mrp/isActive/stockQuantity. Global ETag `W/"admin-products-<count>-<max_updated_at>"` (implicit) for 304; cache private when ETag present.
+  - POST: Body `{ name, description?, department?, category?, price, mrp?, stockQuantity?, isActive? }`; price required number; stockQuantity default 0; isActive default true. Inserts with timestamps. 201 `{ message, id }`; 400 invalid input; 500 on DB; 501 missing DB/auth.
+  - PATCH: Body `{ id, ...fields }`; allows name/description/department/category/price/mrp/stockQuantity/isActive; validates numeric ranges; updates `updated_at`; 404 if not found; 400 no valid fields; 500 DB error.
+  - DELETE: Query `id`; blocks deletion if `order_items` references exist (409 with guidance); otherwise deletes; 404 missing; 500 on error.
+- `/admin/users` (role: admin):
+  - GET: returns list of users with `id, phone, full_name, role, status, created_at`; ETag `W/"admin-users-<count>-<last_modified>"` for 304; private cache headers.
+  - PATCH: Body `{ id, role?, status? }`; role enum {customer,rider,admin}; status enum {active,blocked}; updates `updated_at`; 400 invalid/empty; 404 missing; 500 DB; 501 missing DB.

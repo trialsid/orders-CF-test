@@ -1,0 +1,48 @@
+Topic: Caching and Performance — Exhaustive Deep Report
+
+Server-side caching and headers
+- `/products`:
+  - ETag: `W/"<count>-<products.max_updated_at>-<config.max_updated_at>"` (active products count, products MAX(updated_at), admin_config MAX(updated_at)).
+  - Headers: `Cache-Control: public, max-age=60, stale-while-revalidate=600`, `ETag`, `Content-Type: application/json`.
+  - 304 served when If-None-Match matches ETag; otherwise returns payload. Errors: 503 when ORDERS_DB missing, 500 on DB error (both `no-store` implied).
+- `/order`:
+  - GET with `id`: ETag `W/"order-<id>-<updated_at>"`; headers `Cache-Control: private, max-age=0, must-revalidate` on ETag responses; 304 supported.
+  - GET list (customer scope, unfiltered): ETag `W/"<sub>-<count>-<last_modified>"` (COUNT + MAX(updated_at) for that user); same private cache headers; 304 supported.
+  - GET list (search/status/admin/rider): no ETag, `Cache-Control: no-store`.
+  - POST/PATCH: `Cache-Control: no-store`, JSON responses only.
+- `/admin/users`:
+  - ETag: `W/"admin-users-<count>-<last_modified>"` (COUNT + MAX(updated_at) on users).
+  - Headers: `Cache-Control: private, max-age=0, must-revalidate`, `ETag`; 304 supported; JSON body otherwise.
+- `/auth/me`:
+  - ETag per user derived from COUNT/updated_at for that user id; private cache headers; 304 supported.
+- General: non-ETag responses default to `Cache-Control: no-store`; all APIs set `Content-Type: application/json`. ETags are weak (`W/`) and string-based.
+
+Client caching behavior and storage
+- `useProducts`: sends If-None-Match header with prior ETag; handles 304 by retaining existing state; aborts fetch on unmount; exposes `lastUpdated`.
+- `useOrders`: includes If-None-Match when eligible; handles 304; supports manual `refresh`, focus revalidation, optional polling intervals.
+- `useAdminUsers`: benefits from `/admin/users` ETag to avoid refetch payloads on focus; still private cache semantics.
+- Storage keys: `order-ieeja-theme`, `order-ieeja-locale`, `order-ieeja-cart`. Access token intentionally not stored (memory-only); checkout draft kept in React state (not persisted).
+
+Database indexes and query performance
+- Orders: indexes on created_at DESC, status, user_id, updated_at (idx_orders_created_at/status/user_id/updated_at) to accelerate feeds, filters, and ETag meta queries (COUNT/MAX(updated_at)).
+- Products: indexes on category and department to support browse filtering/search; ETag relies on MAX(updated_at) over products.
+- Users: index on phone for login; admin users ETag uses COUNT/MAX(updated_at).
+- Order_items: indexes on order_id/product_id to speed analytics and delete checks.
+
+Write-path performance and atomicity
+- `/order` uses `db.batch` to group address upsert, order insert, order_items insert, and stock decrements for atomic, single-round-trip persistence.
+- Stock decrements and order creation are combined to prevent partial writes and reduce latency.
+- Admin product updates/inserts are single prepared statements; updates set updated_at in SQL to keep ETag freshness accurate.
+
+Static asset delivery
+- Vite builds to `dist/` with hashed assets; Cloudflare Pages handles CDN caching for static files independent of Functions caching. Functions set explicit no-store/private headers as appropriate.
+
+Dev-time performance aids
+- `vite.config.js` proxy maps `/products`, `/order`, `/config` to 8788 during dev to avoid CORS and extra hops; keeps SPA and API on same origin locally.
+- Inventory generation runs before dev/build to avoid runtime delays loading catalog (`npm run build:inventory`).
+
+Rate limiting and abuse protection
+- Login rate limit via KV (5 failures/min/IP -> 15m block) protects auth endpoint without impacting other routes. Missing KV disables limiter but does not alter other performance paths.
+
+ETag computation cost tradeoffs
+- `/products` ETag queries include COUNT + two MAX() subqueries; `/order` customer ETag uses COUNT + MAX(updated_at); `/admin/users` uses COUNT + MAX(updated_at). These are lightweight and cached by SQLite; overhead acceptable given reduced payloads on 304.

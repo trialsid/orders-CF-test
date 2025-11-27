@@ -1,0 +1,10 @@
+Topic: Known Risks and Gaps
+
+Every system has loose screws; these are the ones to watch here.
+
+- Tests: No automated tests beyond Ladle stories/manual scripts. Missing unit/integration coverage for auth, order validation, address CRUD, and status transitions.
+- Stock integrity: Enforced via app checks + batch writes; races under high concurrency could still slip despite CHECK>=0 on stock_quantity.
+- Compatibility: `compatibility_date` set to 2025-07-18; verify runtime support or adjust before deploy.
+- Bindings: AUTH_SECRET and LOGIN_RATE_LIMIT_KV must be configured; missing values yield 501s or disable rate limiting.
+- Catalog updates: Products seeded via migration; adding new SKUs requires D1 writes or new migrations. Admin UI can edit/toggle existing items but doesn’t ingest new ones automatically.
+- Build caveat: `npm run build` may fail locally if optional `@rollup/rollup-linux-x64-gnu` is absent; reinstall deps or add the optional package if needed.

@@ -1,0 +1,79 @@
+Topic: Frontend Architecture and Flows — Exhaustive Deep Report
+
+Foundations
+- Stack: React 18.3 + TypeScript (strict), Vite 5 bundling, TailwindCSS 3.4 for styling, lucide-react icons.
+- Entry: `src/main.tsx` mounts `App` into `#root`, wraps with `AuthProvider`, imports global styles `index.css`.
+- Router: `src/App.tsx` uses `BrowserRouter` with nested routes under `MainLayout`; redirects `/cart`→`/checkout`, `/discover`→`/browse`, wildcard to `/`.
+
+Global composition (`src/layouts/MainLayout.tsx`)
+- Context glue: provides products (`useProducts`), cart (`useCart`), checkout draft state, and `submitOrder` via `Outlet` context. Hosts `TranslationContext` and theme toggling.
+- Theme/locale: stored in `localStorage` keys `order-ieeja-theme` and `order-ieeja-locale`; sets `document.documentElement.lang` and toggles `dark` class (Tailwind `darkMode: 'class'`).
+- Toasts: managed stack with add/dismiss helpers; rendered via `Toast` component.
+- Scroll/accessibility: on route change, scrolls to top and focuses main region; respects `prefers-reduced-motion`.
+- Checkout draft: keeps `{ form, stepIndex }` in state; reset after successful submit; survives navigation during session (not persisted).
+- Submit order flow:
+  - Validates cart non-empty and quantity limits (`MAX_ITEM_QUANTITY=20`).
+  - Builds payload with `prepareOrderPayload` (shared schema) including optional `saveAddress`.
+  - Uses `useApiClient` to POST `/order`; shows error toast on validation/HTTP failures; on success clears cart, resets draft, shows success toast, navigates to `/checkout/success`.
+
+Routing map (guards via `RequireAuth`)
+- Public pages: `/` (Home), `/browse`, `/products/:productId`, `/checkout` (UI accessible; submit gated by auth server-side), `/checkout/success`, `/orders`, `/auth/login`, `/auth/register`.
+- Protected pages: `/admin` (role admin), `/rider` (roles rider/admin), `/account` (roles customer/admin/rider); guard checks `AuthContext` and redirects to `/auth/login` if missing/unauthorized.
+- Redirects: `/cart` → `/checkout`, `/discover` → `/browse`, `*` → `/`.
+
+State, auth, and data hooks
+- Auth (`src/context/AuthContext.tsx`):
+  - Holds `user`, `token`, `status` (`checking|ready`), `authError`, `isAuthenticating`.
+  - On mount calls `/auth/refresh` to hydrate; access token stored in memory only; refresh token is HttpOnly cookie.
+  - Methods: `login`, `register`, `logout`, `revokeSessions`, `refreshSession`. Errors surface via `authError`; retries 401 once via refresh.
+- API client (`src/hooks/useApiClient.ts`):
+  - Wraps fetch; injects `Authorization: Bearer <token>` when present.
+  - On 401 attempts `refreshSession` then retries once; on repeated 401/403 clears auth.
+- Products (`src/hooks/useProducts.ts`):
+  - Fetches `/products`, respects ETag/304; exposes `products`, `departments`, `filter`, `setFilter`, `isLoading`, `error`, `storeNote` (delivery message), `lastUpdated`.
+- Cart (`src/hooks/useCart.ts`):
+  - Persists to `localStorage` key `order-ieeja-cart`; ensures quantity >0 and ≤20.
+  - Exposes `cartItems`, `totalItems`, `totalAmount`, `hasItems`, `addItem`, `updateQuantity`, `removeItem`, `clearCart`.
+- Orders (`src/hooks/useOrders.ts`):
+  - Fetches `/order` with optional `status`/`search`; supports manual `refresh`, focus revalidation, and interval polling; respects ETag/304; returns `orders`, `isLoading`, `error`.
+- Admin hooks:
+  - `useAdminProducts`: paginated fetch/search, create/update/delete products, update stock/price/activation.
+  - `useAdminUsers`: fetch users list, update role/status.
+  - `useAdminConfig`: fetch/update delivery economics (`/config`).
+- Account hook (`useAccountData`):
+  - Fetches `/account` for user profile + addresses; mutations for profile (`/account/profile`) and addresses (`/account/addresses` CRUD + default toggle).
+- Checkout helpers:
+  - `createEmptyCheckoutForm` seeds form; `prepareOrderPayload` validates form and cart with shared schema and quantity cap; `MAX_ITEM_QUANTITY` imported from `shared/order-schema.js`.
+
+Page flows (key behaviors and data dependencies)
+- Home (`src/pages/HomePage.tsx`): marketing hero + feature sections; CTAs to browse/checkout; may use products feed for highlights.
+- Browse (`src/pages/BrowsePage.tsx`): department chips, search input, product grid/cards with inline quantity controls; uses `useProducts` and `useCart` to sync quantities; shows store note (delivery message).
+- Product detail (`src/pages/ProductDetailPage.tsx`): lookup product by route param from products context; renders details and quantity controls tied to cart.
+- Checkout (`src/pages/CartCheckoutPage.tsx`):
+  - Shows cart summary, delivery slot selector, payment method, instructions, saved-address selector for authed users, “save address” checkbox.
+  - Uses checkout draft state; submits via `submitOrder`; server enforces auth (customer/admin).
+  - On success, navigation carries summary to success page.
+- Order success (`src/pages/OrderSuccessPage.tsx`): reads navigation state to show confirmation and CTA back to browse/orders.
+- Orders (`src/pages/OrdersPage.tsx`):
+  - Lists recent orders; supports search/status filters; provides admin view toggle for extended columns when user is admin.
+  - Uses `useOrders` refresh/polling for freshness.
+- Admin (`src/pages/AdminPage.tsx`):
+  - Dashboard cards (metrics/live queue), order drawer/actions, config form bound to `/config`.
+  - Product table with search/pagination; quick edits for stock/price/activation; create product flow.
+  - Users table with role/status updates.
+- Rider (`src/pages/RiderPage.tsx`):
+  - Shows confirmed/out-for-delivery queues; cards with call/address links; status-advance actions (PATCH `/order`).
+  - Mobile-friendly layout prioritizing actionable info.
+- Account (`src/pages/AccountPage.tsx`):
+  - Profile name editing; address list with create/edit/delete/default selection.
+  - Reflects primary address snapshot; updates propagate to `/account` responses.
+- Auth (`src/pages/AuthPage.tsx`):
+  - Shared login/register UI with bilingual strings; uses `AuthContext` methods; redirects after success; surfaces errors from `authError`.
+
+Cross-cutting UX + data concerns
+- i18n: `TranslationContext` supplies `t` helper; strings in `src/i18n/i18n.ts` for en/te; locale persisted in storage and applied to `<html lang>`.
+- Styling: Tailwind theme with brand emerald palette and Poppins/Inter font stacks; dark mode via `dark` class.
+- Caching: Client honors ETags for `/products` and `/order`; admin/users APIs also emit ETags to reduce bandwidth on focus/poll refresh.
+- Error surfacing: Toasts for cart/checkout/auth/API errors; form-level errors per page components.
+- Limits: quantity cap 20, orders listing `limit` bounded server-side (1–1000).
+- Storage keys: `order-ieeja-cart`, `order-ieeja-theme`, `order-ieeja-locale`; access token deliberately not persisted (memory-only for security).

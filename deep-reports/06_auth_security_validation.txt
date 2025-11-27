@@ -1,0 +1,61 @@
+Topic: Auth, Security, and Validation — Exhaustive Deep Report
+
+Credentials and hashing
+- PBKDF2-SHA256 with 100,000 iterations (SubtleCrypto cap) and 16-byte random salt in `_auth.js`. Hash stored as JSON blob `{ v: 1, algo: 'PBKDF2', iter: 100000, salt, hash }` (base64 fields).
+- Password rules: string, minimum length 8; enforced on register, errors returned with 400.
+- Phone normalization: digits-only, length 6–15 (`PHONE_REGEX`); used for register/login and order validation.
+
+Tokens and sessions
+- Algorithm: HS256 using `AUTH_SECRET` (must be ≥16 chars). Missing/short secret -> auth endpoints return 501.
+- Access tokens: TTL ~15 minutes; claims include `sub` (user id), `role`, `status`, `token_version`, `type: "access"`, `exp`, `iat`. Kept in-memory on client (never persisted).
+- Refresh tokens: TTL ~7 days; claims mirror access with `type: "refresh"`. Sent as HttpOnly cookie `refresh_token` with attributes Path=/auth, SameSite=Lax, Secure, HttpOnly, Max-Age ~7d. Not accessible to JS; scoped to auth paths to limit CSRF surface.
+- Token versioning: `users.token_version` default 1; checked on every access/refresh; `/auth/revoke` increments to invalidate all refresh tokens; mismatch triggers 401 and clears cookie.
+- Rotation: `/auth/refresh` issues new access + refresh pair; stale/invalid refresh clears cookie and 401.
+
+Auth endpoints (security behavior)
+- `/auth/register` POST: validates phone/password; rejects duplicate phone with 400; inserts user (role customer, status active); returns `{ token, user }` and sets refresh cookie.
+- `/auth/login` POST: validates input; enforces KV rate limit (below). On success resets counter, returns tokens, sets refresh cookie. 401 on bad credentials; 429 on rate limit with `Retry-After`.
+- `/auth/refresh` POST: requires valid refresh cookie; verifies signature, expiry, token_version. On failure clears cookie + 401; on success rotates tokens/cookie.
+- `/auth/logout` POST: clears refresh cookie unconditionally; returns success.
+- `/auth/revoke` POST: requires access token; bumps token_version, clears cookie, returns success; forces old refresh tokens to fail.
+- `/auth/me` GET: requires access token; returns public user shape; uses per-user ETag (count + max updated_at) to return 304 when unchanged.
+
+Authorization and guards
+- `requireAuth(request, env, roles?)`:
+  - Extracts Bearer token; verifies HS256 signature, `type`, `exp`, `token_version`, `status`.
+  - Confirms user exists/active via 90s in-memory cache keyed by user id + token_version; falls back to D1 query on cache miss; status ≠ active -> 403.
+  - Enforces role allowlist if provided; otherwise any authenticated role allowed.
+  - Throws `AuthError` with status 401/403/501 for handlers to convert to JSON `{ error }`.
+- Route role mapping:
+  - Public: `/products`, static assets, auth endpoints (except revoke/me).
+  - Customer-required: `/order` POST/GET (non-staff scope), `/account/*`.
+  - Rider/Admin: `/order` PATCH, rider console.
+  - Admin-only: `/config`, `/admin/*`.
+
+Rate limiting (login only)
+- Store: `LOGIN_RATE_LIMIT_KV`; key `rl:login:<ip>`.
+- Policy: 5 failed attempts per IP per 60s -> 15-minute block; block returns 429 with `Retry-After`; successful login deletes key/reset attempts.
+- IP detection: prefers `CF-Connecting-IP`, falls back to first entry of `X-Forwarded-For`.
+- Missing KV binding: logs one warning then disables limiting (auth still works).
+
+Validation: checkout/order and status
+- Shared schema `shared/order-schema.js` used client + server to normalize checkout payload:
+  - Required: `name`, `phone` (digits), `address`, `slot`, `paymentMethod`.
+  - Optional: `addressLine2`, `area`, `city`, `state`, `postalCode`, `landmark`, `instructions`.
+  - Quantity cap: `MAX_ITEM_QUANTITY = 20`.
+- Server `/order` validation extras:
+  - Ensures items array exists, IDs map to active products in DB, quantities numeric >0 and ≤20, stock_quantity sufficient.
+  - Computes totals from DB prices; enforces `minimumOrderAmount` from `admin_config`.
+  - Formats/snapshots address via `formatAddressSnapshot`; stores extended address fields separately.
+  - Status normalization in PATCH: aliases `out_for_delivery`/`outfordelivery` -> `outForDelivery`; allowed: pending, confirmed, outForDelivery, delivered, cancelled.
+  - Errors: 400 for validation issues; 501 when ORDERS_DB missing; 500 on DB failure.
+
+Caching, PII, and storage
+- Access tokens intentionally not persisted (memory-only); refresh token is HttpOnly cookie to reduce XSS risk.
+- PII handling: orders store customer name/phone/address inline for historical accuracy; linking to user/address is additive.
+- Cookies: refresh cookie scope `/auth` + SameSite=Lax reduce CSRF risk on other routes.
+- Logging: errors logged without secrets; KV missing warning logged once to avoid noise.
+
+Client-side protections
+- `useApiClient`: appends Authorization when token present; on 401 triggers `refreshSession` then retries once; on repeated 401/403 clears auth (logout) to prevent stale token loops.
+- `AuthContext`: clears state on logout, refresh failure, or revoke; keeps access token out of storage; auto-refreshes on app load to hydrate if refresh cookie valid.

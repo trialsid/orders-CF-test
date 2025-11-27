@@ -1,0 +1,30 @@
+Topic: Additional Context — Exhaustive Deep Report
+
+Repo and dev hygiene
+- Keep `dist/` out of version control; Cloudflare Pages builds from source.
+- If hashed bundles 404 in dev, restart Vite/Wrangler or disable cache in DevTools; index.html caching can linger.
+- Local D1 state lives under `.wrangler/state`; avoids needing `--persist-to` for `cf:dev`. `db:pull:force` can reset state.
+- Port usage: Vite 5173, Functions 8788; adjust if conflicts arise.
+- Optional dependency warning: `@rollup/rollup-linux-x64-gnu` missing can break builds; reinstall deps if encountered.
+
+Domains and bindings
+- Pages project: `order-ieeja`; production domain expected `order.ieeja.com`.
+- Bindings per env (preview/prod): D1 `ORDERS_DB`, KV `LOGIN_RATE_LIMIT_KV`; `AUTH_SECRET` must be set in both. Missing bindings yield 501s or disable rate limiting.
+- Wrangler config: `pages_build_output_dir = "dist"`, `compatibility_date = "2025-07-18"`.
+
+DB sync and migrations
+- `db:pull*` scripts export remote D1, reorder SQL (`scripts/reorder-d1-export.js`), and import locally for realistic data; `db:pull:force` clears `.wrangler/state` first.
+- Migrations live under `migrations/0001-0012`; apply via `db:migrate*` scripts per env; status scripts list applied/pending.
+- Backups (`backup.sql`) produced by pulls should be cleaned/archived to avoid stale sensitive data.
+
+Product/UX notes
+- Hero/pricing: ₹100 minimum order; free delivery above ₹299; ₹15 fee below threshold; messaging reflected in hero, store note, and `/products` message.
+- Checkout and Orders pages surface customer/delivery/payment details; saved/default address selection for logged-in users; “save this address” option on checkout.
+- Mobile sticky CTAs auto-hide when the keyboard opens; browse uses department chips and inline quantity controls; translations for en/te.
+- Cart quantity capped at 20; stock decremented on order submit; no automatic restock on cancel.
+
+Pending improvements (ideas)
+- Richer customer-facing order tracking, per-rider assignment, and push/real-time updates.
+- PWA/service worker manifest for offline shell, caching, and installability.
+- Hardened auth/role UX (MFA/OTP, better session messaging).
+- Automated tests (unit/integration/e2e), monitoring, and alerting.

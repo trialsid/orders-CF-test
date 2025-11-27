@@ -1,0 +1,9 @@
+Topic: Additional Context Notes
+
+- Repo hygiene: Keep `dist/` out of git; Pages builds from source. If hashed bundles 404 during dev, restart dev servers or disable cache.
+- Local D1 state: Wrangler stores local DB under `.wrangler/state`; avoids needing `--persist-to` for cf:dev.
+- Domain/bindings: Production domain expected at order.ieeja.com (Pages project `order-ieeja`); ensure AUTH_SECRET and ORDERS_DB bindings are attached in preview/prod.
+- DB sync: `db:pull*` scripts export remote D1, reorder SQL (`scripts/reorder-d1-export.js`), and reimport locally for realistic data.
+- Pending improvements: richer customer-facing order tracking, per-rider assignment with push updates, PWA/manifest, and hardened auth/role UX.
+- Build caveat: `npm run build` can fail locally if optional `@rollup/rollup-linux-x64-gnu` is missing; reinstall deps or add the optional package if needed.
+- UX callouts: checkout success + Orders surface customer/delivery/payment details; hero copy advertises ₹100 min / ₹299 free delivery / ₹15 fee below; mobile sticky CTAs auto-hide with keyboard; logged-in checkout surfaces saved/default addresses with “save this address” option.

@@ -1,0 +1,85 @@
+Topic: Data Model (D1) — Exhaustive Deep Report
+
+Overview
+- Cloudflare D1 (SQLite) schema defined by migrations `0001-0012`. Entities: users, user_addresses, admin_config, products, orders, order_items. Orders snapshot customer/address/payment at submission while optionally linking to users + saved addresses. Products carry pricing/stock; admin_config stores delivery economics used by APIs and UI messaging.
+
+Schema timeline (by migration)
+- 0001: create `orders` (minimal: id, customer_name/phone, total_amount INTEGER, currency, status, items_json, created_at).
+- 0002: add `customer_address`, `delivery_slot`, `payment_method`, `delivery_instructions` to orders.
+- 0003: create `admin_config` and seed defaults (min order 100, free threshold 299, fee 15).
+- 0004: create `users` (auth base: phone unique, password_hash, role/status, display_name, metadata_json).
+- 0005: add `full_name`, `primary_address_json`; create `user_addresses`; link `orders.user_id` + `orders.delivery_address_id`; backfill full_name.
+- 0006: create `products` table (price REAL, is_active).
+- 0007: seed products from inventory.
+- 0008: add `users.token_version` (refresh revocation).
+- 0009: create `order_items` normalized table.
+- 0010: add `products.stock_quantity` with default 0; seed to 1000 for existing rows.
+- 0011: recreate products/orders/order_items to fix types (money -> REAL), add CHECK(stock_quantity >= 0), reindex.
+- 0012: add `orders.updated_at`, backfill, index.
+
+Tables and columns (with constraints, defaults, usage)
+- `users`
+  - Keys/columns: `id` TEXT PK (UUID), `phone` TEXT UNIQUE NOT NULL, `password_hash` TEXT NOT NULL, `role` TEXT CHECK ('customer','rider','admin') NOT NULL, `status` TEXT NOT NULL DEFAULT 'active'.
+  - Profile: `display_name` TEXT, `full_name` TEXT, `metadata_json` TEXT, `primary_address_json` TEXT (cached default address snapshot).
+  - Auth control: `token_version` INTEGER DEFAULT 1 (used to revoke refresh tokens).
+  - Timestamps: `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP.
+  - Indexes: `idx_users_phone` for login/auth lookups.
+- `user_addresses`
+  - Keys/columns: `id` TEXT PK (UUID), `user_id` TEXT NOT NULL FK→users(id), address fields (`label`, `contact_name`, `phone`, `line1` NOT NULL, `line2`, `area`, `city`, `state`, `postal_code`, `landmark`), `is_default` INTEGER NOT NULL DEFAULT 0.
+  - Timestamps: `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP.
+  - Indexes: `idx_user_addresses_user_id`.
+  - Behavior: single default enforced in app logic; changes update `users.primary_address_json`. Orders link to `delivery_address_id` but also snapshot address strings.
+- `admin_config`
+  - Keys/columns: `key` TEXT PK, `value` TEXT NOT NULL, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP.
+  - Seed rows: minimumOrderAmount=100, freeDeliveryThreshold=299, deliveryFeeBelowThreshold=15. Used by `/products` message and `/order` validation/pricing.
+- `products`
+  - Keys/columns: `id` TEXT PK, `name` TEXT NOT NULL, `description` TEXT, `department` TEXT, `category` TEXT,
+    `price` REAL NOT NULL, `mrp` REAL, `raw_selling_price` REAL,
+    `is_active` INTEGER DEFAULT 1, `stock_quantity` INTEGER NOT NULL DEFAULT 0 CHECK (stock_quantity >= 0),
+    `created_at` TEXT DEFAULT datetime('now'), `updated_at` TEXT DEFAULT datetime('now').
+  - Indexes: `idx_products_category`, `idx_products_department`.
+  - Seed: ~280 SKUs from `functions/_inventory-data.json` (0007). Stock prefilled to 1000 in 0010.
+  - Usage: `/products` public feed; admin CRUD; stock decremented in `/order` batch; delete blocked when referenced in order_items.
+- `orders`
+  - Keys/columns: `id` TEXT PK, `customer_name` TEXT NOT NULL, `customer_phone` TEXT,
+    `total_amount` REAL NOT NULL (REAL after 0011), `currency` TEXT NOT NULL DEFAULT 'INR',
+    `status` TEXT NOT NULL DEFAULT 'pending', `items_json` TEXT NOT NULL,
+    `customer_address` TEXT, `delivery_slot` TEXT, `payment_method` TEXT, `delivery_instructions` TEXT,
+    `user_id` TEXT FK→users(id), `delivery_address_id` TEXT FK→user_addresses(id),
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP, `updated_at` TEXT (added/backfilled 0012).
+  - Indexes: `idx_orders_created_at` (DESC), `idx_orders_status`, `idx_orders_user_id`, `idx_orders_updated_at`.
+  - Usage: primary feed for customers/admin/riders; ETags rely on `updated_at` and counts; status updates bump `updated_at`.
+- `order_items`
+  - Keys/columns: `id` TEXT PK, `order_id` TEXT NOT NULL FK→orders(id) ON DELETE CASCADE,
+    `product_id` TEXT NOT NULL, `product_name` TEXT NOT NULL (snapshot), `unit_price` REAL NOT NULL, `quantity` INTEGER NOT NULL, `line_total` REAL NOT NULL,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP.
+  - Indexes: `idx_order_items_order_id`, `idx_order_items_product_id`.
+  - Usage: normalized analytics, admin delete guard, order detail rendering if needed.
+
+Relationships and data flow
+- Users 1→N user_addresses; `primary_address_json` caches the active default for quick reads.
+- Orders → users (optional; guest orders allowed) and → user_addresses (optional); still snapshot customer contact/address/payment to remain immutable if user/address later changes.
+- Order_items → orders (cascade delete when order removed).
+- Products referenced by order_items.product_id; admin delete route prevents deletion when referenced.
+- Config (admin_config) read on each `/products` and `/order` request; not cached in DB layer but reflected in ETag for products endpoint.
+
+Data integrity and constraints
+- DB constraints: PK/UNIQUE on ids/phone, CHECK(stock_quantity ≥0), FK on order_items→orders (cascade), orders→users/user_addresses (no cascade), role CHECK enforced in schema; status/role also validated in code paths.
+- Application guards: quantity limits (≤20), stock availability check before insert, minimum order enforced from admin_config, single default address enforced in code.
+- Token revocation: `users.token_version` consulted during `/auth/refresh` to invalidate old refresh cookies.
+
+Seeds and defaults
+- `admin_config` defaults set at creation.
+- `products` seeded from generated inventory (0007); `stock_quantity` mass-updated to 1000 in 0010 for existing rows before CHECK added.
+- `orders.updated_at` backfilled to `datetime('now')` in 0012; orders created post-migration set via app logic on status changes.
+
+Indexes, caching, and performance
+- Orders indexes support feed sorting, status filters, user scoping, and ETag calculations (`COUNT`, `MAX(updated_at)`).
+- Products indexes support browse filters and admin search; products ETag uses `COUNT` + `MAX(updated_at)` + config `MAX(updated_at)`.
+- Users index on phone speeds login and auth lookups; admin users ETag uses `COUNT` + `MAX(updated_at)`.
+- Order_items indexes support join/analytics and delete checks.
+
+Operational notes and types
+- Monetary columns (`total_amount`, `unit_price`, `line_total`) are REAL post-0011 to allow fractional prices; earlier INTEGER corrected via table recreation.
+- Timestamps default to SQLite `datetime('now')`; app updates `orders.updated_at` on status change and `products.updated_at` on admin edits; other updates rely on explicit SQL in code.
+- Soft-deletes: not present; use `is_active` on products and `status` on users/orders. Deletion of products restricted when referenced; deletion of addresses allowed but orders retain snapshots and delivery_address_id may orphan logically (no FK cascade).

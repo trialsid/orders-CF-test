@@ -1,0 +1,39 @@
+Topic: Runtime Configuration and Bindings — Exhaustive Deep Report
+
+Config surfaces
+- `wrangler.toml`:
+  - `compatibility_date = "2025-07-18"`.
+  - `pages_build_output_dir = "dist"` (Vite emits here).
+  - Default env bindings: D1 `ORDERS_DB` -> `order_ieeja_orders_preview` (id `756fd361-4883-4202-bccd-db469354c8f8`), KV `LOGIN_RATE_LIMIT_KV` -> `f059e5f6774f4e7ca9db0d7bf80841fd`.
+  - Production env overrides: D1 `order_ieeja_orders` (id `0eaea965-4467-4aee-89a9-28aed83e4c79`), KV id `5e8638dfbd414219947a22aa476944cf`.
+- No `.env` consumption at build or runtime; SPA uses relative paths and does not read env vars. Functions rely solely on Cloudflare-provided bindings/secrets.
+- Build hooks: `npm run build:inventory` (predev/prebuild) must run to populate `functions/_inventory-data.json` and seed products before dev/build.
+
+Bindings matrix and consumers
+- D1 (`ORDERS_DB`):
+  - Consumers: all functions via `getDatabase(env)` in order/config/products/admin/account/auth modules. Missing binding -> 501 with `{ error: "ORDERS_DB binding is not configured." }`.
+  - Workload: products catalog reads/writes; orders insertion/listing/status updates; admin config; users/auth metadata; user addresses; order_items.
+- KV (`LOGIN_RATE_LIMIT_KV`):
+  - Consumer: `_auth.js` login rate limiting (key `rl:login:<ip>`). If absent, logs warning once and disables rate limiting (no hard failure).
+- Secret (`AUTH_SECRET`):
+  - Consumer: `_auth.js` JWT signing/verification for access/refresh tokens. Must be string length ≥16. Missing/short -> 501 from auth endpoints.
+
+Runtime behaviors tied to config
+- Auth/session:
+  - Access tokens signed with `AUTH_SECRET`, TTL ~15m; refresh tokens ~7d stored as HttpOnly cookie scoped to `/auth`, `Secure`, `SameSite=Lax`.
+  - `/auth/refresh` uses `AUTH_SECRET` + DB token_version; fails if secret missing.
+- Rate limit:
+  - KV-enforced login throttle: 5 failed attempts per IP per minute -> 15m block, `Retry-After` header. Clears on successful login. Disabled if KV binding absent.
+- Database availability:
+  - All major endpoints short-circuit with 501 when D1 binding missing, making misconfiguration explicit.
+
+Environment mapping and routing
+- Default env (preview): Pages deploy uses preview D1/KV ids above.
+- Production env: set via `[env.production]` section; Wrangler deploy with `--env production` attaches prod bindings.
+- Local dev topology: Vite on 5173; Wrangler dev (Functions) on 8788. `vite.config.js` proxies `/products`, `/order`, `/config` to 8788, so the SPA hits the same origin. No env files are read locally; Wrangler injects bindings in dev when configured.
+
+Operational expectations and checks
+- Before deploy: set `AUTH_SECRET` (preview/prod), bind `ORDERS_DB` and `LOGIN_RATE_LIMIT_KV` in Cloudflare dashboard or via `wrangler` so 501s are avoided.
+- Migrations/scripts: `npm run db:migrate` (local preview), `db:migrate:preview`, `db:migrate:prod` select bindings by env; `db:pull`/`db:sync:preview` default to preview DB unless `--env production` variants are used.
+- Cache/ETag dependence: `/products` global ETag uses products + admin_config timestamps from D1; `/order` ETags use orders table updated_at; requires DB timestamps to be accurate (migrations set updated_at in orders).
+- Failure modes: Missing AUTH_SECRET -> auth endpoints 501; missing ORDERS_DB -> most endpoints 501; missing KV -> login rate limiting disabled (warns once).

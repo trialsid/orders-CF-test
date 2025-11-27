@@ -1,0 +1,63 @@
+Topic: Build, Dev, and Deploy — Exhaustive Deep Report
+
+Prereqs
+- Node/npm installed (lockfile present; uses npm). Run `npm install` before workflows.
+- Wrangler CLI provided via devDependency `wrangler@^4.50.0` (scripts invoke via npx). Ensure Cloudflare login configured for remote operations.
+- CSV for inventory: `proposed-280-SKUs.csv` must exist for inventory generation.
+- Env bindings: `AUTH_SECRET`, `ORDERS_DB`, `LOGIN_RATE_LIMIT_KV` configured per environment (preview/prod) in Cloudflare.
+
+Tooling and scripts (package.json)
+- Inventory prep: `build:inventory` generates `functions/_inventory-data.json` from CSV; auto-runs on `predev`/`prebuild` so catalog exists before serving.
+- Dev:
+  - `dev`: Vite dev server on 5173 (SPA only); API proxied to 8788.
+  - `dev:lan`: Vite dev with `--host` for LAN testing.
+  - `design`: `ladle serve` (component stories).
+  - `typecheck`: `tsc --noEmit`.
+- Build/serve:
+  - `build`: Vite build to `dist/` (runs inventory first).
+  - `preview`: `vite preview` to serve built assets locally.
+- Cloudflare Pages (static + Functions):
+  - `pages:dev`: `npm run build` then `wrangler pages dev dist --ip 0.0.0.0` (Functions on 8788; serves dist).
+  - `pages:deploy`: build then `wrangler pages deploy dist` (preview env).
+  - `pages:deploy:preview`: same as above (preview).
+  - `pages:deploy:prod`: build then `wrangler pages deploy dist --branch production` (prod env/bindings).
+- Database/migrations:
+  - Apply: `db:migrate` (local preview), `db:migrate:preview` (remote preview), `db:migrate:prod` (remote prod).
+  - Status: `db:migrate:status`, `db:migrate:status:preview`, `db:migrate:status:prod`.
+  - Export/import: `db:pull` (remote preview → backup.sql → reorder → import local), `db:pull:prod` (prod), `db:pull:force` (reset state then pull), component steps `db:pull:export|process|import`.
+  - Sync: `db:sync:preview` (push local preview to remote preview).
+  - Query/exec: `db:query:users`, `db:query:users:remote`; `db:exec`, `db:exec:remote`, `db:exec:prod`.
+  - Wipe: `db:wipe:orders`, `db:wipe:orders:remote`; `db:wipe:users`, `db:wipe:users:remote`.
+  - Inspect: `db:inspect` (tables + counts locally).
+- Logs:
+  - `logs:tail`, `logs:tail:preview`, `logs:tail:prod` (Pages deployment logs).
+- Maintenance:
+  - `clean`: removes `dist` and `.wrangler` to reset build artifacts and local D1 state.
+
+Local dev topology and workflows
+- Ports: Vite on 5173; Wrangler Pages dev (Functions) on 8788.
+- Proxy: `vite.config.js` proxies `/products`, `/order`, `/config` to `http://127.0.0.1:8788` for same-origin API calls and no CORS/preflights.
+- SPA-only flow: run `npm run dev` when you only need frontend mocks; API calls will hit proxy target (ensure Functions running if needed).
+- Full-stack flow: run `npm run pages:dev` (builds then runs Functions + serves dist). Alternative: `npm run build` then `wrangler pages dev dist` manually.
+- Inventory regeneration: automatic via predev/prebuild; rerun `npm run build:inventory` if CSV changes.
+- Local D1 state: stored in `.wrangler/state`; `db:pull` imports remote preview into local; `db:pull:force` wipes state first.
+
+Build/deploy pipeline
+- Output: `dist/` (configured in `wrangler.toml` as `pages_build_output_dir`).
+- Project: Cloudflare Pages project `order-ieeja`.
+- Bindings: preview/prod D1 + KV defined in `wrangler.toml`; Cloudflare dashboard must attach matching IDs; `AUTH_SECRET` set per env.
+- Preview deploy: `npm run pages:deploy` or `pages:deploy:preview` (uses default env/bindings).
+- Production deploy: `npm run pages:deploy:prod` (deploys from branch `production` with prod bindings).
+- Verification: tail logs via `logs:tail:preview`/`logs:tail:prod`; hit `/products`/`/order` to confirm 200s (501 indicates missing binding/secret).
+- Optional dependency note: `npm run build` can fail if optional `@rollup/rollup-linux-x64-gnu` missing; `npm install` usually resolves; otherwise reinstall with matching platform binary.
+
+Database operations cautions
+- Destructive scripts: `db:sync:preview` drops remote tables before import; `db:wipe:*` deletes data—use only in non-prod or with care.
+- Backups: `db:pull`/`db:pull:prod` create `backup.sql`; reorder script ensures import order (users before orders, migrations before sqlite_sequence). Clean up stale backups after use.
+- State drift fixes: `db:pull:force` clears `.wrangler/state` to realign local DB; rerun migrations if schema errors occur.
+
+Operational/debug notes
+- Cache/ETag: `/products` and `/order` GET use ETags; if dev shows stale SPA shell, clear browser cache or restart dev servers (Vite/Pages) because index.html can be cached.
+- Git hygiene: keep `dist/` out of git; run `clean` before fresh builds if artifacts linger.
+- Auth/binding 501s: indicate missing `AUTH_SECRET` or `ORDERS_DB`; set in Cloudflare env and retry.
+- Port conflicts: ensure 5173/8788 free; adjust Vite/wrangler configs if occupied.

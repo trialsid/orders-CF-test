@@ -1,0 +1,22 @@
+Topic: Auth, Security, and Validation
+
+The security layer is a gate with two keys: JWTs signed with AUTH_SECRET and rate limits enforced by KV. Validation is shared so both sides read the same rulebook.
+
+Passwords
+- PBKDF2-SHA256 with 16-byte random salt, 100,000 iterations (SubtleCrypto cap) in `_auth.js`. Stored as JSON payload (version, iterations, salt, hash).
+
+Tokens
+- HS256 JWTs signed with `AUTH_SECRET`.
+- Access TTL ~15 minutes (kept in client state).
+- Refresh TTL 7 days; cookie is HttpOnly, Secure, SameSite=Lax, Path=/auth.
+- token_version on users table used for revocation checks.
+
+Authorization
+- `requireAuth` verifies Authorization Bearer, signature/exp/type, token_version (cache or DB), status, and role allowlists; throws AuthError with 401/403/501. 90s in-memory cache reduces D1 reads.
+
+Rate Limiting
+- KV-backed login limiter (`LOGIN_RATE_LIMIT_KV`, key `rl:login:<ip>`). 5 failed attempts/min → 15-minute block with Retry-After; success clears attempts.
+
+Validation (checkout/orders)
+- `shared/order-schema.js` normalizes checkout, requires name/phone (digits>=6)/address/slot/paymentMethod, caps quantity at 20, builds payload.
+- `/order` server side re-checks against DB (active products, stock, quantity bounds) and minimumOrderAmount; status inputs normalized with aliases (e.g., `out_for_delivery` → `outForDelivery`).

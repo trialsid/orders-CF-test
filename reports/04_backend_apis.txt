@@ -1,0 +1,31 @@
+Topic: Backend APIs (Cloudflare Pages Functions)
+
+Think of each route as a service window in the same shop. They all read from the same register (D1) and honor the same tickets (JWTs).
+
+/products (`functions/products.js`)
+- Public GET. Returns `{ items, config, message }` from D1. Global ETag = product count/max updated_at + admin_config max updated_at; cache-control `public, max-age=60, stale-while-revalidate=600`; supports 304.
+
+/order (`functions/order.js`)
+- POST (auth: customer/admin): Validates with DB + `shared/order-schema.js`, enforces stock/min order, snapshots address, optional address upsert for user, writes order + order_items + stock updates in one `db.batch`. Order id `ORD-<12 chars>`. Returns message/orderId/summary.
+- GET (auth: customer/rider/admin): Customers see own orders; staff see all. Supports `id`, `limit` (1–1000), `search`, `status`. Per-order ETag on `id`; customer-global ETag (count + max updated_at) when unfiltered. Private cache headers on ETag hits; `no-store` otherwise.
+- PATCH (auth: admin/rider): Normalizes status (aliases like `out_for_delivery`), updates status + `updated_at`.
+
+/config (`functions/config.js`)
+- Admin-only GET/PUT/PATCH for delivery economics (`minimumOrderAmount`, `freeDeliveryThreshold`, `deliveryFeeBelowThreshold`) with numeric validation in `admin_config`.
+
+/auth (functions/auth/*.js + `_auth.js`)
+- `/auth/register` POST: Validates phone/password, PBKDF2 100k hash, inserts customer, issues access token + refresh cookie (HttpOnly, Secure, SameSite=Lax, Path=/auth).
+- `/auth/login` POST: Validates credentials; KV rate limit (5 failures/min → 15m block, Retry-After). Issues tokens; warms cache.
+- `/auth/refresh` POST: Validates refresh token/token_version; rotates tokens; clears cookie on failure.
+- `/auth/logout` POST: Clears refresh cookie.
+- `/auth/revoke` POST: Authenticated; increments token_version to revoke all sessions; clears cookie.
+- `/auth/me` GET: Returns public user profile with per-user ETag.
+
+/account
+- `/account` GET: Auth (customer/rider/admin). Returns profile (public shape) + addresses ordered by default/created_at.
+- `/account/profile` PUT: Auth (customer/rider/admin). Updates displayName/fullName.
+- `/account/addresses`: Auth (customer/rider/admin). GET list; POST create (handles default + primary snapshot); PUT update; PATCH set default; DELETE remove with fallback default and primary snapshot updates.
+
+/admin
+- `/admin/products`: Admin-only. GET with pagination/search and ETag; POST create; PATCH partial update; DELETE blocked if product has order_items references.
+- `/admin/users`: Admin-only. GET with global ETag (count + max updated_at); PATCH role/status (enum-validated).

@@ -1,0 +1,164 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+\geometry{margin=1in}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+
+\title{\textbf{Order-IEEJA Technical Architecture Report}}
+\author{Deep Code Analysis Agent}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document provides a comprehensive technical analysis of the \texttt{order-ieeja} project, a full-stack e-commerce application built on the Cloudflare developer platform. It details the system topology, runtime configuration, data models, authentication security, and operational workflows. The application leverages React (Vite) for the frontend and Cloudflare Pages Functions for the backend, with D1 (SQLite) and KV for persistence.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{System Topology and Stack}
+
+\subsection{High-Level Architecture}
+The system adheres to a serverless monolith architecture hosted entirely on Cloudflare Pages. It serves a static frontend bundle (`dist/`) and executes server-side logic via Pages Functions (`functions/`).
+\begin{itemize}
+    \item \textbf{Frontend:} Single Page Application (SPA) built with React 18.3.1, TypeScript, and Vite 5.4.10.
+    \item \textbf{Backend:} Cloudflare Pages Functions (Workers runtime), exposing RESTful endpoints.
+    \item \textbf{Database:} Cloudflare D1 (SQLite) for relational data (`ORDERS_DB`).
+    \item \textbf{Key-Value Store:} Cloudflare KV for rate limiting (`LOGIN_RATE_LIMIT_KV`).
+    \item \textbf{Environment:} Node.js tooling for build/dev; edge runtime for production.
+\end{itemize}
+
+\subsection{Dependency Graph}
+The project relies on a modern JS/TS ecosystem:
+\begin{itemize}
+    \item \textbf{Core:} `react` (18.3.1), `react-router-dom` (7.9.5).
+    \item \textbf{Styling:} TailwindCSS 3.4.15, `lucide-react` for iconography.
+    \item \textbf{Build/Dev:} `vite` (5.4.10), `wrangler` (4.50.0), `typescript` (5.6.3).
+    \item \textbf{Utilities:} `csv-parse` for inventory generation.
+\end{itemize}
+
+\section{Runtime Configuration}
+
+\subsection{Bindings and Environment Variables}
+The application avoids `.env` files for runtime configuration, relying instead on Cloudflare bindings injected at the edge.
+\begin{itemize}
+    \item \textbf{ORDERS_DB (D1):}
+    \begin{itemize}
+        \item Preview: `order_ieeja_orders_preview` (ID ending `...c8f8`)
+        \item Production: `order_ieeja_orders` (ID ending `...4c79`)
+    \end{itemize}
+    \item \textbf{LOGIN_RATE_LIMIT_KV (KV):}
+    \begin{itemize}
+        \item Preview: ID `f059e...`
+        \item Production: ID `5e863...`
+    \end{itemize}
+    \item \textbf{AUTH_SECRET:} Symmetric key for HS256 JWT signing (must be $\ge$ 16 characters).
+\end{itemize}
+
+\subsection{Dev Proxy}
+Local development mimics production via `vite.config.js` proxying:
+\begin{lstlisting}[language=json, basicstyle=\small\ttfamily]
+{
+  "/products": "http://127.0.0.1:8788",
+  "/order": "http://127.0.0.1:8788",
+  "/config": "http://127.0.0.1:8788"
+}
+\end{lstlisting}
+This allows the React app (port 5173) to consume Functions (port 8788) without CORS.
+
+\section{Data Model (D1 Schema)}
+
+\subsection{Schema Evolution}
+The database schema is managed via 12 ordered migrations (`migrations/0001` to `0012`). Key entities include:
+
+\begin{description}
+    \item[orders] Central table containing customer info, status, payment details, and JSON snapshots of items.
+    \item[order_items] Normalized line items linked to orders and products (added in migration 0009).
+    \item[products] Catalog with price, stock, and active status.
+    \item[users] Authentication principal (phone-based) with role (`customer`, `rider`, `admin`).
+    \item[user_addresses] Saved addresses linked to users; orders reference these but also snapshot data.
+    \item[admin_config] Key-value store for dynamic delivery economics (e.g., `minimumOrderAmount`).
+\end{description}
+
+\subsection{Constraints and Integrity}
+\begin{itemize}
+    \item \textbf{Stock Safety:} `products.stock_quantity` has a `CHECK (stock_quantity >= 0)` constraint.
+    \item \textbf{Referential Integrity:} `order_items` cascade on order deletion. Users and addresses do not cascade to orders to preserve history.
+    \item \textbf{Versioning:} `users.token_version` (int) supports global refresh token revocation.
+\end{itemize}
+
+\section{Application Logic & Flows}
+
+\subsection{Order Lifecycle}
+\begin{enumerate}
+    \item \textbf{Cart Validation:} Client checks quantity ($\le$ 20).
+    \item \textbf{Submission (POST /order):}
+    \begin{itemize}
+        \item Server validates stock availability and `admin_config` thresholds (e.g., min order ₹100).
+        \item Executes atomic `db.batch()`: upsert address $\rightarrow$ insert order $\rightarrow$ insert items $\rightarrow$ decrement stock.
+    \end{itemize}
+    \item \textbf{Processing:} Admin/Rider updates status (Pending $\rightarrow$ Confirmed $\rightarrow$ OutForDelivery $\rightarrow$ Delivered) via PATCH.
+\end{enumerate}
+
+\subsection{Authentication Strategy}
+\begin{itemize}
+    \item \textbf{Method:} Phone number + Password (PBKDF2-SHA256, 100k iterations).
+    \item \textbf{Tokens:} 
+    \begin{itemize}
+        \item \textit{Access:} Short-lived (~15m), memory-only.
+        \item \textit{Refresh:} Long-lived (~7d), HttpOnly/Secure/SameSite=Lax cookie.
+    \end{itemize}
+    \item \textbf{Rate Limiting:} 5 failed logins/minute per IP triggers a 15-minute block via KV.
+\end{itemize}
+
+\subsection{Validation Shared Contract}
+The project shares validation logic between client and server via `shared/order-schema.js`:
+\begin{itemize}
+    \item \texttt{MAX_ITEM_QUANTITY}: 20
+    \item \texttt{PHONE_MIN_DIGITS}: 6
+    \item Default Location: City "Ieeja", State "Telangana", Zip "509127"
+\end{itemize}
+
+\section{Operational Procedures}
+
+\subsection{Build and Deploy}
+\begin{itemize}
+    \item \textbf{Pre-build:} `npm run build:inventory` generates `functions/_inventory-data.json` from CSV to ensure the catalog is seeded.
+    \item \textbf{Production Deploy:} `npm run pages:deploy:prod` builds the Vite app and deploys to the `production` branch.
+\end{itemize}
+
+\subsection{Database Management}
+\begin{itemize}
+    \item \textbf{Sync:} `npm run db:pull` exports remote data, reorders SQL statements (users $\rightarrow$ orders) to satisfy FKs, and imports to local dev.
+    \item \textbf{Migrations:} Applied via `wrangler d1 migrations apply`.
+    \item \textbf{Wipe/Reset:} `db:pull:force` clears local `.wrangler/state` to resolve drift.
+\end{itemize}
+
+\section{Security Risks and Gaps}
+
+\begin{itemize}
+    \item \textbf{Concurrency:} While DB constraints prevent negative stock, high-concurrency overselling is possible without row locking (SQLite limitation in distributed mode).
+    \item \textbf{Auth:} No MFA. Secrets (`AUTH_SECRET`) must be manually kept in sync across environments.
+    \item \textbf{Testing:} No automated test suite (unit/E2E). Reliance on manual QA scripts (e.g., `test-login-rate-limit-preview.sh`).
+    \item \textbf{Data Loss:} "Soft delete" is implemented for products/users, but manual DB wipes are destructive. Backups are manual (`backup.sql`).
+\end{itemize}
+
+\section{Conclusion}
+The `order-ieeja` project is a tightly scoped, modern serverless e-commerce platform. Its use of Cloudflare D1 and Pages Functions reduces operational overhead, but the lack of automated testing and advanced concurrency controls presents scalability risks. The shared validation schema and atomic batch writes demonstrate a solid architectural foundation.
+
+\end{document}

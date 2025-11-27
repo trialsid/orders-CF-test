@@ -1,0 +1,224 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[colorlinks,linkcolor=ForestGreen,citecolor=ForestGreen,urlcolor=RoyalBlue]{hyperref}
+\usepackage{enumitem}
+\usepackage{sectsty}
+\setlist{leftmargin=*,itemsep=4pt}
+\sectionfont{\color{ForestGreen}}
+\subsectionfont{\color{ForestGreen}}
+
+\title{Orders CF Deep Technical Report (C5)}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+\section{Executive Snapshot}
+\begin{itemize}
+  \item Single Cloudflare Pages project \texttt{order-ieeja} serves a Vite SPA (\texttt{dist/}) and Pages Functions on the same domain; there is no separate origin server.
+  \item Workers data plane only: D1 for all transactional data and KV for login rate limiting; \texttt{AUTH\_SECRET} is mandatory for any auth/token work.
+  \item Shared order schema in \texttt{shared/order-schema.js} is imported by frontend and backend to align payloads and validation.
+  \item Inventory generation via \texttt{build:inventory} is required before dev/build so \texttt{functions/\_inventory-data.json} exists for catalog/migrations.
+\end{itemize}
+
+\section{System Snapshot}
+\begin{itemize}
+  \item Cloudflare Pages project \texttt{order-ieeja}: Vite-built static bundle in \texttt{dist/} plus Pages Functions behind the same domain; no origin servers.
+  \item Workers data plane: D1 binding \texttt{ORDERS\_DB} (preview/prod) and KV namespace \texttt{LOGIN\_RATE\_LIMIT\_KV}; all server logic runs in the Workers runtime.
+  \item Shared contracts: \texttt{shared/order-schema.js} used by \texttt{src/utils/checkout.ts} and \texttt{functions/order.js}.
+  \item Auth secret: symmetric \texttt{AUTH\_SECRET} signs access/refresh tokens; refresh tokens live in HttpOnly cookies scoped to \texttt{/auth}.
+\end{itemize}
+
+\section{Runtime Configuration and Bindings}
+\begin{itemize}
+  \item \texttt{wrangler.toml}: \texttt{compatibility\_date = "2025-07-18"}, \texttt{pages\_build\_output\_dir = "dist"}.
+  \item Default env bindings: D1 \texttt{ORDERS\_DB} (\texttt{order\_ieeja\_orders\_preview}, id \texttt{756fd361-4883-4202-bccd-db469354c8f8}); KV \texttt{LOGIN\_RATE\_LIMIT\_KV} id \texttt{f059e5f6774f4e7ca9db0d7bf80841fd}.
+  \item Production env overrides: D1 \texttt{order\_ieeja\_orders} id \texttt{0eaea965-4467-4aee-89a9-28aed83e4c79}; KV id \texttt{5e8638dfbd414219947a22aa476944cf}.
+  \item SPA never reads env vars; Functions rely solely on bindings/secrets. Missing \texttt{ORDERS\_DB} returns 501 from most endpoints; missing \texttt{AUTH\_SECRET} breaks auth; missing KV disables login rate limiting (warns once).
+  \item Build hooks: \texttt{npm run build:inventory} runs on \texttt{predev}/\texttt{prebuild} to populate \texttt{functions/\_inventory-data.json}.
+  \item Local dev topology: Vite on 5173; Wrangler dev for Functions on 8788. Proxy in \texttt{vite.config.js} maps \texttt{/products}, \texttt{/order}, \texttt{/config} to \texttt{http://127.0.0.1:8788}.
+  \item Compatibility note: future Worker changes tied to \texttt{2025-07-18} should be reviewed before updating or deploying on older platforms.
+\end{itemize}
+
+\section{UX, Theme, and i18n}
+\begin{itemize}
+  \item Tailwind 3.4 with emerald brand palette; fonts Poppins/Inter from \texttt{tailwind.config.js}; dark mode via \texttt{dark} class on \texttt{<html>}.
+  \item Translation context covers English and Telugu; locale stored in \texttt{order-ieeja-locale} and applied to \texttt{document.documentElement.lang}; strings in \texttt{src/i18n/i18n.ts}.
+  \item Theme preference stored in \texttt{order-ieeja-theme}; layout toggles class on root element.
+  \item Toast stack, scroll-to-top on route change, focus management respecting \texttt{prefers-reduced-motion}; mobile sticky CTAs auto-hide with keyboard.
+\end{itemize}
+
+\section{Frontend Architecture and Flows}
+\subsection{Foundation}
+\begin{itemize}
+  \item React 18.3 + TypeScript (strict) with Vite 5; TailwindCSS 3.4 and lucide-react icons; global styles in \texttt{src/index.css}.
+  \item Entry \texttt{src/main.tsx} mounts \texttt{App} within \texttt{AuthProvider}.
+  \item Routing (\texttt{src/App.tsx}): \texttt{BrowserRouter} under \texttt{MainLayout}; redirects \texttt{/cart} $\rightarrow$ \texttt{/checkout}, \texttt{/discover} $\rightarrow$ \texttt{/browse}, wildcard to \texttt{/}.
+\end{itemize}
+
+\subsection{Layout and State Composition (\texttt{src/layouts/MainLayout.tsx})}
+\begin{itemize}
+  \item Provides products, cart, checkout draft state, and \texttt{submitOrder} via \texttt{Outlet} context; hosts translation and theme toggles.
+  \item Theme/locale persisted to \texttt{order-ieeja-theme} and \texttt{order-ieeja-locale}; sets \texttt{document.documentElement.lang} and \texttt{dark} class.
+  \item Toast stack; scroll-to-top and focus management on navigation.
+  \item Checkout draft: keeps \texttt{\{ form, stepIndex \}} in state, reset after successful submit; not persisted.
+  \item Submit flow: validates cart and quantity cap, builds payload via \texttt{prepareOrderPayload}, POSTs to \texttt{/order} with bearer when present, shows toasts, clears cart/draft, navigates to \texttt{/checkout/success}.
+\end{itemize}
+
+\subsection{Routing Map and Page Behavior}
+\begin{itemize}
+  \item Public: \texttt{/}, \texttt{/browse}, \texttt{/products/:id}, \texttt{/checkout}, \texttt{/checkout/success}, \texttt{/orders}, \texttt{/auth/login}, \texttt{/auth/register}.
+  \item Protected via \texttt{<RequireAuth>}: \texttt{/admin} (admin), \texttt{/rider} (rider/admin), \texttt{/account} (customer/admin/rider). Unauthorized redirects to \texttt{/auth/login}.
+  \item Home: marketing hero + feature sections; CTAs to browse/checkout.
+  \item Browse: department chips, search, product grid/cards with inline quantity controls; shows delivery message derived from config.
+  \item Product detail: resolves product from context; quantity controls bound to cart state.
+  \item Checkout: cart summary, delivery slot, payment method, instructions, saved-address selector for authed users, ``save address'' toggle; submit guarded server-side by auth.
+  \item Orders: lists recent orders with search/status filters; admin view toggle adds columns; supports manual refresh and polling.
+  \item Order success: confirmation using navigation state with CTA back to browse/orders.
+  \item Admin: dashboard cards/live queue, order drawer/actions, config form bound to \texttt{/config}, product CRUD/search/pagination, stock/price/activation edits, create flow, users table with role/status updates.
+  \item Rider: queues for confirmed/out-for-delivery with call/address links and status advance actions; mobile-friendly layout.
+  \item Account: profile name editing; address CRUD and default selection; shows saved and snapshot addresses.
+  \item Auth: shared login/register page with bilingual strings; uses \texttt{AuthContext}; redirects after success; errors surfaced via \texttt{authError}.
+\end{itemize}
+
+\subsection{Hooks and Data Access}
+\begin{itemize}
+  \item \textbf{AuthContext}: holds \texttt{user}, \texttt{token}, status flags; calls \texttt{/auth/refresh} on mount; methods \texttt{login}, \texttt{register}, \texttt{logout}, \texttt{revokeSessions}, \texttt{refreshSession}. Access token kept in memory only; refresh token is HttpOnly cookie.
+  \item \textbf{useApiClient}: fetch wrapper injecting bearer; on 401 attempts \texttt{refreshSession} then retries once; clears auth on repeated 401/403.
+  \item \textbf{useProducts}: fetches \texttt{/products} with ETag/304; exposes \texttt{products}, \texttt{departments}, filter state, loading/error, store note, last updated.
+  \item \textbf{useCart}: persists to \texttt{order-ieeja-cart}; ensures quantities 1--20; exposes totals and CRUD helpers.
+  \item \textbf{useOrders}: fetches \texttt{/order} with optional status/search; ETag aware; supports manual refresh, focus revalidation, optional polling.
+  \item Admin hooks: \texttt{useAdminProducts} (search/pagination CRUD), \texttt{useAdminUsers} (list and role/status updates), \texttt{useAdminConfig} (delivery economics).
+  \item Account hook: \texttt{useAccountData} for profile + addresses; mutations for profile and addresses (CRUD + default toggle).
+  \item Storage keys: \texttt{order-ieeja-cart}, \texttt{order-ieeja-theme}, \texttt{order-ieeja-locale}; access token intentionally not persisted to reduce theft risk.
+  \item Checkout helpers: \texttt{prepareOrderPayload} and \texttt{MAX\_ITEM\_QUANTITY} sourced from shared schema to keep client/server validation aligned.
+\end{itemize}
+
+\section{Backend APIs (Cloudflare Pages Functions)}
+\subsection{Conventions}
+\begin{itemize}
+  \item ES modules under \texttt{functions/} exporting \texttt{onRequest} or method-specific handlers; \texttt{env} provides \texttt{ORDERS\_DB}, \texttt{LOGIN\_RATE\_LIMIT\_KV}, \texttt{AUTH\_SECRET}.
+  \item JSON responses with \texttt{Content-Type: application/json}; default \texttt{Cache-Control: no-store} unless noted; ETag paths support 304.
+  \item Auth helper \texttt{requireAuth(request, env, roles)} validates JWT access tokens and role allow-list; refresh token handled via HttpOnly cookie on auth endpoints.
+  \item IDs: orders use pattern \texttt{ORD-<12 uppercase hex from uuid>}; order items use \texttt{crypto.randomUUID()}.
+\end{itemize}
+
+\subsection{Key Endpoints}
+\begin{itemize}
+  \item \textbf{/products (GET, public)}: returns active products plus delivery config/message. ETag \texttt{W/"<count>-<products.max\_updated\_at>-<config.max\_updated\_at>"}; \texttt{Cache-Control: public, max-age=60, stale-while-revalidate=600}; 304 on match.
+  \item \textbf{/order}:
+    \begin{itemize}
+      \item POST (roles customer|admin): validates via shared schema and DB lookups, enforces stock, quantity cap, and minimum order amount; optionally saves address for authed user; inserts into \texttt{orders} and \texttt{order\_items}, decrements stock atomically; status starts \texttt{pending}.
+      \item GET list: role-aware filtering (customers see own); unfiltered customer scope supports ETag \texttt{W/"<sub>-<count>-<last\_modified>"} with private cache headers; search/status/admin/rider scopes disable ETag and use \texttt{no-store}.
+      \item GET by id: ETag \texttt{W/"order-<id>-<updated\_at>"} with private cache headers; 304 on match.
+      \item PATCH: updates status for admins/riders.
+    \end{itemize}
+  \item \textbf{/config (admin)}: GET/PUT/PATCH delivery economics (\texttt{minimumOrderAmount}, \texttt{freeDeliveryThreshold}, \texttt{deliveryFeeBelowThreshold}); stored in \texttt{admin\_config}.
+  \item \textbf{/auth/\*}: register/login/me/refresh/logout/revoke; PBKDF2 (100k) password hashing; access tokens ~15m, refresh ~7d HttpOnly cookie; login rate limit (5 failures/min/IP $\rightarrow$ 15m block) uses KV; missing KV disables limiter with warning.
+  \item \textbf{/account/\*}: profile + saved addresses CRUD (labels, phone, default flag); responses include saved addresses and primary address snapshot.
+  \item \textbf{/admin/\*}: product CRUD (search/pagination, activation, stock/price edits, soft archival), users list with role/status updates. Prevents product deletes when order items exist.
+  \item \textbf{Inventory helper}: \texttt{scripts/generate-inventory.mjs} populates \texttt{functions/\_inventory-data.json} and seeds products before builds; migration 0007 depends on generated JSON.
+  \item \textbf{Error handling}: missing \texttt{ORDERS\_DB} returns 501 with explicit JSON error; missing \texttt{AUTH\_SECRET} breaks auth endpoints; other errors return JSON \texttt{\{ error \}} with statuses.
+\end{itemize}
+
+\section{Data Model (D1)}
+\begin{itemize}
+  \item Tables from migrations 0001--0012:
+    \begin{itemize}
+      \item \textbf{orders}: id, customer fields (name, phone, address lines, area/city/state/postalCode/landmark), delivery slot, instructions, payment method, status, currency (INR), \texttt{items\_json}, \texttt{user\_id}, \texttt{delivery\_address\_id}, timestamps.
+      \item \textbf{order\_items}: normalized line items referencing order; product snapshot fields; \texttt{order\_id} FK.
+      \item \textbf{products}: catalog with price/mrp/raw\_selling\_price, department/category, description, \texttt{is\_active}, \texttt{stock\_quantity} (CHECK $\geq 0$), timestamps.
+      \item \textbf{admin\_config}: key/value for delivery economics (\texttt{minimumOrderAmount}, \texttt{freeDeliveryThreshold}, \texttt{deliveryFeeBelowThreshold}).
+      \item \textbf{users}: phone (unique), role, status, display/full name, password hash, \texttt{token\_version}, profile JSON, timestamps.
+      \item \textbf{user\_addresses}: labeled saved addresses with contact/phone, lines, area/city/state/postalCode/landmark, default flag, timestamps; FK to users.
+    \end{itemize}
+  \item Foreign keys: \texttt{orders.user\_id} $\rightarrow$ \texttt{users.id}; \texttt{order\_items.order\_id} $\rightarrow$ \texttt{orders.id}; \texttt{user\_addresses.user\_id} $\rightarrow$ \texttt{users.id}; \texttt{orders.delivery\_address\_id} references saved address but snapshots address text.
+  \item Stock integrity: enforced in application with atomic batch decrement; DB CHECK prevents negative values.
+  \item Indexes: orders on \texttt{created\_at}, \texttt{status}, \texttt{user\_id}, \texttt{updated\_at}; products on category/department; users on phone; order\_items on \texttt{order\_id}/\texttt{product\_id} to speed feeds, filters, ETag queries, and analytics/delete checks.
+  \item Address snapshotting: orders store formatted address text even when linked to saved address so history remains intact if saved records change.
+\end{itemize}
+
+\section{Auth, Security, and Validation}
+\begin{itemize}
+  \item Access tokens signed with \texttt{AUTH\_SECRET}; TTL ~15m. Refresh tokens (~7d) are HttpOnly, Secure, SameSite=Lax cookies scoped to \texttt{/auth}; access token stored only in memory client-side.
+  \item PBKDF2 with 100k iterations for password hashing; \texttt{token\_version} used for session revocation and refresh validation.
+  \item Role enforcement via \texttt{requireAuth} with allow-lists (customer/admin/rider).
+  \item Login rate limit: 5 failed attempts per IP per minute $\rightarrow$ 15m block persisted in KV; missing KV disables limiter but logs warning.
+  \item Validation: shared schema ensures cart items, customer fields, phone format, and quantity limits; server recomputes pricing and enforces minimum order amount.
+  \item Missing binding behavior: absent \texttt{ORDERS\_DB} yields 501 for dependent endpoints; absent \texttt{AUTH\_SECRET} breaks auth endpoints; absent KV only affects rate limiting.
+\end{itemize}
+
+\section{Caching and Performance}
+\begin{itemize}
+  \item \textbf{/products}: ETag \texttt{W/"<count>-<products.max\_updated\_at>-<config.max\_updated\_at>"}; headers \texttt{public, max-age=60, stale-while-revalidate=600}; 304 support.
+  \item \textbf{/order}: per-order ETag \texttt{W/"order-<id>-<updated\_at>"}; customer list ETag \texttt{W/"<sub>-<count>-<last\_modified>"}; private cache headers with 304; other scopes \texttt{no-store}. POST/PATCH always \texttt{no-store}.
+  \item \textbf{/admin/users} and \textbf{/auth/me}: private ETags based on COUNT + MAX(updated\_at); 304 when If-None-Match matches.
+  \item Client behavior: \texttt{useProducts}, \texttt{useOrders}, \texttt{useAdminUsers} send If-None-Match and handle 304s to reduce payloads.
+  \item DB performance: lightweight COUNT/MAX ETag queries; indexes on orders/products/users/order\_items back feeds and filters.
+  \item Write path: \texttt{/order} uses \texttt{db.batch} to group address upsert, order insert, item insert, and stock decrement for a single round-trip and atomicity.
+  \item Static assets: Vite outputs hashed files in \texttt{dist/}; Cloudflare Pages handles CDN caching separately from Functions caching.
+  \item Rate limiting: login-only; absent KV disables the throttle and removes brute-force protection.
+\end{itemize}
+
+\section{Build, Dev, and Deploy}
+\begin{itemize}
+  \item Prereqs: npm install; wrangler via devDependency \texttt{wrangler@^4.50.0}; CSV \texttt{proposed-280-SKUs.csv} required for inventory generation.
+  \item Scripts: \texttt{dev} (Vite 5173), \texttt{dev:lan}, \texttt{design} (Ladle), \texttt{typecheck}, \texttt{build} (runs inventory then Vite), \texttt{preview} (vite preview).
+  \item Pages flows: \texttt{pages:dev} builds then \texttt{wrangler pages dev dist} (Functions on 8788); \texttt{pages:deploy}/\texttt{pages:deploy:preview} for preview; \texttt{pages:deploy:prod} uses branch \texttt{production} with prod bindings.
+  \item Proxy: \texttt{vite.config.js} proxies \texttt{/products}, \texttt{/order}, \texttt{/config} to \texttt{http://127.0.0.1:8788} during dev to keep SPA and API same-origin.
+  \item Local D1 state in \texttt{.wrangler/state}; \texttt{clean} removes \texttt{dist} and state.
+  \item DB scripts: migrations (\texttt{db:migrate} local, \texttt{db:migrate:preview|prod} remote), status checks, export/import (\texttt{db:pull}, \texttt{db:pull:prod}, component steps), sync (\texttt{db:sync:preview}), query/exec helpers, wipes (\texttt{db:wipe:\*}), inspect (\texttt{db:inspect}).
+  \item Logs: \texttt{logs:tail}, \texttt{logs:tail:preview}, \texttt{logs:tail:prod} to stream Pages deployments.
+  \item Optional dependency: missing \texttt{@rollup/rollup-linux-x64-gnu} binary can break builds; reinstall deps if encountered.
+\end{itemize}
+
+\section{Operations and Utility Scripts}
+\begin{itemize}
+  \item \texttt{scripts/generate-inventory.mjs}: parses \texttt{proposed-280-SKUs.csv}, emits \texttt{functions/\_inventory-data.json}, seeds products (used by migration 0007); invoked by \texttt{build:inventory}.
+  \item \texttt{scripts/reorder-d1-export.js}: normalizes D1 export SQL ordering for deterministic imports; used in \texttt{db:pull} flows.
+  \item Preview test scripts: \texttt{scripts/test-auth-refresh-preview.sh} exercises refresh flow; \texttt{scripts/test-login-rate-limit-preview.sh} triggers KV rate limit behavior.
+  \item Maintenance: \texttt{clean} removes \texttt{dist} and \texttt{.wrangler}; port usage 5173 (Vite) and 8788 (Functions); no GUI/desktop dependencies.
+\end{itemize}
+
+\section{Known Risks and Gaps}
+\begin{itemize}
+  \item Testing: no automated unit/integration/e2e or contract tests; no visual regression coverage; manual-only validation across auth, order validation, address CRUD, status transitions, admin mutations, and hooks.
+  \item Data integrity/concurrency: stock protection is app-driven with D1 CHECK only; concurrent orders could oversell. Status FSM not enforced; privileged callers can jump states; cancel/correction does not restock; address FKs do not cascade, leaving possible dangling links.
+  \item Auth/security: missing/short \texttt{AUTH\_SECRET} breaks auth; missing KV disables rate limiting. No MFA/OTP; CSRF protections rely on cookie scoping and SameSite=Lax (no explicit token). Admin/rider search could leak PII if mishandled downstream.
+  \item Operational: \texttt{compatibility\_date} set to 2025-07-18; platform changes may affect behavior. Optional rollup binary can break builds; stale browser cache can serve old SPA shell.
+  \item Observability: console logs only; no metrics/traces/alerts; no automated smoke after deploy; outages may go unnoticed.
+  \item Data management: no scheduled backups; \texttt{backup.sql} from pulls may linger unencrypted; remote wipe/sync scripts are destructive if misused.
+  \item UX/perf: Orders page unpaginated (limit up to 1000) could be heavy; no offline/PWA; ETag correctness depends on \texttt{updated\_at}; login rate-limit feedback is toast-based and minimal.
+\end{itemize}
+
+\section{Customer, Admin, and Rider Flows}
+\begin{itemize}
+  \item \textbf{Catalog}: client hits \texttt{/products}; honors ETag/304; UI derives delivery message from \texttt{admin\_config}; product grid/search/filter driven by department/category metadata.
+  \item \textbf{Checkout}: cart managed client-side; \texttt{prepareOrderPayload} builds POST \texttt{/order} body; server enforces auth, stock, quantity cap, and pricing rules; success clears cart/draft and routes to success page with summary.
+  \item \textbf{Orders feed}: \texttt{useOrders} supports manual refresh, focus revalidation, and optional polling; customer scope limited to own orders; admin/rider use status/search filters without ETag caching.
+  \item \textbf{Config/Admin}: admin console calls \texttt{/config} and \texttt{/admin/products|users}; supports activation toggles, stock/price edits, pagination/search, user role/status updates; prevents deleting products with order items.
+  \item \textbf{Rider}: status advancement via PATCH \texttt{/order}; cards provide call/address actions optimized for mobile; queues split by status (confirmed/out-for-delivery).
+  \item \textbf{Account}: saved addresses CRUD and default selection; \texttt{/order} can optionally save checkout address via \texttt{upsertAddressFromCheckout}; address snapshots ride along with orders.
+  \item \textbf{Auth lifecycle}: access token in memory; refresh cookie used by \texttt{/auth/refresh} on load/401; logout clears cookie server-side and client state; login rate limit enforced via KV when available.
+\end{itemize}
+
+\section{Edge Behaviors and Limits}
+\begin{itemize}
+  \item Cart quantity cap: 20 per item enforced client and server; server also checks stock, active status, and minimum order amount.
+  \item Pricing: server recomputes totals and enforces \texttt{minimumOrderAmount}; delivery fee logic from \texttt{admin\_config} yields store note and checkout messaging. Context notes: ₹100 minimum order; free delivery above ₹299; ₹15 fee below threshold.
+  \item Address handling: orders snapshot address text even when linked to saved address; deleting saved address leaves snapshot intact though FK may point to removed row.
+  \item Stock changes: decrements occur for admin-placed orders; no automatic restock on cancellation.
+  \item Cache headers: ETag responses use private caches for user-specific data; other endpoints set \texttt{no-store}; stale SPA shell can persist in browsers until cache is cleared.
+\end{itemize}
+
+\section{Operational Checks Before Deploy}
+\begin{itemize}
+  \item Ensure \texttt{AUTH\_SECRET}, \texttt{ORDERS\_DB}, and \texttt{LOGIN\_RATE\_LIMIT\_KV} are configured for target env (preview/prod) in Cloudflare; missing bindings yield 501s or disable rate limiting.
+  \item Run \texttt{npm run build} (triggers inventory) before deploy; verify optional rollup binary resolves; clear stale \texttt{dist} with \texttt{npm run clean} if needed.
+  \item For DB state: \texttt{db:migrate:preview|prod} to apply migrations; use \texttt{db:pull} to sync local for debugging; avoid destructive sync/wipe scripts unless intended.
+  \item Post-deploy: tail logs with \texttt{npm run logs:tail:preview|prod}; hit \texttt{/products} and \texttt{/order} to confirm 200 responses (501 indicates binding/secret missing); verify auth flows and refresh cookie via preview test scripts.
+\end{itemize}
+
+\end{document}

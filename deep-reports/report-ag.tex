@@ -1,0 +1,533 @@
+\documentclass[11pt, a4paper]{report}
+
+% =============================================================================
+% PACKAGES
+% =============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+\usepackage{microtype}
+\usepackage[most]{tcolorbox} % For advanced boxes
+\usepackage{enumitem}
+\usepackage{pifont} % For symbols
+\usepackage{amssymb} % For math symbols
+\usepackage{graphicx} % For potential images
+
+% =============================================================================
+% CONFIGURATION
+% =============================================================================
+
+% Page Geometry
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+
+% Brand Colors
+\definecolor{emerald}{RGB}{16, 185, 129} 
+\definecolor{midnight}{RGB}{15, 23, 42}
+\definecolor{slate}{RGB}{100, 116, 139}
+\definecolor{paper}{RGB}{248, 250, 252}
+\definecolor{alert}{RGB}{220, 38, 38}
+\definecolor{gold}{RGB}{217, 119, 6}
+\definecolor{info}{RGB}{37, 99, 235}
+
+% Hyperlink Setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=emerald,
+    filecolor=magenta,      
+    urlcolor=info,
+    pdftitle={Order Ieeja: The Definitive Chronicles},
+}
+
+% Header/Footer Setup
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small \textbf{Order Ieeja}}
+\rhead{\small \textit{Definitive Technical Report}}
+\cfoot{\thepage}
+
+% =============================================================================
+% CUSTOM BOX MACROS
+% =============================================================================
+
+% 1. Definition Box (For Beginners)
+\newtcolorbox{definitionbox}[1]{
+    colback=info!5!white,
+    colframe=info,
+    title=\textbf{\ding{45} Keyword: #1},
+    fonttitle=\bfseries,
+    boxrule=0.5mm,
+    arc=2mm,
+    left=2mm, right=2mm, top=2mm, bottom=2mm
+}
+
+% 2. Excellence Box (Where we did good)
+\newtcolorbox{excellencebox}[1]{
+    colback=emerald!10!white,
+    colframe=emerald,
+    title=\textbf{\ding{51} Architectural Win: #1},
+    fonttitle=\bfseries,
+    boxrule=0.5mm,
+    arc=2mm,
+    left=2mm, right=2mm, top=2mm, bottom=2mm
+}
+
+% 3. Critique Box (Where we could improve)
+\newtcolorbox{critiquebox}[1]{
+    colback=alert!5!white,
+    colframe=alert,
+    title=\textbf{\ding{55} Critique \& Risk: #1},
+    fonttitle=\bfseries,
+    boxrule=0.5mm,
+    arc=2mm,
+    left=2mm, right=2mm, top=2mm, bottom=2mm
+}
+
+% 4. Allegory Box (The Narrative)
+\newtcolorbox{allegorybox}[1]{
+    colback=midnight,
+    coltext=white,
+    colframe=midnight,
+    title=\textit{The Allegory},
+    fonttitle=\bfseries\itshape,
+    boxrule=0mm,
+    arc=0mm,
+    left=4mm, right=4mm, top=2mm, bottom=2mm,
+    borderline west={4pt}{0pt}{gold}
+}
+
+% Code Listing Styling
+\lstset{
+    backgroundcolor=\color{paper},
+    basicstyle=\ttfamily\small\color{midnight},
+    breaklines=true,
+    keywordstyle=\color{emerald}\bfseries,
+    commentstyle=\color{slate}\itshape,
+    stringstyle=\color{gold},
+    frame=l,
+    framesep=10pt,
+    rulecolor=\color{emerald},
+    captionpos=b,
+    escapechar=|
+}
+
+% =============================================================================
+% TITLE PAGE
+% =============================================================================
+\title{
+    \vspace{2cm}
+    \textbf{\Huge Order Ieeja} \\
+    \vspace{0.5cm}
+    \Large The Definitive Architecture Chronicles \\
+    \vspace{1cm}
+    \large An Exhaustive, Explanatory, and Allegorical Deep Dive \\
+    \vspace{2cm}
+    \textit{Prepared for Engineering \& Operations}
+}
+\author{System Architects & Scribes}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+% =============================================================================
+% GLOSSARY (For Beginners)
+% =============================================================================
+\chapter*{The Dictionary of Spells (Glossary)}
+\addcontentsline{toc}{chapter}{The Dictionary of Spells (Glossary)}
+
+Before venturing into the chronicles, one must understand the language of the realm.
+
+\begin{description}[style=standard, leftmargin=1cm, font=\bfseries\color{emerald}]
+    \item[SPA] \textbf{Single Page Application.} A website that loads a single document and then updates the content via JavaScript APIs, rather than loading new pages from the server. It feels like a native app.
+    
+    \item[JWT] \textbf{JSON Web Token.} A secure way to pass information between the client and server. It's like a stamped passport; the server trusts the stamp (signature) without needing to call the passport office (database) every time.
+    
+    \item[D1] \textbf{Cloudflare D1.} A serverless SQL database based on SQLite. Imagine a tiny, super-fast spreadsheet that lives on the edge of the network, replicated globally.
+    
+    \item[KV] \textbf{Key-Value Storage.} A very simple database that stores data as pairs (Key: "UserIP", Value: "Blocked"). It is faster than SQL but cannot handle complex relationships.
+    
+    \item[ETag] \textbf{Entity Tag.} A fingerprint for a file. If the browser asks for a file and provides a fingerprint, the server says "304 Not Modified" if the fingerprint matches, saving data.
+    
+    \item[Hydration] The process where JavaScript "wakes up" a static HTML page, attaching event listeners and making it interactive.
+    
+    \item[Atomicity] A property of database transactions. "All or Nothing." If you buy an item, the money must be deducted AND the stock reduced. If one fails, both must fail.
+
+    \item[PBKDF2] \textbf{Password-Based Key Derivation Function 2.} A cryptographic algorithm used to hash passwords. It applies a function (like SHA-256) thousands of times to make it slow and expensive for hackers to guess passwords.
+\end{description}
+
+\newpage
+
+% =============================================================================
+% CHAPTER 1
+% =============================================================================
+\chapter{The Floating City: Stack and Topology}
+
+\begin{allegorybox}
+Imagine a city built not on the ground, but in the clouds. There is no central castle (origin server) where the King resides. Instead, the city is everywhere at once, composed of thousands of small outposts (Edge Nodes). The moment a traveler (User) approaches, the nearest outpost springs to life to serve them.
+\end{allegorybox}
+
+\section{The Serverless Landscape}
+\textbf{Order Ieeja} rejects the traditional monolithic server architecture (like a single giant computer running 24/7). It is hosted entirely on **Cloudflare Pages**.
+
+\subsection{The Facade (Frontend)}
+The visible city is a Single Page Application (SPA) built with \textbf{React 18.3} and \textbf{Vite 5}.
+\begin{itemize}
+    \item \textbf{Location:} \texttt{dist/} directory.
+    \item \textbf{Styling:} TailwindCSS 3.4 (Emerald Palette) with Poppins/Inter fonts.
+    \item \textbf{Behavior:} It handles all routing client-side (`react-router-dom`) with routes for Catalog, Checkout, Orders, and Admin consoles.
+    \item \textbf{State:} Uses React Context for global state (Auth, Cart, Products) and `localStorage` for persistence (Cart, Theme, Locale).
+\end{itemize}
+
+\subsection{The Machinery (Backend)}
+Behind the facade lies the logic—\textbf{Cloudflare Pages Functions}.
+\begin{itemize}
+    \item \textbf{Location:} \texttt{functions/} directory.
+    \item \textbf{Nature:} These are ephemeral. They spin up in milliseconds when a request hits \texttt{api.order-ieeja.com}, do their job, and vanish.
+    \item \textbf{Runtime:} All logic runs inside the Cloudflare Workers runtime, which provides the global `env` object containing bindings.
+\end{itemize}
+
+\begin{definitionbox}{Binding}
+A binding is a magical bridge connecting a serverless function to a resource (like a database). Without a binding, the function is isolated and blind.
+\end{definitionbox}
+
+\section{The Three Great Bindings}
+If these are missing, the system returns a \texttt{501 Not Implemented} error.
+
+\begin{enumerate}
+    \item \textbf{\texttt{ORDERS\_DB} (The Grand Ledger):} The D1 Database.
+        \begin{itemize} 
+            \item Preview ID: \texttt{756fd361-4883-4202-bccd-db469354c8f8} (\texttt{order\_ieeja\_orders\_preview})
+            \item Production ID: \texttt{0eaea965-4467-4aee-89a9-28aed83e4c79} (\texttt{order\_ieeja\_orders})
+        \end{itemize}
+    \item \textbf{\texttt{LOGIN\_RATE\_LIMIT\_KV} (The Bouncer):} Tracks login failures per IP.
+        \begin{itemize}
+            \item Preview ID: \texttt{f059e5f6774f4e7ca9db0d7bf80841fd}
+            \item Production ID: \texttt{5e8638dfbd414219947a22aa476944cf}
+        \end{itemize}
+    \item \textbf{\texttt{AUTH\_SECRET} (The Royal Seal):} A symmetric key ($\ge$ 16 chars) used to sign tokens. This is injected as an environment variable.
+\end{enumerate}
+
+\section{Shared Contracts: The Common Tongue}
+\begin{itemize}
+    \item \textbf{File:} \texttt{shared/order-schema.js}
+    \item \textbf{Purpose:} Defines the "shape" of a valid order.
+    \item \textbf{Usage:} Imported by both the Frontend (`src/utils/checkout.ts`) and Backend (`functions/order.js`).
+    \item \textbf{Benefit:} Ensures that if the frontend thinks an order is valid, the backend will likely agree. It prevents "validation drift" where the client allows something the server rejects.
+\end{itemize}
+
+\begin{excellencebox}{Single Origin Proxy}
+In local development, the frontend runs on port 5173 and backend on 8788. We configured \texttt{vite.config.js} to \textbf{proxy} requests.
+\textbf{Why this is good:} The frontend code says \texttt{fetch('/api')}. It doesn't need to know if the backend is on \texttt{localhost} or \texttt{cloudflare.com}. It simplifies the code and avoids CORS (Cross-Origin) headaches during development.
+\end{excellencebox}
+
+\begin{critiquebox}{Vendor Lock-In}
+The architecture is heavily tied to Cloudflare's ecosystem (D1, Pages, KV).
+\textbf{The Risk:} Moving this application to AWS or Vercel would require a complete rewrite of the backend layer (\texttt{functions/}) and database adapters. We are "married" to Cloudflare.
+\end{critiquebox}
+
+% =============================================================================
+% CHAPTER 2
+% =============================================================================
+\chapter{The Gatekeepers: Authentication \& Security}
+
+\begin{allegorybox}
+Accessing the inner sanctum requires two keys. One key is made of ice (Access Token)—it melts quickly and must be kept in your hand (Memory). The other key is made of iron (Refresh Token)—it is heavy, permanent, and locked in a secure box (HttpOnly Cookie) that only the gatekeepers can open.
+\end{allegorybox}
+
+\section{The Dual-Token Strategy}
+
+\subsection{1. The Access Token (The Ice Key)}
+\begin{itemize}
+    \item \textbf{Storage:} **In-Memory Only** (React State).
+    \item \textbf{Lifespan:} 15 minutes.
+    \item \textbf{Algorithm:} HS256 (HMAC with SHA-256).
+    \item \textbf{Claims:} `sub` (User ID), `role`, `status`, `token_version`, `type: "access"`.
+    \item \textbf{Purpose:} Grants access to protected API endpoints.
+\end{itemize}
+
+\begin{excellencebox}{XSS Protection}
+By NOT storing the Access Token in \texttt{localStorage}, we immunize the app against many Cross-Site Scripting (XSS) attacks. Even if a hacker injects a script, they cannot read the token because it's inside a Javascript closure, not on the disk.
+\end{excellencebox}
+
+\subsection{2. The Refresh Token (The Iron Key)}
+\begin{itemize}
+    \item \textbf{Storage:} **HttpOnly Cookie**.
+    \item \textbf{Lifespan:} 7 days.
+    \item \textbf{Security Attributes:} \texttt{SameSite=Lax}, \texttt{Secure}, \texttt{Path=/auth}.
+    \item \textbf{Purpose:} Used solely to get a new Access Token when the old one melts. It is never exposed to client-side JavaScript.
+\end{itemize}
+
+\section{The Kill Switch: Token Versioning}
+
+\begin{definitionbox}{Revocation}
+The ability to cancel a key that has already been issued. Standard JWTs cannot be revoked easily because they are stateless.
+\end{definitionbox}
+
+\textbf{Our Solution:}
+1. Every user in the database has a \texttt{token\_version} integer (default 1).
+2. This number is baked into their tokens.
+3. To logout/ban a user, we increment the number in the database to 2 via the `/auth/revoke` endpoint.
+4. When they try to use their old token (version 1), the server sees $1 \neq 2$ and rejects it.
+
+\begin{excellencebox}{Immediate Banning}
+Many stateless auth systems cannot ban a user immediately; they have to wait for the token to expire. Our \texttt{token\_version} check allows for instant revocation of access rights.
+\end{excellencebox}
+
+\section{Defense Mechanisms}
+
+\subsection{Rate Limiting (The Bouncer)}
+\begin{itemize}
+    \item \textbf{Mechanism:} KV Storage (`LOGIN_RATE_LIMIT_KV`).
+    \item \textbf{Key:} `rl:login:<IP_ADDRESS>`.
+    \item \textbf{Policy:} 5 failed attempts per minute.
+    \item \textbf{Penalty:} If exceeded, the IP is blocked for 15 minutes.
+    \item \textbf{Response:} \texttt{429 Too Many Requests} with a \texttt{Retry-After} header.
+    \item \textbf{Fallback:} If the KV binding is missing, the system logs a warning but allows the login (fail-open for availability).
+\end{itemize}
+
+\subsection{Role-Based Access Control (RBAC)}
+The `requireAuth` middleware enforces strict role checks:
+\begin{itemize}
+    \item \textbf{Public:} `/products`, `/auth/*`
+    \item \textbf{Customer:} `/order` (POST/GET own), `/account/*`
+    \item \textbf{Rider:} `/rider`, `/order` (PATCH status)
+    \item \textbf{Admin:} `/admin/*`, `/config`, `/order` (PATCH status, GET all)
+\end{itemize}
+
+\begin{critiquebox}{Password Hashing}
+We use **PBKDF2-SHA256** with 100,000 iterations.
+\textbf{The Critique:} While standard, it is older. Modern standards prefer **Argon2id**, which is resistant to GPU cracking farms. However, Cloudflare's \texttt{SubtleCrypto} environment has limited algorithm support, forcing this compromise.
+\end{critiquebox}
+
+% =============================================================================
+% CHAPTER 3
+% =============================================================================
+\chapter{The Grand Ledger: Data Model}
+
+\begin{allegorybox}
+The history of the kingdom must be immutable. Even if a citizen changes their name or moves to a new house, the records of their past purchases must reflect who they were \textit{at that moment}, not who they are now.
+\end{allegorybox}
+
+\section{The Schema \& Snapshotting}
+The database schema evolved through 12 migrations. A key design pattern here is **Snapshotting**.
+
+\subsection{The Problem}
+If User A orders a pizza to "123 Main St", and later updates their profile to "456 Oak St", looking at the old order should still say "123 Main St".
+
+\subsection{The Solution}
+The \texttt{orders} table does not just link to a User ID. It copies (snapshots) the data:
+\begin{itemize}
+    \item \texttt{customer\_address}: The full text address at time of purchase.
+    \item \texttt{items\_json}: The price and name of items at time of purchase.
+    \item \texttt{customer\_phone}: The phone number used for the order.
+\end{itemize}
+
+\begin{excellencebox}{Historical Integrity}
+This ensures that price changes or profile updates never corrupt financial history. The \texttt{orders} table is a source of truth that stands alone.
+\end{excellencebox}
+
+\section{Key Tables}
+
+\subsection{1. Orders (\texttt{orders})}
+The central entity.
+\begin{itemize}
+    \item \textbf{Columns:} \texttt{id} (UUID), \texttt{status} (pending/confirmed/etc), \texttt{total\_amount} (REAL), \texttt{items\_json}, \texttt{user\_id}, \texttt{delivery\_address\_id}.
+    \item \textbf{Indexes:} \texttt{created\_at} (for feeds), \texttt{status} (for filtering), \texttt{user\_id} (for customer history).
+\end{itemize}
+
+\subsection{2. Products (\texttt{products})}
+The catalog.
+\begin{itemize}
+    \item \textbf{Columns:} \texttt{id}, \texttt{name}, \texttt{price} (REAL), \texttt{stock\_quantity} (INTEGER), \texttt{is\_active} (BOOLEAN).
+    \item \textbf{Constraint:} \texttt{CHECK (stock\_quantity >= 0)} ensures we never have negative stock.
+\end{itemize}
+
+\subsection{3. Users (\texttt{users})}
+The identity store.
+\begin{itemize}
+    \item \textbf{Columns:} \texttt{phone} (Unique), \texttt{password\_hash}, \texttt{role}, \texttt{token\_version}.
+    \item \textbf{Profile:} \texttt{display\_name}, \texttt{primary\_address\_json} (Cached default address).
+\end{itemize}
+
+\section{The Migrations Timeline}
+\begin{itemize}
+    \item **0001-0003:** Foundation (Orders, Config).
+    \item **0004-0005:** Identity (Users, Addresses).
+    \item **0007:** Inventory Seed (280 SKUs).
+    \item **0011:** Monetary Precision Fix (INTEGER -> REAL) and Stock Constraint.
+    \item **0012:** Performance Tuning (Added \texttt{updated\_at} for ETags).
+\end{itemize}
+
+\begin{critiquebox}{Strict Foreign Keys}
+SQLite in D1 is very strict about relationships. If you try to insert an order for a user who doesn't exist, it explodes.
+\textbf{The Pain:} When restoring backups, if the file tries to create Orders before Users, the restore fails. We had to write a custom script (\texttt{scripts/reorder-d1-export.js}) just to fix the order of SQL statements in backups.
+\end{critiquebox}
+
+% =============================================================================
+% CHAPTER 4
+% =============================================================================
+\chapter{The Commerce Engine: Order Lifecycle}
+
+\section{Shared Law (Contracts)}
+Typically, Frontend and Backend are separate. Here, they share a brain.
+\begin{itemize}
+    \item **File:** \texttt{shared/order-schema.js}
+    \item **Usage:** This file defines exactly what a valid order looks like (Name required, Phone required, Max Qty 20).
+    \item **Benefit:** The React app imports this to show error messages. The Backend imports this to reject bad requests.
+\end{itemize}
+
+\begin{excellencebox}{DRY Validation}
+"Don't Repeat Yourself." By sharing the schema file, we guarantee that the Client and Server never disagree on what is valid.
+\end{excellencebox}
+
+\section{The Atomic Transaction}
+When \texttt{POST /order} is hit, four things must happen at once.
+
+\begin{definitionbox}{ACID / Atomicity}
+In a database, Atomicity guarantees that a series of operations act as a single unit. Either they all succeed, or they all fail. No half-states.
+\end{definitionbox}
+
+\textbf{The Batch (\texttt{db.batch()}):}
+1. **Upsert Address:** Save new address to user profile (if authenticated).
+2. **Insert Order:** Create the record with status `pending`.
+3. **Insert Items:** Log individual line items into `order_items`.
+4. **Update Stock:** \texttt{stock = stock - quantity}.
+
+If the Stock update fails (e.g., goes below 0), the Order Insert is cancelled automatically.
+
+\section{Status Transitions}
+The order moves through a lifecycle managed by Admins and Riders:
+\begin{enumerate}
+    \item \textbf{Pending:} Created by the customer.
+    \item \textbf{Confirmed:} Accepted by the shop.
+    \item \textbf{OutForDelivery:} Picked up by the rider.
+    \item \textbf{Delivered:} Handed to the customer.
+    \item \textbf{Cancelled:} Terminated (Note: Stock is NOT automatically restored).
+\end{enumerate}
+
+\begin{critiquebox}{Reactive Stock Check}
+We rely on the database constraint (\texttt{CHECK >= 0}) to catch overselling.
+\textbf{The Risk:} In a high-traffic scenario (flash sale), 100 users might click "Buy" on the last item. 1 will succeed, 99 will get a generic "Server Error 500" because the DB rejected the write. A better system would reserve stock \textit{before} the final write to give a polite "Out of Stock" message.
+\end{critiquebox}
+
+% =============================================================================
+% CHAPTER 5
+% =============================================================================
+\chapter{The Speed of Sound: Caching \& Performance}
+
+\begin{allegorybox}
+In this kingdom, news travels fast, but only if it's new. If a merchant asks, "What are the prices?" and nothing has changed since yesterday, the King simply nods (304), saving his voice for important decrees.
+\end{allegorybox}
+
+\section{Smart ETags}
+We implemented a granular ETag strategy to minimize bandwidth.
+
+\subsection{Public Data (/products)}
+How do we know if the product list changed?
+\textbf{The Hash:} `ActiveCount + Max(Product.Updated) + Max(Config.Updated)`
+\begin{itemize}
+    \item If you change a price? \textbf{Hash changes.}
+    \item If you change the delivery fee in Config? \textbf{Hash changes.}
+    \item \textbf{Headers:} \texttt{Cache-Control: public, max-age=60, stale-while-revalidate=600}.
+\end{itemize}
+
+\subsection{Private Data (/order)}
+\textbf{The Hash:} `UserID + OrderCount + Max(Order.Updated)`
+\begin{itemize}
+    \item If the user places an order? \textbf{Hash changes.}
+    \item If an admin marks an order as "Delivered"? \textbf{Hash changes.}
+    \item \textbf{Headers:} \texttt{Cache-Control: private, max-age=0, must-revalidate}.
+\end{itemize}
+
+\begin{excellencebox}{Stale-While-Revalidate}
+For products, we use \texttt{Cache-Control: stale-while-revalidate=600}.
+\textbf{Meaning:} If the data is slightly old (up to 10 mins), show it immediately (instant load), but fetch the new version in the background for next time. It creates a "zero-latency" feel.
+\end{excellencebox}
+
+\section{Database Performance}
+\begin{itemize}
+    \item **Indexes:** We heavily index `created_at` and `status` on the `orders` table to ensure the Admin Dashboard loads instantly even with thousands of orders.
+    \item **Lightweight Queries:** The ETag queries only ask for `COUNT` and `MAX(updated_at)`, which are extremely fast for SQLite to compute, avoiding the need to load the full dataset to check for freshness.
+\end{itemize}
+
+% =============================================================================
+% CHAPTER 6
+% =============================================================================
+\chapter{The Builders: DevOps \& Operations}
+
+\section{The Pre-Build Ritual}
+Before the code is compiled, we run \texttt{scripts/generate-inventory.mjs}.
+\begin{itemize}
+    \item It reads \texttt{proposed-280-SKUs.csv}.
+    \item It generates a JSON file \texttt{functions/\_inventory-data.json}.
+    \item \textbf{Why?} It ensures the code always has access to the "Truth" of the inventory definition, seeded into the database during migration 0007.
+\end{itemize}
+
+\section{Deployment Pipeline}
+\begin{itemize}
+    \item **Command:** \texttt{npm run pages:deploy:prod}
+    \item **Process:** 
+        1. Runs `build:inventory`.
+        2. Builds React app to \texttt{dist/}.
+        3. Pushes assets and functions to Cloudflare Pages.
+        4. Binds to the Production D1 Database.
+\end{itemize}
+
+\section{Database Management Scripts}
+We built a suite of custom scripts in `package.json` to manage D1:
+\begin{itemize}
+    \item \texttt{db:pull}: Downloads the remote database to your local machine for debugging.
+    \item \texttt{db:migrate}: Applies new schema changes (migrations) to the database.
+    \item \texttt{logs:tail}: Streams real-time logs from the production server to your terminal.
+\end{itemize}
+
+\begin{critiquebox}{Manual Secret Management}
+The \texttt{AUTH\_SECRET} is set manually in the Cloudflare Dashboard. It is not in code (good for security), but bad for disaster recovery. If we lost the Cloudflare account, we'd have to remember to regenerate this secret.
+\end{critiquebox}
+
+% =============================================================================
+% CHAPTER 7
+% =============================================================================
+\chapter{The Shadow Lands: Risks \& Gaps}
+
+Here we outline the dangers lurking in the system.
+
+\section{Testing Void}
+\begin{critiquebox}{Zero Automated Tests}
+The project has **no unit tests, no integration tests, and no E2E tests.**
+\textbf{Severity: High.}
+Every time we deploy, we just "hope" it works. If a developer accidentally changes a variable name in the Auth logic, no robot will warn them. The site will simply break for users.
+\end{critiquebox}
+
+\section{Operational Blindness}
+\begin{critiquebox}{Console Logs Only}
+We have no centralized logging (like Datadog or Sentry). If a user faces a bug, we only know if they call us. We cannot see error rates spiking in real-time. We rely on `wrangler pages deployment tail` which is ephemeral.
+\end{critiquebox}
+
+\section{Data Drift}
+\begin{critiquebox}{Local State Desync}
+Local development uses a local version of D1 stored in \texttt{.wrangler/state}. This frequently gets out of sync with the schema. Developers often have to "nuke" their local database (\texttt{db:pull:force}) to get it working again. It slows down development.
+\end{critiquebox}
+
+\section{Client Experience Gaps}
+\begin{itemize}
+    \item **No Offline Mode:** If internet cuts out, the app goes white. No Service Worker.
+    \item **No Optimistic UI:** When clicking "Add to Cart", the UI waits for the logic to finish. It feels snappy now, but on slow networks, it might feel sluggish.
+    \item **Pagination:** The Orders page loads up to 1000 orders. For a heavy user, this will eventually become slow.
+\end{itemize}
+
+\chapter*{Conclusion}
+Order Ieeja is a modern, cost-effective, and highly scalable architecture. Its use of **Cloudflare Pages** and **D1** keeps costs near zero while offering global performance. Its security model (memory-only tokens, token versioning) is superior to many standard implementations. However, the lack of automated testing and observability is a ticking time bomb that must be addressed before scaling to thousands of users.
+
+\end{document}

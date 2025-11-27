@@ -1,0 +1,17 @@
+Topic: Order Lifecycle
+
+Treat an order like a relay baton: the frontend shapes it, the backend stamps and routes it, and ops/riders advance its status.
+
+Client (Frontend)
+- Cart in localStorage (`order-ieeja-cart`), quantity capped at 20 via `useCart`.
+- Checkout validated with `shared/order-schema.js` (via `src/utils/checkout.ts`).
+- `submitOrder` (MainLayout) POSTs `/order` with Authorization when signed in, shows toast feedback, clears cart/draft on success, and can set `saveAddress`. `/order` requires auth; unauthenticated attempts get 401 and an error toast.
+
+Server (Functions/order.js)
+- POST `/order`: revalidates payload, loads active products, enforces quantity bounds/stock and minimumOrderAmount, builds address snapshot, optionally upserts/snapshots a delivery address for the user, writes order + order_items + stock updates in one `db.batch`. Order id `ORD-<12 chars>`. Returns message/orderId/summary.
+- GET `/order`: auth required. Customers restricted to own orders; riders/admin see all. Supports `id`, `limit` (1–1000), `search`, `status`. Emits per-order ETag on `id` and customer-global ETag (count + max updated_at) when unfiltered.
+- PATCH `/order`: admin/rider only. Normalizes status aliases and updates status + `updated_at`.
+
+Operations/UX
+- Orders page consumes `/order` GET; admin table and rider view poll/revalidate with ETag.
+- Status updates flow from admin/rider UIs via `src/utils/updateOrderStatus.ts`.

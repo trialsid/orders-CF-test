@@ -1,0 +1,182 @@
+# Developer Handbook & Technical Architecture
+**Project:** orders-CF-test (Order Ieeja)
+**Version:** 3.0
+**Last Updated:** 2025-11-29
+
+---
+
+## 1. Introduction
+Welcome to the **Order Ieeja** developer handbook. This document acts as the primary source of truth for engineering practices, architecture decisions, and "how-to" guides for this project.
+
+### Core Philosophy
+1.  **Simplicity over Complexity:** We use plain Cloudflare Pages Functions and D1 (SQLite) instead of heavy ORMs or full backend frameworks (like NestJS).
+2.  **Edge-First:** Every API request hits the edge. We design for eventual consistency (KV) and distributed reads.
+3.  **Type-Safety:** TypeScript is used on the frontend. While the backend is JS (JSDoc), we share validation schemas (`shared/order-schema.js`) to ensure contract safety.
+4.  **Dev Experience:** You should be able to run `npm run dev` and get a working app in < 1 minute.
+
+---
+
+## 2. Quick Start
+
+### Prerequisites
+- Node.js (v18+)
+- Cloudflare Wrangler CLI (`npm install -g wrangler`)
+- Git
+
+### The "5-Minute" Setup
+1.  **Clone & Install:**
+    ```bash
+    git clone <repo>
+    cd orders-CF-test
+    npm install
+    ```
+    *(Note: `npm run build:inventory` runs automatically to seed inventory JSON).*
+
+2.  **Environment:**
+    - Run `npx wrangler login` to authenticate.
+    - No `.env` file needed (Wrangler handles bindings).
+
+3.  **Database Bootstrapping (Local):**
+    ```bash
+    npm run db:migrate
+    ```
+    *Creates a local SQLite file in `.wrangler/state`.*
+
+4.  **Launch:**
+    ```bash
+    npm run dev
+    ```
+    - **App:** `http://localhost:5173`
+    - **API Proxy:** `http://localhost:5173/api/*` -> `http://127.0.0.1:8788`
+
+---
+
+## 3. Architecture Map
+
+### Directory Structure Guide
+```
+/
+├── .wrangler/              # Local D1/KV state (GitIgnored)
+├── dist/                   # Production build output
+├── functions/              # Backend API (Cloudflare Pages Functions)
+│   ├── _auth.js            # Middleware: JWT, Hashing, Rate Limiting
+│   ├── order.js            # Order Processing Logic
+│   └── api/                # (Optional) Future API routes
+├── migrations/             # SQL Schema Files (Ordered by prefix)
+├── scripts/                # Utility scripts (Seeding, Testing)
+├── shared/                 # Isomorphic code (Validation)
+│   └── order-schema.js     # Single source of truth for Order Shapes
+└── src/                    # Frontend (React + Vite)
+    ├── components/         # UI Components (Atomic design)
+    ├── context/            # Global State (Auth, Theme)
+    ├── hooks/              # Data fetching & Business Logic
+    └── types.ts            # TypeScript Definitions
+```
+
+### The Request Lifecycle
+1.  **User Action:** User clicks "Place Order".
+2.  **Client Validation:** `src/utils/checkout.ts` calls `shared/order-schema.js` to validate form.
+3.  **API Call:** `useApiClient` sends POST to `/order` (with Bearer Token if logged in).
+4.  **Edge Middleware:** `functions/_auth.js` verifies token & checks KV for rate limits.
+5.  **Backend Logic:** `functions/order.js` validates Stock & Price against D1.
+6.  **Transaction:** `db.batch()` executes:
+    - Insert Order
+    - Insert Items
+    - Decrement Stock
+    - Upsert Address
+7.  **Response:** JSON success message returned.
+
+---
+
+## 4. Engineering Standards
+
+### A. Database (Cloudflare D1)
+- **Querying:** Use raw SQL with `db.prepare('...').bind(...)`.
+- **Naming:** Snake_case for DB columns (`user_id`, `created_at`).
+- **Migrations:**
+  - Files: `migrations/00XX_description.sql`.
+  - **Never** modify an existing migration file after it has been merged. Create a new one.
+
+### B. Frontend (React)
+- **Styling:** Tailwind CSS with utility classes. Use `@apply` sparingly in `index.css` for reusable components (like `.btn-primary`).
+- **State:**
+  - **Server State:** Use `useEffect` + `fetch` (or custom hooks like `useOrders`).
+  - **Client State:** React Context (`AuthContext`) for global auth; LocalStorage for Cart.
+- **Components:** Functional components with typed props.
+  - Example: `function PageSection({ title }: PageSectionProps): JSX.Element { ... }`
+
+### C. Backend (Functions)
+- **Language:** JavaScript (ESM).
+- **Responses:** Always use the helper `jsonResponse(payload, status)` from `functions/utils.js` (or similar local helpers).
+- **Error Handling:** Return `4xx` for client errors, `5xx` for server errors. **Never** leak stack traces to the client.
+
+### D. Security
+- **Auth:** Never store passwords in plain text. Use `_auth.js` helpers.
+- **Rate Limiting:** All login/write endpoints MUST use the KV rate limiter.
+- **Validation:** Trust nothing from the client. Re-validate prices and stock on the server.
+
+---
+
+## 5. Developer Guides (How-To)
+
+### How to: Add a New Feature
+**Scenario:** "I want to add a 'Wishlist' feature."
+
+1.  **Database:**
+    - Create `migrations/0013_create_wishlist.sql`:
+      ```sql
+      CREATE TABLE wishlists (id TEXT PRIMARY KEY, user_id TEXT, product_id TEXT);
+      ```
+    - Run `npm run db:migrate`.
+2.  **Shared Schema:**
+    - Add `WishlistPayload` type to `src/types.ts` (if needed for API).
+3.  **Backend:**
+    - Create `functions/wishlist.js`.
+    - Export `onRequestGet` (list) and `onRequestPost` (add).
+    - Use `requireAuth` to ensure only logged-in users can access.
+4.  **Frontend:**
+    - Create `src/hooks/useWishlist.ts`.
+    - Create UI components in `src/components/Wishlist/`.
+5.  **Verify:**
+    - Test locally.
+    - Run `npm run design` to create a Ladle story for the UI.
+
+### How to: Debug Production Issues
+1.  **Logs:**
+    - Run `npm run logs:tail` to stream live production logs.
+2.  **Replica DB:**
+    - Run `npm run db:pull:prod` to download the production database state to your local machine.
+    - Debug against this local copy without fearing data corruption on prod.
+
+### How to: Handle "Out of Sync" Schema
+If your local DB throws errors about missing columns:
+1.  Check `migrations/` folder for new files.
+2.  Run `npm run db:migrate`.
+3.  If all else fails: `npm run clean` then `npm run db:migrate` (Wipes local data).
+
+---
+
+## 6. Troubleshooting
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `501 Not Implemented` (Auth) | `AUTH_SECRET` missing. | Set secret in Cloudflare Dashboard or ensure `wrangler` binding is active. |
+| `SQLITE_CONSTRAINT` | Foreign key or Unique violation. | Check your input data. Ensure IDs exist. |
+| `Network Error` (Frontend) | Backend not running. | Ensure `npm run dev` is running. Check port `8788`. |
+| `Rate Limit Exceeded` | Too many login attempts. | Wait 15 mins or manually clear KV in Cloudflare Dashboard. |
+
+---
+
+## 7. Useful Commands Cheat Sheet
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Start full stack dev environment. |
+| `npm run db:migrate` | Update local database schema. |
+| `npm run db:exec -- "SQL"` | Run arbitrary SQL against local DB. |
+| `npm run design` | Open Ladle (Component Playground). |
+| `npm run pages:deploy` | Deploy to Cloudflare (Preview/Prod). |
+
+---
+
+*For detailed API contracts and specific implementation logic, refer to the code in `functions/` and `src/types.ts`.*

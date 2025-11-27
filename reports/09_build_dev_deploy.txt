@@ -1,0 +1,21 @@
+Topic: Build, Dev, and Deploy
+
+Scripts (package.json)
+- `build:inventory`: generates `functions/_inventory-data.json` from `proposed-280-SKUs.csv` (runs predev/prebuild).
+- `dev`: Vite dev server (frontend only).
+- `dev:lan`: Vite dev server with `--host`.
+- `build`: Vite build to `dist/`; `preview`: serve build.
+- `pages:dev`: build then `wrangler pages dev dist --ip 0.0.0.0` (runs functions locally).
+- `pages:deploy`, `pages:deploy:preview`, `pages:deploy:prod`: build then `wrangler pages deploy dist` (prod uses `--branch production`).
+- DB scripts: `db:migrate*`, `db:pull*`, `db:sync:preview`, `db:wipe:*`, `db:exec*`, `db:inspect`.
+- Logs: `logs:tail`, `logs:tail:preview`, `logs:tail:prod`.
+- Type check: `typecheck`; component previews: `design` (Ladle).
+- Clean: removes `dist` and `.wrangler`.
+
+Local Workflow
+- Inventory generation runs automatically via predev/prebuild.
+- Start UI: `npm run dev` (port 5173).
+- Start functions: `npm run pages:dev` (port 8788) or `wrangler pages dev dist` after a build; Vite proxies API calls to 8788.
+
+Deploy
+- Cloudflare Pages project name `order-ieeja`; output `dist/`. Functions deploy with the Pages build via wrangler scripts.

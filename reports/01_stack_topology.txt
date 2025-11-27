@@ -1,0 +1,17 @@
+Topic: Stack and Topology
+
+Think of the project as a two-piece band plugged into the same PA system: the frontend plays melody, the backend keeps rhythm, and both read from the same sheet music.
+
+Frontend (melody)
+- React 18.3.1 + TypeScript (strict) built with Vite 5 (`src/`).
+- Styling via TailwindCSS 3 (brand/emerald palette and fonts in `tailwind.config.js`), with PostCSS/autoprefixer enabled.
+- Navigation and UI instruments: `react-router-dom` 7.9.5, lucide-react icons, and bilingual strings from `src/i18n/i18n.ts` (en/te).
+
+Backend (rhythm)
+- Cloudflare Pages Functions in `functions/` (ES modules) cover `/products`, `/order`, `/config`, `/auth/*`, `/account/*`, `/admin/*`.
+- Data sources: Cloudflare D1 binding `ORDERS_DB` (preview/prod defined in `wrangler.toml`); login rate limiting via Cloudflare KV `LOGIN_RATE_LIMIT_KV`.
+- Shared sheet music: `shared/order-schema.js` is imported on both sides (e.g., `src/utils/checkout.ts`, `functions/order.js`) to keep validation and shapes in sync.
+
+Hosting/Serving (PA system)
+- Cloudflare Pages serves static assets from `dist/` and routes API calls to Functions.
+- Local DX: Vite dev server on 5173; `vite.config.js` proxies `/products`, `/order`, `/config` to `http://127.0.0.1:8788` (Wrangler dev) so the band can rehearse together.

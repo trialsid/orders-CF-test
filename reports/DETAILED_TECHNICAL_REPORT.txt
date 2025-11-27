@@ -1,0 +1,108 @@
+Order Ieeja – Technical Deep Dive
+Last reviewed: 2025-11-29
+
+1) Stack and Topology
+- Frontend: React 18.3 + TypeScript via Vite 5 (`src/`), TailwindCSS 3 theme (brand/emerald palette in `tailwind.config.js`), lucide-react icons, react-router-dom 7.9.5 for routing.
+- Backend: Cloudflare Pages Functions in `functions/` (ES modules). Data in Cloudflare D1; login rate limiting uses Cloudflare KV. Validation and checkout shaping are shared in `shared/order-schema.js` and reused by both UI and Functions.
+- Hosting/serving: Cloudflare Pages ships static assets from `dist/`; file-based functions handle `/products`, `/order`, `/config`, `/auth/*`, `/account/*`, `/admin/*`. For local DX, `vite.config.js` proxies `/products`, `/order`, `/config` to 127.0.0.1:8788 (Wrangler dev).
+- Internationalization: English + Telugu dictionaries in `src/i18n/i18n.ts`; locale persisted in localStorage (`order-ieeja-locale`) and provided via `TranslationContext`.
+- Theming: Light/dark toggle driven by `MainLayout`, persisted under `order-ieeja-theme`, applied to `document.documentElement`.
+
+2) Runtime Configuration and Bindings
+- `wrangler.toml`: `pages_build_output_dir="dist"`, `compatibility_date="2025-07-18"`, D1 binding `ORDERS_DB` for preview/prod DBs, KV binding `LOGIN_RATE_LIMIT_KV` for rate limiting.
+- Secrets: `AUTH_SECRET` must be set for auth flows; missing secret results in 501 responses from auth handlers.
+- Local dev: Vite runs on 5173. Wrangler Pages dev (functions) listens on 8788 when started; Vite proxies API calls there. No `.env` consumption in code; bindings are expected via Wrangler.
+
+3) Frontend Architecture and Flows
+- Entry: `src/main.tsx` mounts `App` inside `AuthProvider`.
+- Layout: `MainLayout` composes products/cart hooks, checkout draft state (with reset/update helpers), theme/locale toggles, toast stack, translation provider, and exposes `submitOrder` via outlet context. `useApiClient` handles auth-aware fetch with 401 refresh logic.
+- Routing (`src/App.tsx`): `/` Home, `/browse`, `/products/:productId`, `/checkout`, `/checkout/success`, `/orders`, `/admin` (RequireAuth admin), `/rider` (RequireAuth rider/admin), `/account` (RequireAuth customer/admin/rider), `/auth/login`, `/auth/register`; wildcard redirects to `/`.
+- Hooks/state:
+  - `useProducts` loads `/products` with ETag/304 handling, builds departments, store note, and filter state.
+  - `useCart` persists cart in localStorage (`order-ieeja-cart`), enforces MAX_ITEM_QUANTITY=20.
+  - `useOrders` fetches `/order` with optional search/status, supports polling and focus revalidation, respects ETag 304.
+  - `useAdminProducts`, `useAdminUsers`, `useAdminConfig`, `useAccountData` wrap respective admin/account APIs with auth headers and refresh helpers.
+  - `AuthContext` manages access token/user, auto-refreshes via `/auth/refresh`, and exposes login/register/logout/revoke/refreshSession.
+- Pages/UX: Browse supports department chips and search; checkout offers saved address selection + save checkbox; Orders has list view (all) and admin-only table toggle; Admin page provides dashboard, order drawer, config form, catalog CRUD, user role/status updates; Rider page shows pending/assigned queues with status advance; Account page edits profile and full address CRUD.
+
+4) Backend APIs (Cloudflare Functions)
+- `/products` (`functions/products.js`): Public GET; reads active products from D1 and delivery config from `admin_config`. Returns `{ items, config, message }`. Uses a global ETag built from product count/max updated_at plus config max updated_at; cache-control `public, max-age=60, stale-while-revalidate=600`.
+- `/order` (`functions/order.js`):
+  - POST: Auth required (customer/admin). Validates body with DB lookups and `shared/order-schema.js`, enforces stock and MAX_ITEM_QUANTITY=20, enforces minimumOrderAmount from `admin_config`, snapshots address, optionally upserts/snapshots a user address, and writes order + order_items + stock decrements in a single `db.batch`. Order IDs like `ORD-<12 chars>`. Returns message + orderId + summary.
+  - GET: Auth required (customer/rider/admin). Customers only see their orders; riders/admin see all. Supports `id`, `limit` (1–1000), `search`, `status`. Per-order ETag on `id` fetch; customer-global ETag (count + max updated_at) when unfiltered. Uses `no-store` unless an ETag is emitted; private cache headers on ETag responses.
+  - PATCH: Auth required (admin/rider). Normalizes status (supports aliases like `out_for_delivery`), updates status and `updated_at`.
+- `/config` (`functions/config.js`): Admin-only GET/PUT/PATCH. Validates numeric updates for `minimumOrderAmount`, `freeDeliveryThreshold`, `deliveryFeeBelowThreshold` and persists to `admin_config` with updated_at.
+- `/auth/*` (`functions/auth/*.js` with `_auth.js` helpers):
+  - `/auth/register` (POST): Validates phone/password, hashes with PBKDF2 100k iterations, inserts customer user, issues access token + refresh cookie (HttpOnly, Secure, SameSite=Lax, Path=/auth).
+  - `/auth/login` (POST): Validates credentials; applies KV-backed rate limiting (5 failures/min → 15m block with Retry-After). Issues tokens and warms in-memory auth cache.
+  - `/auth/refresh` (POST): Validates refresh token and token_version; rotates access/refresh; clears cookie on failure.
+  - `/auth/logout` (POST): Clears refresh cookie.
+  - `/auth/revoke` (POST): Authenticated; increments token_version in DB to revoke all sessions and clears refresh cookie.
+  - `/auth/me` (GET): Returns public user profile with per-user ETag.
+- `/account` (`functions/account/index.js`): Auth (customer/rider/admin). Returns user profile (public shape) and saved addresses ordered by default/created_at.
+- `/account/profile` (`functions/account/profile.js`): Auth (customer/rider/admin). PUT to update displayName/fullName.
+- `/account/addresses` (`functions/account/addresses.js`): Auth (customer/rider/admin). GET list; POST create (optionally default + primary snapshot); PUT update; PATCH set default; DELETE delete with fallback/default reassignment and primary snapshot maintenance.
+- `/admin/products` (`functions/admin/products.js`): Admin-only. GET with pagination/search and ETag; POST create; PATCH partial update; DELETE blocked if product is referenced in order_items.
+- `/admin/users` (`functions/admin/users.js`): Admin-only. GET with global ETag (count + max updated_at); PATCH role/status (validated against enums).
+
+5) Data Model (D1)
+- `users`: id (PK), phone UNIQUE, password_hash, role ENUM('customer','rider','admin'), status ENUM('active','blocked'), display_name, full_name, metadata_json, token_version (default 1 via 0008), primary_address_json snapshot, created_at, updated_at.
+- `user_addresses`: id (PK), user_id FK, label, contact_name, phone, line1 (required), line2, area, city, state, postal_code, landmark, is_default (0/1), created_at/updated_at. Primary snapshot maintained on users.primary_address_json when default changes.
+- `orders`: id (PK), customer_name/phone/address snapshot fields, total_amount REAL (0011), currency default INR, status ENUM(pending/confirmed/outForDelivery/delivered/cancelled), items_json (cart snapshot), delivery_slot, payment_method, delivery_instructions, user_id FK, delivery_address_id FK, created_at, updated_at (0012).
+- `order_items`: id (PK), order_id FK, product_id, product_name snapshot, unit_price REAL, quantity, line_total REAL, created_at.
+- `products`: id (PK), name, description, department, category, price REAL, mrp REAL, raw_selling_price, is_active (0/1), stock_quantity INTEGER CHECK >=0, created_at/updated_at. Seeded via CSV pipeline (`scripts/generate-inventory.mjs` → `functions/_inventory-data.json` → 0007 seed).
+- `admin_config`: key/value with updated_at; defaults seeded in 0003 (minimumOrderAmount=100, freeDeliveryThreshold=299, deliveryFeeBelowThreshold=15).
+
+6) Auth, Security, and Validation
+- Passwords: PBKDF2-SHA256 with random 16-byte salt, 100k iterations; stored as JSON payload (version, iterations, salt, hash).
+- JWTs: HS256 signed with AUTH_SECRET. Access TTL ~15m; refresh TTL 7d; refresh cookie HttpOnly/Secure/SameSite=Lax scoped to `/auth`. token_version embedded for revocation.
+- Authorization: `requireAuth` verifies signature/exp/type, checks token_version vs cache or DB, enforces role allowlists, returns 401/403/501 on failure.
+- Rate limiting: KV-backed login limiter (`LOGIN_RATE_LIMIT_KV`, key `rl:login:<ip>`). 5 failed attempts/min → 15m block with Retry-After.
+- Validation: `shared/order-schema.js` normalizes checkout, requires name/phone (digits>=6)/address/slot/paymentMethod, caps quantity at 20, builds payload. Server rechecks items against DB price/stock and minimumOrderAmount; status inputs normalized (aliases supported).
+
+7) Order Lifecycle (end-to-end)
+- Client: Cart persisted in localStorage; checkout validated with shared schema; `submitOrder` posts to `/order` with Authorization when available, shows toast feedback, clears cart/draft on success, supports saveAddress flag. `/order` requires auth, so unauthenticated submissions return 401 and surface an error toast.
+- Server: `/order` POST revalidates form/items, queries products for price/stock, enforces minimum order, snapshots address, optionally upserts delivery address + primary snapshot for the user, and writes order + order_items + stock updates via `db.batch`. Returns message/orderId/summary.
+- Status updates: Admin/Rider UIs call `/order` PATCH via `src/utils/updateOrderStatus.ts`; server updates status + updated_at. Orders GET feeds customer/admin/rider UIs; rider page polls every 60s (visibility-gated).
+
+8) Caching and Performance
+- Products: Global ETag (count/max updated_at/config updated_at); cache-control `public, max-age=60, stale-while-revalidate=600`; 304 supported and handled by `useProducts`.
+- Orders: Per-order ETag on `id` lookups; customer-global ETag (count + max updated_at) when unfiltered and non-privileged. Private cache headers on ETag hits; `no-store` otherwise. `useOrders` honors 304 and revalidates on focus.
+- Users/admin users: `/auth/me` emits per-user ETag; `/admin/users` emits global ETag (count + max updated_at).
+- Client storage: LocalStorage used only for theme, locale, cart, checkout draft to limit network churn.
+
+9) Build, Dev, and Deploy
+- Scripts (`package.json`):
+  - `npm run build:inventory` (predev/prebuild) generates `functions/_inventory-data.json` from the CSV.
+  - `npm run dev` starts Vite only (frontend). Functions must be run separately to serve API (`npm run pages:dev` or `wrangler pages dev dist` after a build).
+  - `npm run pages:dev`: builds then runs `wrangler pages dev dist --ip 0.0.0.0` (functions).
+  - `npm run pages:deploy` / `pages:deploy:preview` / `pages:deploy:prod`: build + `wrangler pages deploy dist` (prod uses `--branch production`).
+  - `npm run preview`: Vite preview of the built site; `npm run build`: Vite build to `dist/`.
+  - `npm run dev:lan`: Vite with `--host`.
+  - DB: `db:migrate`, `db:migrate:preview`, `db:migrate:prod`, `db:pull*`, `db:sync:preview`, `db:wipe:*`, `db:exec*`, `db:inspect`.
+  - Logs: `logs:tail`, `logs:tail:preview`, `logs:tail:prod`.
+  - Type check: `npm run typecheck`; component previews: `npm run design` (Ladle).
+- Migrations: `migrations/*.sql` evolve schema; 0011 recreates products/orders/order_items for REAL types and stock CHECK; 0012 adds orders.updated_at index.
+- Tooling: TypeScript strict mode, Tailwind config in `tailwind.config.js`, PostCSS/autoprefixer enabled.
+
+10) Ops, Utilities, and Scripts
+- `scripts/reorder-d1-export.js`: Reorders D1 export SQL for deterministic imports (users before orders, migrations before sqlite_sequence).
+- `scripts/test-auth-refresh-preview.sh`, `scripts/test-login-rate-limit-preview.sh`: Curl-based checks for auth refresh flow and login rate limit (preview).
+- `scripts/generate-inventory.mjs`: Converts `proposed-280-SKUs.csv` to `functions/_inventory-data.json` (auto-run predev/prebuild).
+- `clean`: removes `dist` and `.wrangler`.
+
+11) Known Risks and Gaps
+- No automated tests beyond Ladle stories/manual scripts; add unit/integration coverage for auth, order validation, address CRUD, and status transitions.
+- Stock integrity relies on app checks + batch writes; high concurrency could still race without stronger DB constraints.
+- Compatibility date set to 2025-07-18; verify runtime support or adjust before deploy.
+- AUTH_SECRET/KV bindings must be configured; missing values yield 501s or disable rate limiting.
+- Catalog seeded in migrations; ongoing updates need D1 writes or new migrations (admin UI can toggle active/stock/price but doesn’t add new SKUs automatically).
+
+12) Additional Context Notes (from context.txt)
+- Repo hygiene: keep `dist/` out of git; Pages builds from source. If hashed bundles 404, restart dev servers or disable cache.
+- Local state: Wrangler keeps local D1 under `.wrangler/state`; using that avoids `--persist-to` flags.
+- Domain/bindings: Production domain expected at order.ieeja.com (Pages project `order-ieeja`); ensure AUTH_SECRET and ORDERS_DB attached in preview/prod.
+- Build caveat: `npm run build` can fail locally if optional `@rollup/rollup-linux-x64-gnu` isn’t present; reinstall deps or add the optional package if needed.
+- DB sync scripts pull remote snapshots, reorder SQL, and import into local D1 for realistic dev data.
+- Pending improvements: richer customer-facing order tracking, per-rider assignment and push updates, PWA/manifest, hardened auth/role UX.
+- UX callouts: checkout success + Orders surface customer/delivery/payment details; hero copy advertises ₹100 min / ₹299 free delivery / ₹15 fee below; mobile sticky CTAs auto-hide with keyboard; logged-in checkout surfaces saved/default addresses with “save this address” option.

@@ -1,0 +1,10 @@
+Topic: Ops, Utilities, and Scripts
+
+Think of these as the shop’s backroom tools: data loaders, export shufflers, and quick health checks.
+
+- `scripts/generate-inventory.mjs`: Turns `proposed-280-SKUs.csv` into `functions/_inventory-data.json`; runs automatically predev/prebuild.
+- `scripts/reorder-d1-export.js`: Reorders D1 export SQL for deterministic imports (users before orders, migrations before sqlite_sequence).
+- `scripts/test-auth-refresh-preview.sh`: Curl check for auth refresh flow (preview).
+- `scripts/test-login-rate-limit-preview.sh`: Curl check for KV-backed login rate limiting (preview).
+- DB helpers (npm scripts): `db:pull*` export/reorder/import remote DB; `db:wipe:*` clears orders/users (non-admin); `db:exec*` runs SQL; `db:inspect` lists tables/counts.
+- `clean`: removes `dist` and `.wrangler`.

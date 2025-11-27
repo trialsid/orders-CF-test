@@ -1,0 +1,51 @@
+Topic: Known Risks and Gaps — Exhaustive Deep Report
+
+Testing/coverage gaps
+- No automated unit/integration/e2e tests; regression risk across auth, order validation, address CRUD, status transitions, admin mutations, and hooks.
+- No contract tests to enforce parity between frontend payload builders and backend validators (`shared/order-schema.js`); drift risk if schema or error mapping changes.
+- No load/perf testing for `/order` batch writes, `/products` reads, or concurrent status updates; unknown behavior under peak load.
+- No snapshot/visual regression coverage for UI flows (Browse, Checkout, Admin, Rider, Account).
+
+Data integrity and concurrency
+- Stock protection is app-driven with D1 CHECK(stock_quantity >= 0); concurrent orders could oversell without serializing decrements or using DO-like locking.
+- Status FSM not enforced server-side; privileged callers can jump statuses (e.g., pending→delivered) without transition rules or audit logging.
+- Address FKs not cascading; deleting an address leaves `delivery_address_id` pointing to removed row (though snapshot remains).
+- Cancel/correction flow does not restock inventory; manual fixes required for cancelled orders.
+- No validation of price drift between client and server beyond server recompute; prices changed mid-checkout could surprise users (no optimistic pricing sync).
+- No uniqueness on order id pattern beyond UUID slice; extremely low collision risk, but no DB-side UNIQUE validation of normalized phone for addresses.
+
+Security/auth config risks
+- Missing/mis-set `AUTH_SECRET` yields 501s; inconsistent secrets across envs break refresh/verify silently for some users.
+- LOGIN_RATE_LIMIT_KV missing disables brute-force protection; KV latency or outage not handled with fallback penalties.
+- Refresh endpoint protected only by HttpOnly cookie + SameSite=Lax; CSRF mitigations rely on path scoping and Lax but no explicit CSRF token.
+- No MFA/OTP for login; password-only auth with PBKDF2 100k (adequate but no breach detection).
+- No role-based field filtering on orders payload beyond user_id scope; admin/rider search could leak PII if logs are mishandled.
+
+Operational/deployment risks
+- `compatibility_date` set to 2025-07-18; deploying before that date is supported may fail; future Worker changes could break behavior if not updated.
+- Build fragility: optional `@rollup/rollup-linux-x64-gnu` missing can break `npm run build`; CI/CD might halt without platform-specific binary caching.
+- Dist caching in browsers can serve stale SPA shell after deploy; no cache-busting guidance beyond hashed assets.
+- No automated deploy validation (smoke tests) post-Pages deploy; failures might surface late.
+- Wrangler/D1 state drift: manual DB sync scripts can be misused; remote wipes are destructive (`db:sync:preview`).
+
+Catalog and data updates
+- No automated ingestion for new SKUs beyond CSV + migration; live catalog updates depend on admin manual creation.
+- Admin UI lacks bulk import/edit; department/category taxonomy changes require manual updates and risk inconsistency.
+- Stock levels initialized generically (1000) and may not reflect real inventory; no scheduled sync with upstream system.
+
+Observability and alerting
+- Logs are console-only; no central aggregation, metrics, or traces; no alerts on elevated 5xx, auth failures, or rate-limit triggers.
+- No health checks/uptime monitors for Pages Functions; outages could go undetected.
+- No audit logs for admin/rider actions (status changes, product edits, user role changes).
+
+Backup/recovery
+- Backups require manual `db:pull`/`db:pull:prod`; no scheduled backups, retention policy, or restore drills.
+- `backup.sql` files may linger locally unencrypted; risk of sensitive data exposure or accidental reuse.
+- No point-in-time recovery; restores are full imports only.
+
+Client experience edge cases
+- No offline/PWA/service worker; app fails without network.
+- Orders page lacks pagination; large histories (limit up to 1000) could cause heavy payloads and slow UI.
+- ETag correctness depends on updated_at maintenance; any out-of-band DB edits without updated_at bumps will serve stale data to clients.
+- Error handling mostly toast-based; limited user guidance for rate-limited logins or expired sessions beyond generic errors.
+- Accessibility/motion: while prefers-reduced-motion is honored for scroll, broader a11y testing not documented.

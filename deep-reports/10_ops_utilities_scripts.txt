@@ -1,0 +1,37 @@
+Topic: Ops, Utilities, and Scripts — Exhaustive Deep Report
+
+Inventory + data prep
+- `scripts/generate-inventory.mjs`: parses `proposed-280-SKUs.csv`, emits `functions/_inventory-data.json` and seeds products used by migration 0007. Invoked via `build:inventory` (runs predev/prebuild). Required before dev/build so `/products` has data.
+- `scripts/reorder-d1-export.js`: normalizes D1 export SQL ordering (users before orders, migrations before sqlite_sequence) for deterministic imports; used in `db:pull`/`db:pull:prod` flows before import.
+
+Testing/health scripts (curl, preview-oriented)
+- `scripts/test-auth-refresh-preview.sh`: exercises `/auth/refresh` flow against preview deployment to verify token rotation and cookies.
+- `scripts/test-login-rate-limit-preview.sh`: intentionally fails logins to trigger KV rate limit (5 failures/min → 15m block, Retry-After) on preview.
+
+NPM DB helpers (package.json)
+- Export/import/sync:
+  - `db:pull`: export remote preview DB → `backup.sql`, reorder via script, import into local preview (.wrangler/state).
+  - `db:pull:prod`: same for prod DB.
+  - `db:pull:force`: removes `.wrangler/state` then runs `db:pull`.
+  - Component steps: `db:pull:export`, `db:pull:process`, `db:pull:import`.
+  - `db:sync:preview`: exports local preview DB, drops key tables on remote preview, reimports to remote.
+- Migrations:
+  - `db:migrate`, `db:migrate:preview`, `db:migrate:prod`: apply migrations locally (preview binding), remote preview, remote prod.
+  - Status checks: `db:migrate:status`, `db:migrate:status:preview`, `db:migrate:status:prod`.
+- Queries/exec:
+  - `db:query:users`, `db:query:users:remote`: list phone/role/status (preview local/remote).
+  - `db:exec`, `db:exec:remote`, `db:exec:prod`: run arbitrary SQL (preview local/remote, prod).
+- Wipes:
+  - `db:wipe:orders`, `db:wipe:orders:remote`: delete order_items then orders (preview local/remote).
+  - `db:wipe:users`, `db:wipe:users:remote`: delete users where role != admin (preview local/remote).
+- Inspect:
+  - `db:inspect`: list tables and counts (orders/users) locally.
+
+Logs and maintenance
+- Logs tailing: `logs:tail`, `logs:tail:preview`, `logs:tail:prod` to stream Pages deployment logs per environment.
+- `clean`: deletes `dist` and `.wrangler` to reset build/dev artifacts and local D1 state.
+
+Operational notes
+- Env readiness: ensure `AUTH_SECRET`, `ORDERS_DB`, `LOGIN_RATE_LIMIT_KV` are configured in target envs before remote DB/auth checks.
+- Backups: `db:pull`/`db:pull:prod` produce `backup.sql`; remove or archive to avoid stale data reuse.
+- Local state: default `.wrangler/state` used for local D1; `db:pull:force` clears it when needing a fresh import.

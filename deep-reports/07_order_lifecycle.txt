@@ -1,0 +1,71 @@
+Topic: Order Lifecycle — Exhaustive Deep Report
+
+Client-side lifecycle
+- Cart management: `useCart` persists to `localStorage` key `order-ieeja-cart`; ensures quantity >0 and ≤ `MAX_ITEM_QUANTITY` (20). Exposes add/update/remove/clear, totals (items/amount), `hasItems`.
+- Checkout data prep: `createEmptyCheckoutForm` seeds state; `prepareOrderPayload` merges cart + form, validates via shared `order-schema` (requires name, phone, address, slot, paymentMethod; optional addressLine2/area/city/state/postalCode/landmark/instructions; respects quantity cap). Returns structured payload or cart error (empty/quantityLimit).
+- Submission path (`MainLayout.submitOrder`):
+  - Guards empty cart/quantity limit; shows error toast if invalid.
+  - Builds payload with optional `saveAddress` flag (defaults true if omitted).
+  - Sends POST `/order` via `useApiClient` (adds bearer token if present; refreshes on 401 once).
+  - On success: clears cart, resets checkout draft, shows success toast, navigates to `/checkout/success` with state.
+  - On failure: shows toast (validation/server/auth); auth failures bubble from `useApiClient` which may clear auth on persistent 401/403.
+- UI surfaces: checkout page shows cart summary, delivery slot, payment method, instructions, saved-address selector for authed users, “save address” checkbox. Orders page lists history; admin/rider pages offer status actions.
+
+Server-side lifecycle (functions/order.js)
+- POST `/order` (roles: customer/admin)
+  - Input: JSON body `{ items: [{ id, quantity }], name, phone, address, addressLine2?, area?, city?, state?, postalCode?, landmark?, slot, instructions?, paymentMethod, saveAddress? }`.
+  - Validation:
+    - Body must be object; items array non-empty; each item id must exist and be active in `products`; quantity numeric >0 and ≤20; stock_quantity sufficient.
+    - Shared schema `validateOrderRequest` enforces required fields + phone format; maps first field error to friendly message.
+    - Enforces `minimumOrderAmount` from `admin_config`.
+  - Address handling: formats `customer_address` via `formatAddressSnapshot`; includes extended address fields separately in summary.
+  - Optional address save: if authed and `saveAddress !== false`, `upsertAddressFromCheckout` creates/updates `user_addresses`, returning `deliveryAddressId` and batch statements.
+  - Persistence:
+    - Generate order id `ORD-<12 uppercase hex from uuid>`.
+    - Prepare insert into `orders` (status pending, currency INR, items_json payload, customer/delivery/payment fields, user_id, delivery_address_id).
+    - Prepare inserts into `order_items` (normalized lines with product snapshot).
+    - Prepare stock decrements `products.stock_quantity -= quantity`.
+    - Execute all in `db.batch` (address + order + items + stock) for atomicity.
+  - Response: 200 `{ message, orderId, summary }` where summary echoes validated data + status pending.
+  - Failure codes: 400 validation errors; 500 on batch DB error; 501 when ORDERS_DB missing.
+- GET `/order` (roles: admin/rider/customer)
+  - Query params: `id` (specific order), `limit` (default 100, min 1, max 1000), `search` (LIKE on lower name/phone/id), `status` (normalized; aliases `out_for_delivery`/`outfordelivery` -> `outForDelivery`).
+  - Access control: customers filtered to `user_id = sub`; admins/riders unrestricted.
+  - Specific order: builds ETag `W/"order-<id>-<updated_at>"`; if If-None-Match matches, returns 304 with private cache headers; otherwise returns `{ orders: [order] }` with structured fields (items from `items_json`, timestamps, delivery/payment info).
+  - List: sorted by `created_at DESC`; for customer scope without search/status, builds global ETag `W/"<sub>-<count>-<last_modified>"` (COUNT + MAX(updated_at)); 304 on match. Otherwise `Cache-Control: no-store`. Returns `{ orders }`.
+  - Errors: 404 when not found (respecting scope); 500 on DB errors; 501 missing ORDERS_DB.
+- PATCH `/order` (roles: admin/rider)
+  - Input: `{ orderId, status }`; normalizes status aliases; allowed set {pending, confirmed, outForDelivery, delivered, cancelled}.
+  - Effect: updates `orders.status`, sets `updated_at = datetime('now')`; returns `{ orderId, status }`.
+  - Errors: 400 invalid/missing inputs; 404 missing order; 500 DB error; 501 missing ORDERS_DB.
+
+Status flow and operations
+- Initial status: `pending` at creation.
+- Transitions: UI implies pending → confirmed → outForDelivery → delivered or cancelled; no hard server-side FSM beyond allowed statuses.
+- Actors: admin/rider advance statuses via PATCH `/order`; customer cannot mutate status.
+- Surfacing: admin dashboard shows live queue with actions; rider view filtered to confirmed/outForDelivery with call/address links; orders page shows current status to customer.
+
+Data persistence and integrity
+- Atomic writes: `db.batch` combines address upsert, order insert, order_items insert, and stock decrements to avoid partial state.
+- Stock safety: application checks quantities and stock; DB has CHECK (stock_quantity >= 0). No row-level locking; race conditions low at this scale.
+- Address snapshots: orders store `customer_address` string and detailed fields plus optional `delivery_address_id`; historical record persists even if user edits/deletes saved address.
+- Monetary accuracy: totals computed from DB prices (not client) to prevent tampering; min order enforced server-side.
+
+Caching and responses
+- ETags: per-order and per-user (customer scope) enable 304s; admin/rider list responses avoid ETag unless unfiltered customer scope.
+- Cache headers: private on ETag hits; `no-store` otherwise. POST/PATCH responses are uncached.
+
+Client error handling and UX
+- Validation/cart errors: toasts with specific messages (empty cart, quantity limit, missing fields).
+- Server errors: generic toast; keeps cart/draft intact.
+- Auth errors: 401/403 from `/order` cause `useApiClient` to clear auth after refresh retry; UI guards require login for checkout submit/orders page via `RequireAuth`.
+
+Identifiers and formatting
+- Order IDs: `ORD-` + 12 uppercase hex chars; uniqueness from UUID; not time-sortable; created_at used for ordering.
+- Items: duplicated in `items_json` (for fast API return) and normalized in `order_items` (analytics/admin delete guard).
+
+Edge behaviors
+- `saveAddress`: default true; set false skips address upsert but still snapshots inline address.
+- Search filter: case-insensitive LIKE on customer_name/phone/id; no pagination beyond `limit`.
+- Missing bindings: ORDERS_DB absence yields 501; AUTH_SECRET needed for auth (handled upstream in requireAuth); KV not required for orders endpoints.
+- Stock changes: decrements happen even for admin-placed orders; no restoration on cancellations (business rule not implemented).

@@ -1,0 +1,18 @@
+Topic: Runtime Configuration and Bindings
+
+Picture a stage with labeled cables—if they’re not plugged in, the show stops. This repo’s cables are defined in `wrangler.toml` and live in Cloudflare.
+
+Bindings (cables)
+- D1: `ORDERS_DB` with preview DB id `756fd361-4883-4202-bccd-db469354c8f8`; production DB id `0eaea965-4467-4aee-89a9-28aed83e4c79`.
+- KV: `LOGIN_RATE_LIMIT_KV` with preview id `f059e5f6774f4e7ca9db0d7bf80841fd`; production id `5e8638dfbd414219947a22aa476944cf`.
+- Build output and runtime: `pages_build_output_dir = "dist"`, `compatibility_date = "2025-07-18"`.
+
+Secrets (power)
+- `AUTH_SECRET` must be set; without it, auth handlers in `_auth.js` return 501.
+
+Local ports (monitors)
+- Vite dev server on 5173.
+- Wrangler Pages dev (when running functions) on 8788; `vite.config.js` proxies API routes there.
+
+Notes
+- No `.env` is read by the app; bindings are provided by Wrangler `env` in Functions.

@@ -1,0 +1,20 @@
+Topic: Caching and Performance
+
+ETags are the “last checked” stamps; caches keep the line short.
+
+Products (`functions/products.js`)
+- Global ETag = active product count + max(updated_at) of products + max(updated_at) of admin_config.
+- Cache: `public, max-age=60, stale-while-revalidate=600`.
+- 304 supported; `useProducts` handles 304/AbortError gracefully.
+
+Orders (`functions/order.js`)
+- Per-order ETag on `id` lookups (weak ETag with updated_at).
+- Customer-global ETag (count + max updated_at) when unfiltered/non-privileged; private cache headers on hits.
+- Otherwise `Cache-Control: no-store`. `useOrders` honors 304 and revalidates on focus.
+
+Users (`functions/_auth.js`, `functions/admin/users.js`)
+- `/auth/me`: per-user ETag (updated_at/token_version).
+- `/admin/users`: global ETag (count + max updated_at) with private cache headers; supports 304.
+
+Client Storage
+- LocalStorage only for theme (`order-ieeja-theme`), locale (`order-ieeja-locale`), cart (`order-ieeja-cart`), and checkout draft.

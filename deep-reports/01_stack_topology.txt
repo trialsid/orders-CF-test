@@ -1,0 +1,47 @@
+Topic: Stack and Topology — Deep Report
+
+System shape
+- Single Cloudflare Pages project `order-ieeja`: static bundle from Vite in `dist/` plus Pages Functions in `functions/` behind the same domain; no separate origin servers.
+- Data plane: Cloudflare D1 binding `ORDERS_DB` (preview/prod in `wrangler.toml`) and KV namespace `LOGIN_RATE_LIMIT_KV` for login throttling; all server logic runs inside Workers runtimes.
+- Shared contracts: `shared/order-schema.js` holds cart/order validation and is imported by both the frontend (`src/utils/checkout.ts`) and backend (`functions/order.js`) to keep payload shapes aligned.
+- Auth secret: symmetric `AUTH_SECRET` env var (required in Pages env) signs short-lived access tokens; refresh tokens live in HttpOnly cookies scoped to `/auth`.
+
+Frontend runtime (React/Vite)
+- React 18.3.1 + TypeScript (strict) bundled by Vite 5 with `@vitejs/plugin-react`; entry is `src/main.tsx` → `AuthProvider` → `App`.
+- Router: `src/App.tsx` uses `BrowserRouter` with routes for catalog (`/`, `/browse`, `/products/:id`), checkout (`/checkout`, success), orders feed, auth (`/auth/login|register`), and protected consoles (`/admin`, `/rider`, `/account`) gated by `<RequireAuth>`.
+- Layout/composition: `src/layouts/MainLayout.tsx` wraps all routes, provides theme + locale state, product/cart contexts, checkout draft persistence, toast system, and order submission handler that posts to `/order`.
+- Styling: TailwindCSS 3.4 with brand emerald palette and Poppins/Inter fonts from `tailwind.config.js`; global styles in `src/index.css`; lucide-react icons supply UI glyphs.
+- i18n: bilingual strings (en/te) in `src/i18n/i18n.ts`; layout sets `document.documentElement.lang` and stores locale in `localStorage`.
+- Data access: hooks like `useProducts`, `useCart`, `useOrders`, `useAdminConfig`, and `useAccount` call the Pages Functions; `useApiClient` injects bearer tokens from `AuthContext` when present and retries on 401 after `/auth/refresh`.
+
+Backend runtime (Pages Functions)
+- All functions are ES modules exporting `onRequest` (or method-specific) handlers. The Worker env provides `ORDERS_DB`, `LOGIN_RATE_LIMIT_KV`, and `AUTH_SECRET`.
+- Products (`functions/products.js`): GET `/products` reads active rows from `products` table plus delivery config; issues strong ETags (`count-lastModified-configLastModified`) and caches for 60s with `stale-while-revalidate`.
+- Orders (`functions/order.js`): POST `/order` validates cart + customer fields with `validateOrderRequest`, enforces stock, reads pricing config, batches inserts into `orders` + `order_items`, optionally saves an address via `upsertAddressFromCheckout`, and decrements stock atomically. GET lists or fetches specific orders with role-aware filtering (customers see their own) and ETags; PATCH updates status for admins/riders.
+- Config (`functions/config.js` + `_config.js`): admin-only GET/PUT/PATCH for `minimumOrderAmount`, `freeDeliveryThreshold`, `deliveryFeeBelowThreshold` stored in `admin_config`.
+- Auth (`functions/auth/*.js` + `_auth.js`): register/login/me/refresh/logout/revoke. PBKDF2 (100k iterations) hashes passwords; access tokens last ~15m; refresh tokens (~7d) are HttpOnly, Secure, SameSite=Lax cookies. Rate limiting: 5 failed logins/IP/min → 15m block persisted in KV.
+- Account (`functions/account/*.js`): `/account` index returns profile + addresses; `/account/profile` updates display/full names; `/account/addresses` CRUD for saved addresses (default flag, labels, contact/phone, lines).
+- Admin APIs (`functions/admin/*.js`): product CRUD, pagination, search, soft archival via `is_active`, stock edits; prevents deletes when order_items exist. Admin users API exposes account list (roles/status) for consoles.
+- Inventory helper: `scripts/generate-inventory.mjs` ingests `proposed-280-SKUs.csv` into `functions/_inventory-data.json` and the `products` table before builds (`predev`/`prebuild` hooks).
+
+Persistence topology (D1)
+- Tables from `migrations/0001-0012`: `orders` (id, customer fields, delivery, payment, status, items_json, user_id, delivery_address_id, created_at, updated_at), `order_items` (normalized line items with product snapshots), `products` (catalog with price/mrp/raw_selling_price, department/category, `is_active`, `stock_quantity` with CHECK ≥0), `admin_config` (key/value delivery economics), `users` (phone unique, role, status, display/full name, password_hash, token_version, profile JSON), `user_addresses` (labeled saved addresses with default flag).
+- Foreign keys: `orders.user_id` → `users.id`; `order_items.order_id` → `orders.id`; `user_addresses.user_id` → `users.id`; `orders.delivery_address_id` references saved addresses but still snapshots address text into the order.
+- Stock integrity: application checks quantities against `products.stock_quantity`; D1 batch writes ensure order, items, address upsert, and stock decrement land together.
+
+Hosting, dev, and routing topology
+- Build: `npm run build` runs inventory generation then Vite → `dist/`; Cloudflare Pages serves static assets and dispatches `/functions/*` modules automatically.
+- Local dev: `npm run dev` starts Vite on 5173; `npm run cf:dev` (Wrangler) serves Functions on 8788. `vite.config.js` proxies `/products`, `/order`, `/config` to 8788 so the SPA and API share origin during dev.
+- Environments: `wrangler.toml` binds preview DB `order_ieeja_orders_preview` (database_id 756f...) and KV `order_ieeja_login_rate_limit` for default env; production env attaches `order_ieeja_orders` (database_id 0eae...) and KV id 5e86....
+- CLI operations: migrations under `migrations/` run via `npm run db:migrate` (local) and `db:migrate:preview|prod` (remote). DB sync scripts (`db:pull`, `db:sync:preview`, `cf:db:refresh`) move data between remote and local; `logs:tail` commands stream Pages deployments.
+
+Client-server interaction patterns
+- Catalog flow: frontend `useProducts` hits `/products`, caches respect ETag and SWR headers; UI shows pricing message derived from `admin_config`.
+- Checkout flow: cart is client-managed, `prepareOrderPayload` builds POST `/order` body; auth bearer (if present) links order to user and saves address; response returns orderId and echoed summary.
+- Config/Admin flows: admin console uses bearer token to read/update config and CRUD products; rider/admin consoles mutate order status via PATCH `/order`.
+- Auth lifecycle: client stores access token in memory, refresh token in cookie; `AuthContext.refreshSession` calls `/auth/refresh` on load/401; logout clears cookie server-side and local state.
+
+Cross-cutting behavior
+- Caching: `/products` uses public cache with ETags; `/order` GET uses private ETags per user and 304 support; other endpoints set `Cache-Control: no-store`.
+- Error handling: most handlers guard missing bindings (`501` when ORDERS_DB absent) and return JSON `{ error }` responses.
+- Localization/theming: `MainLayout` toggles `dark` class on `<html>` and stores theme/locale keys; components read from `TranslationContext` so both locales share the same API payloads.
