@@ -41,9 +41,28 @@ const mockUser: AuthUser = {
   displayName: 'John Doe',
 };
 
+// Helper to create a touched object with all fields set to false
+const createTouchedFields = (initialValues: Partial<Record<keyof CheckoutFormValues, boolean>> = {}) => {
+  const allFields: Record<keyof CheckoutFormValues, boolean> = {
+    name: false,
+    phone: false,
+    address: false,
+    addressLine2: false,
+    area: false,
+    city: false,
+    state: false,
+    postalCode: false,
+    landmark: false,
+    slot: false,
+    paymentMethod: false,
+    instructions: false,
+  };
+  return { ...allFields, ...initialValues };
+};
+
 export const Guest: Story = () => {
   const [form, setForm] = useState(emptyForm);
-  const [touched, setTouched] = useState<Record<keyof CheckoutFormValues, boolean>>({} as any);
+  const [touched, setTouched] = useState<Record<keyof CheckoutFormValues, boolean>>(createTouchedFields());
 
   const handleChange = (field: keyof CheckoutFormValues) => (e: any) => {
     setForm({ ...form, [field]: e.target.value });
@@ -83,7 +102,7 @@ export const Authenticated: Story = () => {
         <div className="max-w-2xl mx-auto p-4">
             <AddressForm
                 form={filledForm}
-                touched={{}}
+                touched={createTouchedFields()}
                 errors={{}}
                 user={mockUser}
                 addresses={[{ id: 'addr1', label: 'Home', line1: '123 Main St', city: 'Gadwal', postalCode: '509125', isDefault: true }]}
@@ -107,7 +126,7 @@ export const WithErrors: Story = () => (
     <div className="max-w-2xl mx-auto p-4">
         <AddressForm
             form={emptyForm}
-            touched={{ name: true, phone: true, address: true }}
+            touched={createTouchedFields({ name: true, phone: true, address: true })}
             errors={{ name: 'required', phone: 'invalidPhone', address: 'required' }}
             user={null}
             addresses={[]}

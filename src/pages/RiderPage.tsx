@@ -66,7 +66,6 @@ function RiderPage(): JSX.Element {
   const { token, user } = useAuth();
   const { apiFetch } = useApiClient();
   const { orders, status, error, refresh, lastUpdatedAt } = useOrders(50, {
-    token,
     requireAuth: true,
     pollIntervalMs: 60000,
     onlyWhenVisible: true,

@@ -60,7 +60,13 @@ export const Loading: Story = () => {
 export const Error: Story = () => {
      React.useEffect(() => {
         const originalFetch = window.fetch;
-        window.fetch = async () => { throw new Error("Failed to fetch"); };
+        window.fetch = async () => {
+            return {
+                ok: false,
+                status: 500,
+                json: async () => ({ error: "Failed to fetch" })
+            } as Response;
+        };
         return () => { window.fetch = originalFetch; };
     }, []);
     return <ProductCatalog />;

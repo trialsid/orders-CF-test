@@ -82,7 +82,7 @@ export const MobileMenuOpen: Story = () => {
 
     return (
         <div style={{ height: '600px', width: '375px', border: '1px solid #ccc', overflow: 'auto' }}>
-            <SiteNav {...commonProps} />
+            <SiteNav {...commonProps} cartCount={0} />
         </div>
     );
 };
