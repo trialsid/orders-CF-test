@@ -3,6 +3,7 @@ import { X, Phone, MapPin, Truck, CheckCircle2, Clock, Ban, MessageCircle } from
 import { formatCurrency } from '../../utils/formatCurrency';
 import type { OrderRecord, OrderStatus } from '../../types';
 import { useApiClient } from '../../hooks/useApiClient';
+import { useAuth } from '../../context/AuthContext';
 
 interface OrderDetailsDrawerProps {
   order: OrderRecord;
@@ -29,6 +30,7 @@ const ORDER_STATUS_OPTIONS: Array<{ value: OrderStatus; label: string }> = [
 
 export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: OrderDetailsDrawerProps) {
   const { apiFetch } = useApiClient();
+  const { token } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
   const [resolvedOrder, setResolvedOrder] = useState<OrderRecord>(order);
   const orderEtagsRef = useRef<Record<string, string>>({});
@@ -40,7 +42,7 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: O
 
   // Revalidate order on open using per-order ETag
   useEffect(() => {
-    if (!isOpen || !authToken || !order?.id) return;
+    if (!isOpen || !token || !order?.id) return;
     const controller = new AbortController();
 
     const guessEtag =
@@ -80,7 +82,7 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: O
     })();
 
     return () => controller.abort();
-  }, [isOpen, order, apiFetch]);
+  }, [isOpen, order, apiFetch, token]);
 
   const statusConfig = STATUS_CONFIG[resolvedOrder.status as OrderStatus] || STATUS_CONFIG.pending;
   const StatusIcon = statusConfig.icon;

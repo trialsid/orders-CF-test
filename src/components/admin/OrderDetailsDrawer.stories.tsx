@@ -54,7 +54,6 @@ export const Default: Story = () => {
                 order={order}
                 isOpen={isOpen} 
                 onClose={() => setIsOpen(false)} 
-                authToken="mock-token"
                 onStatusChange={handleStatusChange}
             />
         </div>
@@ -66,7 +65,6 @@ export const Delivered: Story = () => (
         order={{ ...mockOrder, status: 'delivered' }}
         isOpen={true} 
         onClose={() => {}} 
-        authToken="mock-token"
         onStatusChange={async () => {}}
     />
 );
