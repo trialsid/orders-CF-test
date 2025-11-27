@@ -49,3 +49,8 @@ Client experience edge cases
 - ETag correctness depends on updated_at maintenance; any out-of-band DB edits without updated_at bumps will serve stale data to clients.
 - Error handling mostly toast-based; limited user guidance for rate-limited logins or expired sessions beyond generic errors.
 - Accessibility/motion: while prefers-reduced-motion is honored for scroll, broader a11y testing not documented.
+
+Cross-Session State Leakage
+- Session Isolation: The application is designed to reset sensitive form state (e.g., checkout draft) upon authentication changes (login/logout). This ensures that user-specific input does not persist across different sessions on the same device.
+- Shared Device Risks (Cart): The shopping cart is persisted in `localStorage` with a non-namespaced key (`order-ieeja-cart`). This design choice allows a cart to survive a browser restart but implies that multiple users sharing a device will see the same cart contents.
+- Guest Data Persistence: To enforce strict session isolation, guest input in the checkout form is cleared upon login. This design prioritizes data safety over the merging of guest-to-authenticated states.

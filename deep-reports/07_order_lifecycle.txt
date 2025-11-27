@@ -18,6 +18,7 @@ Server-side lifecycle (functions/order.js)
     - Body must be object; items array non-empty; each item id must exist and be active in `products`; quantity numeric >0 and ≤20; stock_quantity sufficient.
     - Shared schema `validateOrderRequest` enforces required fields + phone format; maps first field error to friendly message.
     - Enforces `minimumOrderAmount` from `admin_config`.
+  - Data Source: The `user_id` is securely derived from the authentication token. However, `customer_name` and address details are sourced from the submitted form data (`validateOrderRequest`). This allows users to edit shipping details for specific orders (e.g., gifting) but implies the backend trusts the provided contact info.
   - Address handling: formats `customer_address` via `formatAddressSnapshot`; includes extended address fields separately in summary.
   - Optional address save: if authed and `saveAddress !== false`, `upsertAddressFromCheckout` creates/updates `user_addresses`, returning `deliveryAddressId` and batch statements.
   - Persistence:

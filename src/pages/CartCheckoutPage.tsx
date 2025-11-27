@@ -268,6 +268,17 @@ function CartCheckoutPage(): JSX.Element {
         }
     }, [addresses, form, selectedAddressId, setFormAndDraft, user]);
 
+    // Effect to reset local form state when the user changes (login/logout)
+    useEffect(() => {
+        setForm(createEmptyCheckoutForm());
+        setTouched(createInitialTouchedState());
+        setErrors({});
+        setSelectedAddressId(null);
+        setIsEditingAddress(false);
+        setSaveAddressChoice(false);
+        setAddressBeforeEdit(null);
+    }, [user]);
+
     const startEditAddress = () => {
         setAddressBeforeEdit(form);
         setIsEditingAddress(true);

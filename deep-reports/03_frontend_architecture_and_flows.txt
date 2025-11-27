@@ -11,6 +11,7 @@ Global composition (`src/layouts/MainLayout.tsx`)
 - Toasts: managed stack with add/dismiss helpers; rendered via `Toast` component.
 - Scroll/accessibility: on route change, scrolls to top and focuses main region; respects `prefers-reduced-motion`.
 - Checkout draft: keeps `{ form, stepIndex }` in state; reset after successful submit; survives navigation during session (not persisted).
+  - *State Management Note:* Global/shared state (like `checkoutDraft`) must be explicitly reset when the authentication context changes (login/logout) to prevent data leakage between sessions. `MainLayout` implements a `useEffect` to trigger this reset.
 - Submit order flow:
   - Validates cart non-empty and quantity limits (`MAX_ITEM_QUANTITY=20`).
   - Builds payload with `prepareOrderPayload` (shared schema) including optional `saveAddress`.
