@@ -203,53 +203,63 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
             ))}
           </nav>
 
-          {!isRider && (
-            <form
-              onSubmit={handleSearchSubmit}
-              className="relative hidden flex-1 md:block md:ml-2 md:max-w-sm"
+          <form
+            onSubmit={handleSearchSubmit}
+            className="relative hidden flex-1 md:block md:ml-2 md:max-w-sm"
+          >
+            <label htmlFor="search-input" className="sr-only">{t('nav.search')}</label>
+            <input
+              id="search-input"
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={t('nav.searchPlaceholder')}
+              className="w-full rounded-full border border-emerald-200/70 bg-white py-2.5 pl-4 pr-10 text-sm shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
+            />
+            <button
+              type="submit"
+              className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-full text-emerald-700 hover:text-emerald-900 dark:text-emerald-200 dark:hover:text-emerald-50"
+              aria-label={t('nav.search')}
             >
-              <label htmlFor="search-input" className="sr-only">{t('nav.search')}</label>
-              <input
-                id="search-input"
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={t('nav.searchPlaceholder')}
-                className="w-full rounded-full border border-emerald-200/70 bg-white py-2.5 pl-4 pr-10 text-sm shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
-              />
-              <button
-                type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-full text-emerald-700 hover:text-emerald-900 dark:text-emerald-200 dark:hover:text-emerald-50"
-                aria-label={t('nav.search')}
-              >
-                <Search className="h-4 w-4" />
-              </button>
-            </form>
-          )}
+              <Search className="h-4 w-4" />
+            </button>
+          </form>
 
           <div className="ml-auto flex items-center gap-2">
-            {isRider ? (
-              <Link
-                to="/rider"
-                className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200/70 bg-white text-emerald-700 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
-                aria-label={t('nav.riderConsole')}
-              >
-                <Truck className="h-5 w-5" />
-              </Link>
-            ) : (
-              <Link
-                to="/checkout"
-                className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200/70 bg-white text-emerald-700 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
-                aria-label={t('nav.openCart')}
-              >
-                <ShoppingCart className="h-5 w-5" />
-                {cartCount > 0 && (
-                  <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-500 px-1 text-xs font-semibold text-white">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
+            {/* Work Console Button for Staff */}
+            {user && (user.role === 'admin' || user.role === 'rider') && (
+              <>
+                <Link
+                  to={user.role === 'admin' ? '/admin' : '/rider'}
+                  className="hidden md:inline-flex h-11 items-center gap-2 rounded-full bg-emerald-900 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 dark:bg-emerald-700 dark:hover:bg-emerald-600"
+                  aria-label={user.role === 'admin' ? t('nav.adminConsole') : t('nav.riderConsole')}
+                >
+                  {user.role === 'admin' ? <LayoutDashboard className="h-4 w-4" /> : <Truck className="h-4 w-4" />}
+                  <span>{user.role === 'admin' ? 'Admin' : 'Rider'}</span>
+                </Link>
+                {/* Mobile Icon Only Button */}
+                <Link
+                  to={user.role === 'admin' ? '/admin' : '/rider'}
+                  className="inline-flex md:hidden h-11 w-11 items-center justify-center rounded-full bg-emerald-900 text-white shadow-sm transition hover:bg-emerald-800 dark:bg-emerald-700 dark:hover:bg-emerald-600"
+                  aria-label={user.role === 'admin' ? t('nav.adminConsole') : t('nav.riderConsole')}
+                >
+                   {user.role === 'admin' ? <LayoutDashboard className="h-5 w-5" /> : <Truck className="h-5 w-5" />}
+                </Link>
+              </>
             )}
+
+            <Link
+              to="/checkout"
+              className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200/70 bg-white text-emerald-700 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
+              aria-label={t('nav.openCart')}
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-500 px-1 text-xs font-semibold text-white">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
 
             {isAuthReady && !user && (
               <Link
