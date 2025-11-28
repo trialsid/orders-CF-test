@@ -17,6 +17,7 @@ type ProductsSectionProps = {
   getQuantity?: (productId: string) => number;
   onUpdateQuantity?: (productId: string, delta: number) => void;
   paddingBottom?: number;
+  wrapInSection?: boolean;
 };
 
 function ProductsSection({
@@ -30,22 +31,16 @@ function ProductsSection({
   getQuantity,
   onUpdateQuantity,
   paddingBottom,
+  wrapInSection = true,
 }: ProductsSectionProps): JSX.Element {
   const { t } = useTranslations();
   const resolveQuantity = getQuantity ?? (() => 0);
   const canAdjustQuantity = typeof onUpdateQuantity === 'function';
 
-  return (
-    <section id="products" ref={sectionRef} className="section">
-      <div
-        className="page-shell"
-        style={paddingBottom ? { paddingBottom: `${paddingBottom}px` } : undefined}
-      >
-        <div className="section__intro">
-          <h2>{t('products.title')}</h2>
-          <p>{t('products.description')}</p>
-        </div>
+  const containerStyle = paddingBottom ? { paddingBottom: `${paddingBottom}px` } : undefined;
 
+  const content = (
+    <div id="products" ref={sectionRef} style={containerStyle}>
         <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 sm:flex-wrap sm:gap-3">
           <button
             type="button"
@@ -183,6 +178,21 @@ function ProductsSection({
         </div>
 
         <p className="status">{statusText}</p>
+    </div>
+  );
+
+  if (!wrapInSection) {
+    return content;
+  }
+
+  return (
+    <section id="products" ref={sectionRef} className="section">
+      <div className="page-shell" style={containerStyle}>
+        <div className="section__intro">
+          <h2>{t('products.title')}</h2>
+          <p>{t('products.description')}</p>
+        </div>
+        {content}
       </div>
     </section>
   );

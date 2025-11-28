@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { ShoppingCart, RefreshCw } from 'lucide-react';
 import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import ProductsSection from '../components/ProductsSection';
+import PageSection from '../components/PageSection';
 import type { AppOutletContext } from '../layouts/MainLayout';
 import { useTranslations } from '../i18n/i18n';
 import { formatCurrency } from '../utils/formatCurrency';
@@ -119,27 +120,34 @@ function BrowsePage(): JSX.Element {
 
   return (
     <>
-      <div className="page-shell mt-4 flex justify-end">
-        <button
-          onClick={products.refresh}
-          className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 disabled:opacity-60 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
-          disabled={products.isLoading}
-        >
-          <RefreshCw className="h-4 w-4" /> {products.isLoading ? 'Refreshing...' : 'Refresh Products'}
-        </button>
-      </div>
-      <ProductsSection
-        sectionRef={sectionRef}
-        departments={products.departments}
-        filter={products.filter}
-        onFilterChange={handleFilterChange}
-        products={filteredAndSearchedProducts}
-        statusText={statusText}
-        onAddToCart={cart.addItem}
-        onUpdateQuantity={cart.updateQuantity}
-        getQuantity={(productId) => quantityById.get(productId) ?? 0}
-        paddingBottom={stickyHeight + 20}
-      />
+      <PageSection
+        title={t('products.title')}
+        description={t('products.description')}
+        spacing="compact"
+        actions={
+          <button
+            onClick={products.refresh}
+            className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 disabled:opacity-60 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
+            disabled={products.isLoading}
+          >
+            <RefreshCw className="h-4 w-4" /> {products.isLoading ? 'Refreshing...' : 'Refresh Products'}
+          </button>
+        }
+      >
+        <ProductsSection
+          sectionRef={sectionRef}
+          departments={products.departments}
+          filter={products.filter}
+          onFilterChange={handleFilterChange}
+          products={filteredAndSearchedProducts}
+          statusText={statusText}
+          onAddToCart={cart.addItem}
+          onUpdateQuantity={cart.updateQuantity}
+          getQuantity={(productId) => quantityById.get(productId) ?? 0}
+          paddingBottom={stickyHeight + 20}
+          wrapInSection={false}
+        />
+      </PageSection>
       <MobileStickyAction
         hidden={!cart.hasItems}
         onClick={handleGoToCart}

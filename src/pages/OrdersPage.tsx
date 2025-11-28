@@ -6,14 +6,7 @@ import { useTranslations } from '../i18n/i18n';
 import { formatCurrency } from '../utils/formatCurrency';
 import PageSection from '../components/PageSection';
 import { useAuth } from '../context/AuthContext';
-
-const STATUS_BADGE_STYLES: Record<string, string> = {
-  pending: 'bg-amber-500/10 text-amber-700 dark:text-amber-200',
-  confirmed: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-200',
-  outForDelivery: 'bg-sky-500/10 text-sky-700 dark:text-sky-200',
-  delivered: 'bg-brand-500/10 text-brand-700 dark:text-brand-200',
-  cancelled: 'bg-rose-500/10 text-rose-700 dark:text-rose-200',
-};
+import { StatusBadge } from '../components/StatusBadge';
 
 function OrdersPage(): JSX.Element {
   const { t, locale } = useTranslations();
@@ -140,9 +133,6 @@ function OrdersPage(): JSX.Element {
                   </thead>
                   <tbody className="divide-y divide-emerald-100/60 dark:divide-emerald-900/60">
                     {orders.map((order) => {
-                      const statusLabelKey = `orders.status.${order.status}`;
-                      const statusLabel = t(statusLabelKey) || order.status;
-                      const badgeClass = STATUS_BADGE_STYLES[order.status] ?? STATUS_BADGE_STYLES.pending;
                       const orderDate = order.createdAt ? new Date(order.createdAt) : undefined;
                       const formattedDate = orderDate
                         ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(orderDate)
@@ -158,11 +148,7 @@ function OrdersPage(): JSX.Element {
                             )}
                           </td>
                           <td className="px-6 py-4">
-                            <span
-                              className={`inline-block rounded-full border border-transparent px-3 py-1 text-xs font-semibold uppercase tracking-wide ${badgeClass}`}
-                            >
-                              {statusLabel}
-                            </span>
+                            <StatusBadge status={order.status} />
                           </td>
                           <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
                             {order.deliverySlot || '—'}
@@ -182,9 +168,6 @@ function OrdersPage(): JSX.Element {
           {hasOrders && viewMode === 'list' && (
             <div className="space-y-4">
               {orders.map((order) => {
-                const statusLabelKey = `orders.status.${order.status}`;
-                const statusLabel = t(statusLabelKey) || order.status;
-                const badgeClass = STATUS_BADGE_STYLES[order.status] ?? STATUS_BADGE_STYLES.pending;
                 const orderDate = order.createdAt ? new Date(order.createdAt) : undefined;
                 const formattedDate = orderDate
                   ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(orderDate)
@@ -204,11 +187,7 @@ function OrdersPage(): JSX.Element {
                           {formattedDate ? t('orders.placedOn', { date: formattedDate }) : ''}
                         </p>
                       </div>
-                      <span
-                        className={`rounded-full border border-transparent px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide ${badgeClass}`}
-                      >
-                        {statusLabel}
-                      </span>
+                      <StatusBadge status={order.status} />
                     </div>
 
                     {(slotDetail || paymentDetail) && (

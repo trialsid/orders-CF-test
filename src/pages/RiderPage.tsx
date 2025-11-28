@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle, Clock, MapPin, Navigation, PackageCheck, Phone, RefreshCw, Truck, Shield, XCircle, Map } from 'lucide-react';
+import { CheckCircle, Clock, MapPin, Navigation, PackageCheck, Phone, RefreshCw, Truck, Shield, Map } from 'lucide-react';
 import PageSection from '../components/PageSection';
 import MobileStickyAction from '../components/MobileStickyAction';
 import { useOrders } from '../hooks/useOrders';
@@ -8,18 +8,9 @@ import type { OrderRecord, OrderStatus } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
 import { updateOrderStatus as updateOrderStatusRequest } from '../utils/updateOrderStatus';
 import { useAuth } from '../context/AuthContext';
+import { StatusBadge } from '../components/StatusBadge';
 
 const ASSIGNED_STATUSES: OrderStatus[] = ['confirmed', 'outForDelivery'];
-const STATUS_META: Record<
-  OrderStatus,
-  { label: string; bgClass: string; textClass: string; Icon: typeof MapPin }
-> = {
-  pending: { label: 'Pending', bgClass: 'bg-amber-100/80 dark:bg-amber-900/40', textClass: 'text-amber-900 dark:text-amber-100', Icon: Clock },
-  confirmed: { label: 'Ready', bgClass: 'bg-emerald-100/80 dark:bg-emerald-900/40', textClass: 'text-emerald-900 dark:text-emerald-100', Icon: Shield },
-  outForDelivery: { label: 'On the way', bgClass: 'bg-sky-100/80 dark:bg-sky-900/40', textClass: 'text-sky-900 dark:text-sky-100', Icon: Truck },
-  delivered: { label: 'Delivered', bgClass: 'bg-emerald-100/80 dark:bg-emerald-900/40', textClass: 'text-emerald-900 dark:text-emerald-100', Icon: CheckCircle },
-  cancelled: { label: 'Cancelled', bgClass: 'bg-rose-100/80 dark:bg-rose-900/40', textClass: 'text-rose-900 dark:text-rose-100', Icon: XCircle },
-};
 
 const getMapsUrl = (address?: string) => {
   if (!address?.trim()) return undefined;
@@ -112,25 +103,6 @@ function RiderPage(): JSX.Element {
     }
   };
 
-  const renderStatusBadge = (status: OrderStatus) => {
-    const meta =
-      STATUS_META[status] ?? {
-        label: status,
-        bgClass: 'bg-slate-100 dark:bg-slate-800/60',
-        textClass: 'text-slate-700 dark:text-slate-200',
-        Icon: Shield,
-      };
-    const StatusIcon = meta.Icon;
-    return (
-      <span
-        className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${meta.bgClass} ${meta.textClass}`}
-      >
-        <StatusIcon className="h-3.5 w-3.5" />
-        {meta.label}
-      </span>
-    );
-  };
-
   const renderOrderCard = (order: OrderRecord) => {
     const { buttonLabel, nextStatus } = getAdvanceMeta(order);
     const disableAdvance = order.status === 'delivered' || order.status === 'cancelled' || updating[order.id];
@@ -151,7 +123,7 @@ function RiderPage(): JSX.Element {
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">{order.id}</p>
-              {renderStatusBadge(order.status)}
+              <StatusBadge status={order.status} showIcon />
               {urgent && (
                 <span className="inline-flex items-center gap-2 rounded-full bg-amber-100/80 px-3 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-200/70 dark:bg-amber-900/40 dark:text-amber-100 dark:ring-amber-900/60">
                   <Clock className="h-3.5 w-3.5" />
@@ -242,7 +214,7 @@ function RiderPage(): JSX.Element {
           <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
             {order.paymentMethod || 'Payment TBD'}
           </span>
-          {renderStatusBadge(order.status)}
+          <StatusBadge status={order.status} showIcon />
         </div>
         {!isPrimary && (
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -361,7 +333,7 @@ function RiderPage(): JSX.Element {
                   <p className="text-base font-bold text-white dark:text-slate-900">{primaryOrder.customerName}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                   {renderStatusBadge(primaryOrder.status)}
+                   <StatusBadge status={primaryOrder.status} showIcon />
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-4 gap-2">

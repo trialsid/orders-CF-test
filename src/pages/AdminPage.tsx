@@ -26,6 +26,7 @@ import { OrderDetailsDrawer } from '../components/admin/OrderDetailsDrawer';
 import { ProductCatalog } from '../components/admin/ProductCatalog';
 import { useAdminUsers } from '../hooks/useAdminUsers';
 import { useApiClient } from '../hooks/useApiClient';
+import { StatusBadge } from '../components/StatusBadge';
 
 const DEFAULT_STATUS: OrderStatus = 'pending';
 
@@ -719,15 +720,7 @@ function AdminPage(): JSX.Element {
                               <div className="text-xs text-slate-500">{order.customerPhone}</div>
                             </td>
                             <td className="px-4 py-3">
-                               <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                 order.status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200' :
-                                 order.status === 'confirmed' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' :
-                                 order.status === 'outForDelivery' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200' :
-                                 order.status === 'delivered' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' :
-                                 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                               }`}>
-                                 {getStatusLabel(order.status as OrderStatus)}
-                               </span>
+                               <StatusBadge status={order.status} />
                             </td>
                             <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{order.deliverySlot}</td>
                             <td className="px-4 py-3 text-right font-medium text-emerald-900 dark:text-emerald-100">{formatCurrency(order.totalAmount)}</td>
