@@ -30,7 +30,7 @@ export function useAdminUsers(): AdminUsersHook {
     setError(null);
       try {
         const response = await apiFetch('/api/admin/users', {
-          headers,
+          cache: force ? 'no-cache' : 'default',
           tokenOverride: token ?? undefined,
       });
 
