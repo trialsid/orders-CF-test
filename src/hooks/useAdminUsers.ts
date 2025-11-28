@@ -28,9 +28,10 @@ export function useAdminUsers(): AdminUsersHook {
 
     setStatus('loading');
     setError(null);
-    try {
-      const response = await apiFetch('/admin/users', {
-        cache: force ? 'no-cache' : 'default',
+      try {
+        const response = await apiFetch('/api/admin/users', {
+          headers,
+          tokenOverride: token ?? undefined,
       });
 
       if (response.status === 304) {

@@ -124,6 +124,7 @@ function BrowsePage(): JSX.Element {
         title={t('products.title')}
         description={t('products.description')}
         spacing="compact"
+        layout="split"
         actions={
           <button
             onClick={products.refresh}

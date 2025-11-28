@@ -65,7 +65,7 @@ export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersRes
           params.append('status', statusFilter);
         }
 
-        const response = await apiFetch(`/order?${params.toString()}`, {
+        const response = await apiFetch(`/api/order?${params.toString()}`, {
           signal,
         });
         

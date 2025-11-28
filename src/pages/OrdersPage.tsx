@@ -27,6 +27,7 @@ function OrdersPage(): JSX.Element {
       title={t('orders.title')}
       description={t('orders.description')}
       spacing="compact"
+      layout="split"
       actions={
         isAuthenticated ? (
           <div className="flex items-center gap-2">

@@ -251,6 +251,7 @@ function RiderPage(): JSX.Element {
         title="Rider console"
         description="Grab the next delivery, call the customer, and update status as you go."
         paddingBottom={primaryOrder ? 140 : undefined}
+        layout="split"
         actions={
           <div className="flex flex-wrap items-center gap-3">
             {user && (

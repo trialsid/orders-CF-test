@@ -15,7 +15,7 @@ export async function updateOrderStatus(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetchImpl('/order', {
+  const response = await fetchImpl('/api/order', {
     method: 'PATCH',
     headers,
     body: JSON.stringify({ orderId, status }),

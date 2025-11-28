@@ -49,9 +49,9 @@ export function useAdminProducts({ enabled = true, page = 1, limit = 50, search 
         search: search,
       });
 
-      const res = await apiFetch(`/admin/products?${params.toString()}`, {
-        cache: force ? 'no-cache' : 'default',
-      });
+        const res = await apiFetch(`/api/admin/products?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
       if (res.status === 304) {
         setStatus('success');

@@ -1,4 +1,4 @@
-import { readConfig } from "./_config.js";
+import { readConfig } from "../_config.js";
 
 function getDatabase(env) {
   return env && typeof env === "object" ? env.ORDERS_DB : undefined;

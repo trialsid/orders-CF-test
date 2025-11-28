@@ -1,4 +1,4 @@
-import { requireAuth, AuthError } from "../_auth";
+import { requireAuth, AuthError } from "../../_auth";
 
 function jsonResponse(payload, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(payload), {

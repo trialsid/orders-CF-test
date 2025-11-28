@@ -444,6 +444,7 @@ function AdminPage(): JSX.Element {
     <PageSection
       title="Store Management"
       description="Overview, order processing, and store configuration."
+      layout="split"
       actions={
         <div className="flex flex-wrap items-center gap-3">
           {user && (

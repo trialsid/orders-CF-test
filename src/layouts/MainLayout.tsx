@@ -230,7 +230,7 @@ function MainLayout(): JSX.Element {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await apiFetch('/order', {
+      const response = await apiFetch('/api/order', {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),

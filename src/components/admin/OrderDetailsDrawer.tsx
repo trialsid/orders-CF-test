@@ -51,7 +51,7 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: O
 
     (async () => {
       try {
-        const response = await apiFetch(`/order?id=${encodeURIComponent(order.id)}`, {
+        const response = await apiFetch(`/api/order?id=${encodeURIComponent(order.id)}`, {
           headers: {
             ...(guessEtag ? { 'If-None-Match': guessEtag } : {}),
           },

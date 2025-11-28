@@ -1,4 +1,4 @@
-import { handleProfile, jsonResponse } from "../_auth";
+import { handleProfile, jsonResponse } from "../../_auth";
 
 export async function onRequest(context) {
   if (context.request.method !== "GET") {

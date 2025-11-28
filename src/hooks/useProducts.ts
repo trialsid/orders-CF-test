@@ -29,7 +29,7 @@ export function useProducts() {
         fetchOptions.cache = 'no-cache'; // Forces revalidation with ETag
       }
 
-      const response = await fetch('/products', fetchOptions);
+      const response = await fetch('/api/products', fetchOptions);
 
       if (response.status === 304) {
         setIsLoading(false);

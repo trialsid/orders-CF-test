@@ -32,7 +32,7 @@ export function useAccountData() {
   );
 
   const fetchAccount = useCallback(async () => {
-    if (!headers) {
+    if (!token || !headers) {
       setProfile(null);
       setAddresses([]);
       setStatus('idle');
@@ -42,7 +42,7 @@ export function useAccountData() {
     setStatus('loading');
     setError(undefined);
     try {
-      const response = await apiFetch('/account', { headers, tokenOverride: token ?? undefined });
+      const response = await apiFetch('/api/account', { headers, tokenOverride: token ?? undefined });
       const payload = await response.json();
       if (!response.ok || payload.error) {
         throw new Error(payload.error || 'Unable to load account details.');
@@ -67,7 +67,7 @@ export function useAccountData() {
         throw new Error('Not authenticated.');
       }
       const body = JSON.stringify(updates);
-      const response = await apiFetch('/account/profile', {
+      const response = await apiFetch('/api/account/profile', {
         method: 'PUT',
         headers,
         body,
@@ -87,7 +87,7 @@ export function useAccountData() {
       if (!headers) {
         throw new Error('Not authenticated.');
       }
-      const response = await apiFetch('/account/addresses', {
+      const response = await apiFetch('/api/account/addresses', {
         method: 'POST',
         headers,
         body: JSON.stringify(address),
@@ -108,7 +108,7 @@ export function useAccountData() {
       if (!headers) {
         throw new Error('Not authenticated.');
       }
-      const response = await apiFetch('/account/addresses', {
+      const response = await apiFetch('/api/account/addresses', {
         method: 'PUT',
         headers,
         body: JSON.stringify(address),
@@ -129,7 +129,7 @@ export function useAccountData() {
       if (!headers) {
         throw new Error('Not authenticated.');
       }
-      const response = await apiFetch('/account/addresses', {
+      const response = await apiFetch('/api/account/addresses', {
         method: 'DELETE',
         headers,
         body: JSON.stringify({ id }),
@@ -149,7 +149,7 @@ export function useAccountData() {
       if (!headers) {
         throw new Error('Not authenticated.');
       }
-      const response = await apiFetch('/account/addresses', {
+      const response = await apiFetch('/api/account/addresses', {
         method: 'PATCH',
         headers,
         body: JSON.stringify({ id }),

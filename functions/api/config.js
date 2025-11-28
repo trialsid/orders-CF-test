@@ -1,5 +1,5 @@
-import { requireAuth, AuthError } from "./_auth";
-import { DEFAULT_CONFIG, readConfig } from "./_config.js";
+import { requireAuth, AuthError } from "../_auth";
+import { DEFAULT_CONFIG, readConfig } from "../_config.js";
 
 function jsonResponse(payload, status = 200) {
   return new Response(JSON.stringify(payload), {

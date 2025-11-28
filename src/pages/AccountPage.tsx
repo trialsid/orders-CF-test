@@ -240,6 +240,7 @@ function AccountPage(): JSX.Element {
       description={t('account.description')}
       spacing="compact"
       contentClassName="space-y-8"
+      layout="split"
     >
       {error && (
         <div className="rounded-2xl border border-rose-200/60 bg-rose-50/80 p-4 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-900/30 dark:text-rose-100">

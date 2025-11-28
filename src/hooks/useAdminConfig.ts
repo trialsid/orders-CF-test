@@ -32,10 +32,9 @@ export function useAdminConfig(): UseAdminConfigResult {
     setStatus('loading');
     setError(undefined);
 
-    try {
-      const response = await apiFetch('/config', {});
-      const payload = await response.json();
-
+          try {
+            const response = await apiFetch('/api/config', {});
+            const payload = await response.json();
       if (!response.ok || payload.error) {
         throw new Error(payload.error || DEFAULT_ERROR);
       }

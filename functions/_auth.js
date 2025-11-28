@@ -82,7 +82,7 @@ function createRefreshCookie(token) {
     `${REFRESH_COOKIE_NAME}=${encoded}`,
     "HttpOnly",
     "SameSite=Lax",
-    "Path=/auth",
+    "Path=/",
     `Max-Age=${token ? REFRESH_TOKEN_TTL_SECONDS : 0}`,
     "Secure",
   ];

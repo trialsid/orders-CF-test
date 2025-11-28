@@ -1,7 +1,7 @@
-import { requireAuth, AuthError } from "./_auth";
-import { readConfig } from "./_config.js";
-import { upsertAddressFromCheckout } from "./_addresses.js";
-import { validateOrderRequest, MAX_ITEM_QUANTITY, formatAddressSnapshot } from "../shared/order-schema.js";
+import { requireAuth, AuthError } from "../_auth";
+import { readConfig } from "../_config.js";
+import { upsertAddressFromCheckout } from "../_addresses.js";
+import { validateOrderRequest, MAX_ITEM_QUANTITY, formatAddressSnapshot } from "../../shared/order-schema.js";
 
 const DEFAULT_ORDER_STATUS = "pending";
 const ALLOWED_ORDER_STATUSES = new Set(["pending", "confirmed", "outForDelivery", "delivered", "cancelled"]);

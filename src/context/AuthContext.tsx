@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     }
     const promise = (async () => {
       try {
-        const response = await fetch('/auth/refresh', { method: 'POST' });
+        const response = await fetch('/api/auth/refresh', { method: 'POST' });
         
         if (response.status === 401) {
            clearAuth();
@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       setIsAuthenticating(true);
       setAuthError(null);
       try {
-        const result = await submitAuthRequest('/auth/login', payload);
+        const result = await submitAuthRequest('/api/auth/login', payload);
         setToken(result.token);
         setUser(result.user);
         setStatus('ready');

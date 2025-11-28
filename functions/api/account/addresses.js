@@ -1,5 +1,5 @@
-import { requireAuth, AuthError, jsonResponse } from "../_auth";
-import { sanitizeAddressPayload, listAddresses, setPrimaryAddress, mapAddress, getPrimaryAddressUpdateStatement, buildSnapshot } from "../_addresses.js";
+import { requireAuth, AuthError, jsonResponse } from "../../_auth";
+import { sanitizeAddressPayload, listAddresses, setPrimaryAddress, mapAddress, getPrimaryAddressUpdateStatement, buildSnapshot } from "../../_addresses.js";
 
 function getDatabase(env) {
   return env && typeof env === "object" ? env.ORDERS_DB : undefined;

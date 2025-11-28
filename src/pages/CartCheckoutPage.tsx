@@ -330,6 +330,7 @@ function CartCheckoutPage(): JSX.Element {
             className="md:pb-16"
             paddingBottom={stickyHeight ? stickyHeight + 20 : undefined}
             spacing="compact"
+            layout="split"
         >
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
                 {/* Left Column: Forms */}

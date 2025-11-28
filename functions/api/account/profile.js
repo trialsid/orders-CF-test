@@ -1,4 +1,4 @@
-import { requireAuth, AuthError, jsonResponse } from "../_auth";
+import { requireAuth, AuthError, jsonResponse } from "../../_auth";
 
 function getDatabase(env) {
   return env && typeof env === "object" ? env.ORDERS_DB : undefined;
