@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock3, Wallet, ShieldCheck, LayoutList, Table } from 'lucide-react';
+import { ShieldCheck, LayoutList, Table } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useOrders } from '../hooks/useOrders';
 import { useTranslations } from '../i18n/i18n';
@@ -7,6 +7,7 @@ import { formatCurrency } from '../utils/formatCurrency';
 import PageSection from '../components/PageSection';
 import { useAuth } from '../context/AuthContext';
 import { StatusBadge } from '../components/StatusBadge';
+import { OrderCard } from '../components/OrderCard';
 
 function OrdersPage(): JSX.Element {
   const { t, locale } = useTranslations();
@@ -167,68 +168,10 @@ function OrdersPage(): JSX.Element {
           )}
 
           {hasOrders && viewMode === 'list' && (
-            <div className="space-y-4">
-              {orders.map((order) => {
-                const orderDate = order.createdAt ? new Date(order.createdAt) : undefined;
-                const formattedDate = orderDate
-                  ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(orderDate)
-                  : '';
-                const slotDetail = order.deliverySlot;
-                const paymentDetail = order.paymentMethod;
-
-                return (
-                  <article
-                    key={order.id}
-                    className="rounded-3xl border border-emerald-100/60 bg-white/90 p-5 shadow-sm dark:border-emerald-900/60 dark:bg-slate-900/70"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="font-display text-lg font-semibold text-emerald-900 dark:text-brand-100">{order.id}</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-300">
-                          {formattedDate ? t('orders.placedOn', { date: formattedDate }) : ''}
-                        </p>
-                      </div>
-                      <StatusBadge status={order.status} />
-                    </div>
-
-                    {(slotDetail || paymentDetail) && (
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
-                        {slotDetail && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/70 px-3 py-1 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
-                            <Clock3 className="h-3.5 w-3.5" />
-                            {slotDetail}
-                          </span>
-                        )}
-                        {paymentDetail && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-100/50 px-3 py-1 text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
-                            <Wallet className="h-3.5 w-3.5" />
-                            {paymentDetail}
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    <p className="mt-4 text-lg font-semibold text-emerald-800 dark:text-emerald-200">
-                      {formatCurrency(order.totalAmount)}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        className="rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-xs font-semibold text-emerald-800 transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
-                      >
-                        {t('orders.invoice')}
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-xs font-semibold text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-                      >
-                        {t('orders.reorder')}
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {orders.map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))}
             </div>
           )}
         </>
