@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Moon, Phone, Menu, X, ShoppingCart, ChevronDown, UserCircle2, LogOut, Search, Settings, Languages, Compass, Package, Truck, LayoutDashboard, ChevronRight } from 'lucide-react';
 import { useTranslations } from '../i18n/i18n';
@@ -31,15 +32,13 @@ function NavSwitch({ label, icon, checked, onChange }: NavSwitchProps) {
         <span>{label}</span>
       </div>
       <div
-        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${
-          checked ? 'bg-brand-500' : 'bg-slate-200 dark:bg-slate-700'
-        }`}
+        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${checked ? 'bg-brand-500' : 'bg-slate-200 dark:bg-slate-700'
+          }`}
       >
         <span
           aria-hidden="true"
-          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-            checked ? 'translate-x-5' : 'translate-x-0'
-          }`}
+          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${checked ? 'translate-x-5' : 'translate-x-0'
+            }`}
         />
       </div>
     </button>
@@ -167,9 +166,9 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
 
   return (
     <>
-      <header 
+      <header
         ref={headerRef}
-        className="relative sticky top-0 z-50 border-b border-emerald-100/60 bg-white/90 shadow-sm backdrop-blur dark:border-emerald-900/40 dark:bg-slate-950/80"
+        className="fixed top-0 left-0 right-0 z-50 border-b border-emerald-100/60 bg-white/90 shadow-sm backdrop-blur dark:border-emerald-900/40 dark:bg-slate-950/80"
       >
         <a href="#main-content" className="skip-link">
           {t('nav.skipToContent')}
@@ -243,7 +242,7 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
                   className="inline-flex md:hidden h-11 w-11 items-center justify-center rounded-full bg-emerald-900 text-white shadow-sm transition hover:bg-emerald-800 dark:bg-emerald-700 dark:hover:bg-emerald-600"
                   aria-label={user.role === 'admin' ? t('nav.adminConsole') : t('nav.riderConsole')}
                 >
-                   {user.role === 'admin' ? <LayoutDashboard className="h-5 w-5" /> : <Truck className="h-5 w-5" />}
+                  {user.role === 'admin' ? <LayoutDashboard className="h-5 w-5" /> : <Truck className="h-5 w-5" />}
                 </Link>
               </>
             )}
@@ -307,7 +306,7 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
               )}
 
               {utilityOpen && (
-                <div 
+                <div
                   className="absolute right-0 top-[calc(100%+0.5rem)] w-80 overflow-hidden rounded-3xl border border-emerald-100/70 bg-white p-3 shadow-xl shadow-emerald-200/50 ring-1 ring-emerald-100/60 dark:border-emerald-900/70 dark:bg-slate-950 dark:shadow-emerald-950/40 dark:ring-emerald-900/60 transition-all duration-300 ease-out transform opacity-0 scale-95 data-[state=open]:opacity-100 data-[state=open]:scale-100"
                   data-state={utilityOpen ? 'open' : 'closed'}
                 >
@@ -393,7 +392,7 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
                         <span>{t('nav.callToOrder')}</span>
                       </div>
                     </a>
-                    
+
                     {user && (
                       <button
                         type="button"
@@ -423,9 +422,12 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
         </div>
       </header>
 
-      {open && (
+      {/* Spacer to prevent content from hiding behind fixed header */}
+      <div style={{ height: headerHeight }} aria-hidden="true" />
+
+      {open && createPortal(
         <div
-          className="fixed inset-x-0 bottom-0 z-50 md:hidden"
+          className="fixed inset-x-0 bottom-0 z-[100] md:hidden"
           role="dialog"
           aria-modal="true"
           data-state={open ? 'open' : 'closed'}
@@ -440,148 +442,147 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
             className="relative flex h-full w-full flex-col overflow-y-auto bg-white px-4 pb-6 pt-4 shadow-2xl shadow-emerald-900/20 transition-all duration-300 ease-out animate-in slide-in-from-top-4 dark:bg-slate-950 dark:shadow-emerald-950/50"
             onClick={(event) => event.stopPropagation()}
           >
-          {/* 1. Identity / Login Section */}
-          {user ? (
-            <Link
-              to="/account"
-              onClick={() => setOpen(false)}
-              className="mb-4 flex items-center gap-3 rounded-2xl border border-emerald-100/60 bg-emerald-50/50 p-3 transition active:scale-[0.98] dark:border-emerald-900/60 dark:bg-emerald-900/20"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-200 text-lg font-bold text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
-                {userDisplayName ? userDisplayName.charAt(0).toUpperCase() : 'U'}
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <p className="truncate text-lg font-bold text-emerald-950 dark:text-emerald-100">
-                  {userDisplayName}
-                </p>
-                <p className="truncate text-base font-medium text-emerald-600/80 dark:text-emerald-400/80">
-                  {user.phone} • <span className="capitalize">{user.role}</span>
-                </p>
-              </div>
-              <ChevronRight className="h-5 w-5 text-emerald-400" />
-            </Link>
-          ) : (
-            <div className="mb-4 rounded-2xl border border-emerald-100/60 bg-emerald-50/30 p-3 dark:border-emerald-900/60 dark:bg-emerald-900/10">
-              <p className="mb-3 text-center text-sm text-emerald-800/80 dark:text-emerald-200/80">
-                Sign in to manage orders and save your address.
-              </p>
+            {/* 1. Identity / Login Section */}
+            {user ? (
               <Link
-                to="/auth/login"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-3 text-base font-bold text-white shadow-brand-500/20 shadow-lg transition hover:bg-brand-600"
-              >
-                {t('nav.signIn')}
-              </Link>
-            </div>
-          )}
-
-          {/* 2. Work Console (Admin/Rider) */}
-          {user && (user.role === 'admin' || user.role === 'rider') && (
-            <Link
-              to={user.role === 'admin' ? '/admin' : '/rider'}
-              onClick={() => setOpen(false)}
-              className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-800 to-emerald-900 py-3.5 text-base font-bold text-white shadow-md shadow-emerald-900/10 transition active:scale-[0.98] dark:from-emerald-700 dark:to-emerald-800"
-            >
-              {user.role === 'admin' ? <LayoutDashboard className="h-4 w-4" /> : <Truck className="h-4 w-4" />}
-              {user.role === 'admin' ? t('nav.adminConsole') : t('nav.riderConsole')}
-            </Link>
-          )}
-
-          {/* 3. Navigation Grid */}
-          <div className="mb-4 grid grid-cols-2 gap-2">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
+                to="/account"
                 onClick={() => setOpen(false)}
-                className={({ isActive }) =>
-                  `flex flex-row items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all ${
-                    isActive
+                className="mb-4 flex items-center gap-3 rounded-2xl border border-emerald-100/60 bg-emerald-50/50 p-3 transition active:scale-[0.98] dark:border-emerald-900/60 dark:bg-emerald-900/20"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-200 text-lg font-bold text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
+                  {userDisplayName ? userDisplayName.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <p className="truncate text-lg font-bold text-emerald-950 dark:text-emerald-100">
+                    {userDisplayName}
+                  </p>
+                  <p className="truncate text-base font-medium text-emerald-600/80 dark:text-emerald-400/80">
+                    {user.phone} • <span className="capitalize">{user.role}</span>
+                  </p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-emerald-400" />
+              </Link>
+            ) : (
+              <div className="mb-4 rounded-2xl border border-emerald-100/60 bg-emerald-50/30 p-3 dark:border-emerald-900/60 dark:bg-emerald-900/10">
+                <p className="mb-3 text-center text-sm text-emerald-800/80 dark:text-emerald-200/80">
+                  Sign in to manage orders and save your address.
+                </p>
+                <Link
+                  to="/auth/login"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-3 text-base font-bold text-white shadow-brand-500/20 shadow-lg transition hover:bg-brand-600"
+                >
+                  {t('nav.signIn')}
+                </Link>
+              </div>
+            )}
+
+            {/* 2. Work Console (Admin/Rider) */}
+            {user && (user.role === 'admin' || user.role === 'rider') && (
+              <Link
+                to={user.role === 'admin' ? '/admin' : '/rider'}
+                onClick={() => setOpen(false)}
+                className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-800 to-emerald-900 py-3.5 text-base font-bold text-white shadow-md shadow-emerald-900/10 transition active:scale-[0.98] dark:from-emerald-700 dark:to-emerald-800"
+              >
+                {user.role === 'admin' ? <LayoutDashboard className="h-4 w-4" /> : <Truck className="h-4 w-4" />}
+                {user.role === 'admin' ? t('nav.adminConsole') : t('nav.riderConsole')}
+              </Link>
+            )}
+
+            {/* 3. Navigation Grid */}
+            <div className="mb-4 grid grid-cols-2 gap-2">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setOpen(false)}
+                  className={({ isActive }) =>
+                    `flex flex-row items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all ${isActive
                       ? 'border-brand-500/50 bg-brand-50/50 text-brand-700 dark:border-brand-500/30 dark:bg-brand-900/20 dark:text-brand-200'
                       : 'border-emerald-100/60 bg-white text-slate-600 active:bg-slate-50 dark:border-emerald-800/60 dark:bg-slate-900 dark:text-slate-300'
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <div className={`rounded-full p-2 ${isActive ? 'bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
+                        {React.cloneElement(item.icon as React.ReactElement, { className: 'h-5 w-5' })}
+                      </div>
+                      <span className="text-base font-semibold">{item.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              ))}
+              {/* Add Cart Link to Grid for convenience */}
+              <NavLink
+                to="/checkout"
+                onClick={() => setOpen(false)}
+                className={({ isActive }) =>
+                  `flex flex-row items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all ${isActive
+                    ? 'border-brand-500/50 bg-brand-50/50 text-brand-700 dark:border-brand-500/30 dark:bg-brand-900/20 dark:text-brand-200'
+                    : 'border-emerald-100/60 bg-white text-slate-600 active:bg-slate-50 dark:border-emerald-800/60 dark:bg-slate-900 dark:text-slate-300'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <div className={`rounded-full p-2 ${isActive ? 'bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
-                      {React.cloneElement(item.icon as React.ReactElement, { className: 'h-5 w-5' })}
-                    </div>
-                    <span className="text-base font-semibold">{item.label}</span>
-                  </>
-                )}
-              </NavLink>
-            ))}
-            {/* Add Cart Link to Grid for convenience */}
-            <NavLink
-               to="/checkout"
-               onClick={() => setOpen(false)}
-               className={({ isActive }) =>
-                `flex flex-row items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all ${
-                  isActive
-                    ? 'border-brand-500/50 bg-brand-50/50 text-brand-700 dark:border-brand-500/30 dark:bg-brand-900/20 dark:text-brand-200'
-                    : 'border-emerald-100/60 bg-white text-slate-600 active:bg-slate-50 dark:border-emerald-800/60 dark:bg-slate-900 dark:text-slate-300'
-                }`
-              }
-            >
-               {({ isActive }) => (
-                 <>
-                   <div className={`relative rounded-full p-2 ${isActive ? 'bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
+                    <div className={`relative rounded-full p-2 ${isActive ? 'bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
                       <ShoppingCart className="h-5 w-5" />
                       {cartCount > 0 && (
                         <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-500 px-0.5 text-[10px] font-bold text-white">
                           {cartCount}
                         </span>
                       )}
-                   </div>
-                   <span className="text-base font-semibold">{t('nav.checkout')}</span>
-                 </>
-               )}
-            </NavLink>
-          </div>
+                    </div>
+                    <span className="text-base font-semibold">{t('nav.checkout')}</span>
+                  </>
+                )}
+              </NavLink>
+            </div>
 
-          {/* 4. Utilities */}
-          <div className="space-y-1 rounded-2xl border border-emerald-100/60 bg-slate-50/50 p-3 dark:border-emerald-900/60 dark:bg-slate-900/30">
-            <h4 className="px-1 text-sm font-bold uppercase tracking-wider text-slate-400">Settings</h4>
-            <NavSwitch
-              label="Telugu / తెలుగు"
-              icon={<Languages className="h-5 w-5" />}
-              checked={locale === 'te'}
-              onChange={() => setLocale(locale === 'en' ? 'te' : 'en')}
-            />
-            <NavSwitch
-              label="Dark Mode"
-              icon={<Moon className="h-5 w-5" />}
-              checked={theme === 'dark'}
-              onChange={onToggleTheme}
-            />
+            {/* 4. Utilities */}
+            <div className="space-y-1 rounded-2xl border border-emerald-100/60 bg-slate-50/50 p-3 dark:border-emerald-900/60 dark:bg-slate-900/30">
+              <h4 className="px-1 text-sm font-bold uppercase tracking-wider text-slate-400">Settings</h4>
+              <NavSwitch
+                label="Telugu / తెలుగు"
+                icon={<Languages className="h-5 w-5" />}
+                checked={locale === 'te'}
+                onChange={() => setLocale(locale === 'en' ? 'te' : 'en')}
+              />
+              <NavSwitch
+                label="Dark Mode"
+                icon={<Moon className="h-5 w-5" />}
+                checked={theme === 'dark'}
+                onChange={onToggleTheme}
+              />
 
-            <div className="my-2 h-px bg-slate-200 dark:bg-slate-800" />
+              <div className="my-2 h-px bg-slate-200 dark:bg-slate-800" />
 
-             <a
-              href="tel:+919876543210"
-              className="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-base font-medium text-slate-700 transition hover:bg-white dark:text-slate-200 dark:hover:bg-white/5"
-            >
-              <div className="flex items-center gap-3">
-                <Phone className="h-5 w-5 text-slate-400 dark:text-slate-500" />
-                <span>{t('nav.callToOrder')}</span>
-              </div>
-            </a>
-
-             {user && (
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-base font-medium text-rose-600 transition hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-900/20"
+              <a
+                href="tel:+919876543210"
+                className="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-base font-medium text-slate-700 transition hover:bg-white dark:text-slate-200 dark:hover:bg-white/5"
               >
                 <div className="flex items-center gap-3">
-                  <LogOut className="h-5 w-5 opacity-70" />
-                  <span>{t('nav.signOut')}</span>
+                  <Phone className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+                  <span>{t('nav.callToOrder')}</span>
                 </div>
-              </button>
-            )}
+              </a>
+
+              {user && (
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-base font-medium text-rose-600 transition hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-900/20"
+                >
+                  <div className="flex items-center gap-3">
+                    <LogOut className="h-5 w-5 opacity-70" />
+                    <span>{t('nav.signOut')}</span>
+                  </div>
+                </button>
+              )}
+            </div>
           </div>
-          </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
