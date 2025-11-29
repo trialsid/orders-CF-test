@@ -7,7 +7,7 @@ function FloatingCall(): JSX.Element {
 
   return (
     <a
-      className="floating-call hidden sm:inline-flex"
+      className="floating-call hidden md:inline-flex"
       href="tel:+919876543210"
       aria-label={t('floatingCall.aria')}
     >

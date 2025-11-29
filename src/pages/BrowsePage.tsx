@@ -9,7 +9,7 @@ import { formatCurrency } from '../utils/formatCurrency';
 import MobileStickyAction from '../components/MobileStickyAction';
 
 function BrowsePage(): JSX.Element {
-  const sectionRef = useRef<HTMLElement | null>(null);
+  const sectionRef = useRef<HTMLDivElement | null>(null);
   const { products, cart } = useOutletContext<AppOutletContext>();
   const navigate = useNavigate();
   const { t } = useTranslations();

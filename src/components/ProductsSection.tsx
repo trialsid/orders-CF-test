@@ -7,7 +7,7 @@ import { formatCurrency } from '../utils/formatCurrency';
 import { useTranslations } from '../i18n/i18n';
 
 type ProductsSectionProps = {
-  sectionRef?: RefObject<HTMLElement>;
+  sectionRef?: RefObject<HTMLDivElement>;
   departments: string[];
   filter: string;
   onFilterChange: (department: string) => void;
