@@ -6,6 +6,7 @@ import { formatCurrency } from '../utils/formatCurrency';
 import { useTranslations } from '../i18n/i18n';
 import MobileStickyAction from '../components/MobileStickyAction';
 import { StickyBottomContainer } from '../components/StickyBottomContainer';
+import { QuantityControl } from '../components/QuantityControl';
 
 function ProductDetailPage(): JSX.Element {
   const { productId } = useParams<{ productId: string }>();
@@ -160,32 +161,64 @@ function ProductDetailPage(): JSX.Element {
               </span>
               <p className="mt-2 text-3xl font-semibold text-emerald-900 dark:text-brand-100">{formatCurrency(product.price)}</p>
             </div>
+
+            <div className="flex flex-col gap-3">
+              {quantity > 0 ? (
+                <>
+                  <div className="flex items-center justify-center rounded-2xl bg-white p-2 shadow-sm ring-1 ring-emerald-100 dark:bg-slate-800 dark:ring-emerald-900">
+                    <QuantityControl
+                      quantity={quantity}
+                      onDecrease={handleDecrease}
+                      onIncrease={handleIncrease}
+                      ariaLabelName={product.name}
+                    />
+                  </div>
+                  {cart.hasItems && (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/cart')}
+                      className="flex w-full items-center justify-center gap-2 rounded-full border border-emerald-200/60 bg-white/50 px-4 py-3 text-base font-semibold text-emerald-800 transition hover:bg-white hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900/50 dark:text-emerald-200 dark:hover:bg-slate-900"
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                      {t('products.detail.viewCart')}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-3.5 text-base font-semibold uppercase tracking-wide text-white shadow-lg shadow-brand-500/30 transition hover:-translate-y-0.5 hover:shadow-brand-500/40 hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                >
+                  <PlusCircle className="h-5 w-5" />
+                  {t('products.actions.addToCart')}
+                </button>
+              )}
+            </div>
           </aside>
         </div>
       </div>
 
       {/* Conditional Sticky Bottom Action Bar or Quantity Stepper */}
       {showQuantityStepper ? (
-        <StickyBottomContainer onHeightChange={setStickyHeight}>
-          <div className="flex h-[2.75rem] w-full items-center justify-between rounded-full bg-gradient-to-r from-lime-100 via-yellow-50 to-amber-100 px-1 shadow-sm dark:bg-slate-900 dark:from-slate-900 dark:to-slate-900 dark:border dark:border-slate-700">
-            <button
-              type="button"
-              onClick={handleDecrease}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-700 shadow-soft transition hover:bg-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:bg-slate-800 dark:text-brand-100 dark:hover:bg-slate-700"
-              aria-label={t('cart.aria.decrease', { name: product.name })}
-            >
-              <Minus className="h-4 w-4" />
-            </button>
-            <span className="text-xl font-semibold text-amber-900 dark:text-slate-100">{quantity}</span>
-            <button
-              type="button"
-              onClick={handleIncrease}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-              aria-label={t('cart.aria.increase', { name: product.name })}
-            >
-              <PlusCircle className="h-4 w-4" />
-            </button>
+        <StickyBottomContainer onHeightChange={setStickyHeight} className="flex flex-col items-center gap-3 pb-4">
+          <div className="rounded-full bg-white p-1 shadow-lg dark:bg-slate-900">
+            <QuantityControl
+              quantity={quantity}
+              onDecrease={handleDecrease}
+              onIncrease={handleIncrease}
+              ariaLabelName={product.name}
+            />
           </div>
+          {cart.hasItems ? (
+            <button
+              type="button"
+              onClick={() => navigate('/cart')}
+              className="!bg-gradient-to-r !from-brand-500 !to-brand-600 !text-white !border-transparent hover:!from-brand-600 hover:!to-brand-700 dark:!bg-none dark:!bg-brand-600 dark:!text-white flex min-h-[2.75rem] flex-1 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-base font-semibold text-slate-700 shadow-soft transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-400 w-full max-w-sm"
+            >
+              {t('products.detail.viewCart')}
+            </button>
+          ) : null}
         </StickyBottomContainer>
       ) : (
         <MobileStickyAction

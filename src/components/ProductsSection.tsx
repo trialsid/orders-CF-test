@@ -3,6 +3,7 @@ import type { RefObject } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, PackageOpen } from 'lucide-react';
 import type { Product } from '../types';
+import { QuantityControl } from './QuantityControl';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useTranslations } from '../i18n/i18n';
 
@@ -123,27 +124,13 @@ function ProductsSection({
                   {/* Quantity Controls / Add to Cart Button */}
                   <div className="flex items-center justify-end sm:w-auto sm:justify-start">
                     {quantity > 0 && canAdjustQuantity ? (
-                      <div className="flex items-center gap-2 sm:flex">
-                        <button
-                          type="button"
-                          onClick={handleDecrease}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white text-brand-700 shadow-soft transition hover:border-emerald-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-brand-200"
-                          aria-label={t('cart.aria.decrease', { name: product.name })}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </button>
-                        <span className="inline-flex min-w-[2.5rem] items-center justify-center rounded-full bg-gradient-to-r from-lime-100 via-yellow-50 to-amber-100 px-3 py-1 text-base font-semibold text-amber-900 shadow-sm shadow-amber-200/60 dark:from-amber-700 dark:via-amber-600 dark:to-amber-700 dark:text-amber-50 dark:shadow-amber-950/40">
-                          {quantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleIncrease}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-soft transition hover:from-brand-600 hover:to-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-                          aria-label={t('cart.aria.increase', { name: product.name })}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
-                      </div>
+                      <QuantityControl
+                        quantity={quantity}
+                        onDecrease={handleDecrease}
+                        onIncrease={handleIncrease}
+                        ariaLabelName={product.name}
+                        className="sm:flex"
+                      />
                     ) : (
                       <>
                         {/* Desktop Add to Cart Button */}
