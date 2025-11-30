@@ -56,6 +56,19 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
   const { locale, setLocale, t } = useTranslations();
   const { user, status: authStatus, logout } = useAuth();
 
+  const homePath = useMemo(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        return '/admin';
+      }
+      if (user.role === 'rider') {
+        return '/rider';
+      }
+      return '/browse'; // Default for customer
+    }
+    return '/'; // Logged out users go to landing page
+  }, [user]);
+
   useLayoutEffect(() => {
     const node = headerRef.current;
     if (!node) return;
@@ -197,7 +210,7 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
           {t('nav.skipToContent')}
         </a>
         <div className="page-shell relative z-20 flex flex-wrap items-center gap-3 py-3 sm:gap-4 sm:py-4">
-          <Link to="/" className="flex items-center gap-3">
+          <Link to={homePath} className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-brand-500 to-brand-600 text-base font-semibold text-white">
               OI
             </span>

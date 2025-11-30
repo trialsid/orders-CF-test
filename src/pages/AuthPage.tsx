@@ -20,7 +20,7 @@ const getDashboardPath = (role: UserRole): string => {
   if (role === 'rider') {
     return '/rider';
   }
-  return '/orders';
+  return '/browse';
 };
 
 function AuthPage({ mode }: AuthPageProps): JSX.Element {
