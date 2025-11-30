@@ -13,6 +13,8 @@ import AuthPage from './pages/AuthPage';
 import RequireAuth from './components/RequireAuth';
 import AccountPage from './pages/AccountPage';
 
+import NotFoundPage from './pages/NotFoundPage';
+
 function App(): JSX.Element {
   return (
     <BrowserRouter>
@@ -52,7 +54,7 @@ function App(): JSX.Element {
           />
           <Route path="auth/login" element={<AuthPage mode="login" />} />
           <Route path="auth/register" element={<AuthPage mode="register" />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

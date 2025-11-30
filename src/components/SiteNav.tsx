@@ -4,6 +4,7 @@ import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Moon, Phone, Menu, X, ShoppingCart, ChevronDown, UserCircle2, LogOut, Search, Settings, Languages, Compass, Package, Truck, LayoutDashboard, ChevronRight } from 'lucide-react';
 import { useTranslations } from '../i18n/i18n';
 import { useAuth } from '../context/AuthContext';
+import { useHomePath } from '../hooks/useHomePath';
 
 type SiteNavProps = {
   theme: 'light' | 'dark';
@@ -56,33 +57,27 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
   const { locale, setLocale, t } = useTranslations();
   const { user, status: authStatus, logout } = useAuth();
 
-  const homePath = useMemo(() => {
-    if (user) {
-      if (user.role === 'admin') {
-        return '/admin';
-      }
-      if (user.role === 'rider') {
-        return '/rider';
-      }
-      return '/browse'; // Default for customer
-    }
-    return '/'; // Logged out users go to landing page
-  }, [user]);
-
   useLayoutEffect(() => {
     const node = headerRef.current;
     if (!node) return;
 
-    const updateHeight = () => setHeaderHeight(node.getBoundingClientRect().height);
+    const updateHeight = () => {
+      const rect = node.getBoundingClientRect();
+      setHeaderHeight(rect.height);
+    };
+
     updateHeight();
 
     const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateHeight) : null;
     observer?.observe(node);
     window.addEventListener('resize', updateHeight);
+    // The SiteNav header's top position changes via CSS variable, this layout effect should track that.
+    node.addEventListener('transitionend', updateHeight);
 
     return () => {
       observer?.disconnect();
       window.removeEventListener('resize', updateHeight);
+      node.removeEventListener('transitionend', updateHeight);
     };
   }, []);
 
@@ -90,6 +85,8 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
   const accountDestination = user ? '/account' : '/auth/login';
   const userDisplayName = user?.fullName ?? user?.displayName ?? user?.phone ?? '';
   const isRider = user?.role === 'rider';
+
+  const homePath = useHomePath();
 
   const navItems = useMemo(() => {
     return [
@@ -204,7 +201,8 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
     <>
       <header
         ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-50 border-b border-emerald-100/60 bg-white/90 shadow-sm backdrop-blur dark:border-emerald-900/40 dark:bg-slate-950/80"
+        className="fixed left-0 right-0 z-50 border-b border-emerald-100/60 bg-white/90 shadow-sm backdrop-blur transition-[top] duration-300 ease-in-out dark:border-emerald-900/40 dark:bg-slate-950/80"
+        style={{ top: 'var(--offline-banner-height, 0px)' }}
       >
         <a href="#main-content" className="skip-link">
           {t('nav.skipToContent')}
@@ -458,16 +456,20 @@ function SiteNav({ theme, onToggleTheme, cartCount }: SiteNavProps): JSX.Element
         </div>
       </header>
 
-      {/* Spacer to prevent content from hiding behind fixed header */}
-      <div style={{ height: headerHeight }} aria-hidden="true" />
+      {/* Spacer to prevent content from hiding behind fixed header and offline banner */}
+      <div style={{ height: `calc(${headerHeight}px + var(--offline-banner-height, 0px))` }} aria-hidden="true" />
 
       {open && createPortal(
         <div
-          className="fixed inset-0 z-[100] md:hidden"
+          className="fixed inset-0 z-[100] md:hidden transition-[transform] duration-300 ease-in-out"
           role="dialog"
           aria-modal="true"
           data-state={open ? 'open' : 'closed'}
-          style={{ top: headerHeight ? headerHeight - 1 : undefined, '--header-height': `${headerHeight}px` } as React.CSSProperties}
+          style={{
+            top: `${headerHeight}px`,
+            transform: 'translateY(var(--offline-banner-height, 0px))',
+            '--header-height': `${headerHeight}px`
+          } as React.CSSProperties}
           onClick={() => {
             setOpen(false);
             setUtilityOpen(false);

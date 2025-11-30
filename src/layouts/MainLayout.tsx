@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { WifiOff, Wifi } from 'lucide-react';
 import SiteNav from '../components/SiteNav';
 import Footer from '../components/Footer';
 import FloatingCall from '../components/FloatingCall';
@@ -23,6 +24,7 @@ export type Theme = 'light' | 'dark';
 
 const THEME_STORAGE_KEY = 'order-ieeja-theme';
 const LOCALE_STORAGE_KEY = 'order-ieeja-locale';
+const OFFLINE_BANNER_HEIGHT = 30;
 
 const getPreferredTheme = (): Theme => {
   if (typeof window === 'undefined') {
@@ -74,11 +76,50 @@ function MainLayout(): JSX.Element {
   const [locale, setLocale] = useState<Locale>(() => getPreferredLocale());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [networkStatus, setNetworkStatus] = useState<'online' | 'offline' | 'reconnecting'>('online');
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const [checkoutDraft, setCheckoutDraft] = useState<CheckoutDraftState>(() => ({
     form: createEmptyCheckoutForm(),
     stepIndex: 0,
   }));
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const clearReconnectTimer = () => {
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+    };
+
+    const handleOffline = () => {
+      // If we go offline, cancel any pending "back online" transition
+      clearReconnectTimer();
+      setNetworkStatus('offline');
+    };
+
+    const handleOnline = () => {
+      setNetworkStatus('reconnecting');
+      clearReconnectTimer();
+      reconnectTimerRef.current = setTimeout(() => {
+        setNetworkStatus('online');
+        reconnectTimerRef.current = null;
+      }, 3000);
+    };
+
+    // Initial check
+    setNetworkStatus(window.navigator.onLine ? 'online' : 'offline');
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      clearReconnectTimer();
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, []);
 
   const updateCheckoutDraft = useCallback((draft: Partial<CheckoutDraftState>) => {
     setCheckoutDraft((current) => ({
@@ -131,6 +172,16 @@ function MainLayout(): JSX.Element {
     (path: string, params?: Record<string, string | number | undefined>) => translate(dictionary, path, params),
     [dictionary]
   );
+
+  const bannerHeight = useMemo(() => {
+    if (networkStatus === 'online') return 0;
+    return OFFLINE_BANNER_HEIGHT;
+  }, [networkStatus]);
+
+  useEffect(() => {
+    // Set a CSS custom property for the banner height to be consumed by other components
+    document.documentElement.style.setProperty('--offline-banner-height', `${bannerHeight}px`);
+  }, [bannerHeight]);
 
   const showToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
     setToasts((current) => [
@@ -299,7 +350,25 @@ function MainLayout(): JSX.Element {
   return (
     <TranslationContext.Provider value={translationValue}>
       <div className="min-h-screen bg-surface-light dark:bg-slate-950">
+        {/* Offline/Reconnecting Banner */}
+        {networkStatus !== 'online' && (
+          <div
+            className={`fixed left-0 right-0 top-0 z-[60] flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-semibold text-white shadow-md transition-all duration-300 ease-in-out
+              ${networkStatus === 'offline' ? 'bg-rose-600' : 'bg-emerald-600'}
+            `}
+            style={{ height: `${OFFLINE_BANNER_HEIGHT}px` }}
+          >
+            {networkStatus === 'offline' ? <WifiOff className="h-3.5 w-3.5" /> : <Wifi className="h-3.5 w-3.5" />}
+            <span>
+              {networkStatus === 'offline' && (t('common.offlineMessage') || 'You are currently offline. Some features may be unavailable.')}
+              {networkStatus === 'reconnecting' && (t('common.onlineMessage') || 'You are back online!')}
+            </span>
+          </div>
+        )}
+
+        {/* Site Navigation (fixed, offset by banner height via CSS var) */}
         <SiteNav theme={theme} onToggleTheme={toggleTheme} cartCount={cart.cartItems.length} />
+
         <main
           id="main-content"
           ref={mainRef}
