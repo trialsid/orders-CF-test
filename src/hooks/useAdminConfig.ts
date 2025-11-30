@@ -62,7 +62,7 @@ export function useAdminConfig(): UseAdminConfigResult {
       setSaving(true);
       setError(undefined);
       try {
-        const response = await apiFetch('/config', {
+        const response = await apiFetch('/api/config', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

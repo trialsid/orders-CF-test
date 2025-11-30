@@ -80,7 +80,7 @@ export function useAdminProducts({ enabled = true, page = 1, limit = 50, search 
   const updateProduct = async (id: string, updates: Partial<AdminProduct>) => {
     if (!token) throw new Error('Not authenticated');
 
-    const res = await apiFetch('/admin/products', {
+    const res = await apiFetch('/api/admin/products', {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -101,7 +101,7 @@ export function useAdminProducts({ enabled = true, page = 1, limit = 50, search 
   const addProduct = async (product: Omit<AdminProduct, 'id'>) => {
     if (!token) throw new Error('Not authenticated');
 
-    const res = await apiFetch('/admin/products', {
+    const res = await apiFetch('/api/admin/products', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -120,7 +120,7 @@ export function useAdminProducts({ enabled = true, page = 1, limit = 50, search 
   const deleteProduct = async (id: string) => {
     if (!token) throw new Error('Not authenticated');
 
-    const res = await apiFetch(`/admin/products?id=${id}`, {
+    const res = await apiFetch(`/api/admin/products?id=${id}`, {
       method: 'DELETE',
     });
 

@@ -142,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       setIsAuthenticating(true);
       setAuthError(null);
       try {
-        const result = await submitAuthRequest('/auth/register', payload);
+        const result = await submitAuthRequest('/api/auth/register', payload);
         setToken(result.token);
         setUser(result.user);
         setStatus('ready');
@@ -160,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
 
   const logout = useCallback(async () => {
     try {
-      await fetch('/auth/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', { method: 'POST' });
     } catch (error) {
       console.warn('Logout request failed', error);
     } finally {
@@ -176,7 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       if (!activeToken) {
         throw new Error('Session expired. Please log in again.');
       }
-      const response = await fetch('/auth/revoke', {
+      const response = await fetch('/api/auth/revoke', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

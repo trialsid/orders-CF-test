@@ -58,7 +58,7 @@ export function useAdminUsers(): AdminUsersHook {
     if (!token) return;
 
     try {
-      const response = await apiFetch(`/admin/users`, {
+      const response = await apiFetch(`/api/admin/users`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
