@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ForbiddenPage from '../pages/ForbiddenPage';
 import type { UserRole } from '../types';
 
 type RequireAuthProps = {
@@ -27,7 +28,7 @@ function RequireAuth({ roles, children }: RequireAuthProps): JSX.Element {
   }
 
   if (roles && roles.length > 0 && !roles.includes(user.role)) {
-    return <Navigate to={FALLBACK_PATH} replace state={{ from: location.pathname, denied: true }} />;
+    return <ForbiddenPage />;
   }
 
   return children;
