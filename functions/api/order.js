@@ -665,7 +665,7 @@ export async function onRequest({ request, env, ctx }) {
 
       const orderId = normalizeString(payload.orderId);
       const status = normalizeStatusInput(payload.status);
-      const riderId = payload.riderId; // can be string or null
+      const riderId = payload.riderId;
 
       if (!orderId) {
         return jsonResponse({ error: "Order ID is required." }, 400);
@@ -673,6 +673,10 @@ export async function onRequest({ request, env, ctx }) {
 
       // Check if trying to update riderId
       if (riderId !== undefined) {
+         if (riderId !== null && (typeof riderId !== 'string' || riderId.trim() === '')) {
+             return jsonResponse({ error: "Rider ID must be a valid string or null." }, 400);
+         }
+
          if (authContext.role !== "admin") {
             return jsonResponse({ error: "Only admins can assign riders." }, 403);
          }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useApiClient } from './useApiClient';
 import type { OrderRecord, OrdersResponse, OrderStatus } from '../types';

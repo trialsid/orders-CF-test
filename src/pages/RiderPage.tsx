@@ -65,15 +65,14 @@ function RiderPage(): JSX.Element {
   return (
     <>
       <PageSection
-        title="Rider console"
-        description="Grab the next delivery, call the customer, and update status as you go."
+        title="My Deliveries"
         paddingBottom={primaryOrder ? 140 : undefined}
         layout="split"
         actions={
           <div className="flex flex-wrap items-center gap-3">
             {user && (
               <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/30 dark:text-emerald-100">
-                <Shield className="h-4 w-4" /> {(user.fullName ?? user.displayName ?? user.phone) ?? ''} • {user.role}
+                <Shield className="h-4 w-4" /> {(user.fullName ?? user.displayName ?? user.phone) ?? ''}
               </span>
             )}
             <button
@@ -82,7 +81,7 @@ function RiderPage(): JSX.Element {
               className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 dark:border-emerald-900/60 dark:bg-slate-950 dark:text-emerald-200"
               disabled={status === 'loading'}
             >
-              {status === 'loading' ? 'Refreshing…' : 'Refresh feed'}
+              {status === 'loading' ? 'Refreshing…' : 'Refresh'}
             </button>
           </div>
         }
@@ -101,28 +100,41 @@ function RiderPage(): JSX.Element {
           )}
 
           <section className="space-y-4">
-            <header>
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Today&apos;s queue</p>
-              <p className="text-lg font-semibold text-emerald-950 dark:text-brand-100">
-                {activeOrders.length ? `${activeOrders.length} delivery stops` : 'No assigned orders yet'}
-              </p>
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                Orders move here when staff confirms the slot. Hit “Start delivery” once you leave the store.
-              </p>
-              <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                Last sync: {lastSyncLabel} • Auto-syncs every ~60s while this tab is open.
-              </p>
+            <header className="flex items-end justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Active Route</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-slate-900 dark:text-white">
+                    {activeOrders.length}
+                  </span>
+                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                    Stops Remaining
+                  </span>
+                </div>
+              </div>
+              <div className="text-right">
+                 <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                    Synced: {lastSyncLabel}
+                 </p>
+              </div>
             </header>
-            {status === 'loading' && (
-              <p className="rounded-2xl border border-dashed border-emerald-200/70 p-4 text-sm text-slate-500 dark:border-emerald-900/60 dark:text-slate-300">
-                Loading assigned orders…
-              </p>
+
+            {status === 'loading' && !activeOrders.length && (
+              <div className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                <div className="animate-pulse">Loading route...</div>
+              </div>
             )}
+
             {!activeOrders.length && status === 'success' && (
-              <p className="rounded-2xl border border-dashed border-emerald-200/70 p-4 text-sm text-slate-500 dark:border-emerald-900/60 dark:text-slate-300">
-                No orders assigned to you yet. Pull to refresh when dispatch assigns more.
-              </p>
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center dark:border-slate-800 dark:bg-slate-900/50">
+                <Truck className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600" />
+                <p className="mt-3 text-sm font-medium text-slate-900 dark:text-white">All caught up!</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  New orders will appear here when assigned.
+                </p>
+              </div>
             )}
+
             <div className="space-y-4">
               {activeOrders.map((order) => (
                 <RiderOrderCard

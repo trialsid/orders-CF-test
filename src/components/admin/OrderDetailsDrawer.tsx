@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Phone, MapPin, Truck, CheckCircle2, Clock, Ban, MessageCircle, Bike } from 'lucide-react';
+import { X, Phone, MapPin, Truck, CheckCircle2, Clock, Ban, MessageCircle } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatCurrency';
 import type { OrderRecord, OrderStatus } from '../../types';
 import { useApiClient } from '../../hooks/useApiClient';
