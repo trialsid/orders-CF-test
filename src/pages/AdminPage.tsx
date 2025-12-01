@@ -981,6 +981,7 @@ function AdminPage(): JSX.Element {
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrderId(null)}
           onStatusChange={handleStatusChange}
+          onOrderUpdate={refresh}
         />
       )}
     </PageSection>

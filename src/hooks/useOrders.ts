@@ -12,6 +12,7 @@ type UseOrdersOptions = {
   statusFilter?: OrderStatus | 'all';
   pollIntervalMs?: number;
   onlyWhenVisible?: boolean;
+  riderId?: string;
 };
 
 type UseOrdersResult = {
@@ -32,6 +33,7 @@ export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersRes
     statusFilter,
     pollIntervalMs,
     onlyWhenVisible = true,
+    riderId,
   } = options ?? {};
   const { token } = useAuth();
   const { apiFetch } = useApiClient();
@@ -63,6 +65,9 @@ export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersRes
         }
         if (statusFilter && statusFilter !== 'all') {
           params.append('status', statusFilter);
+        }
+        if (riderId) {
+          params.append('riderId', riderId);
         }
 
         const response = await apiFetch(`/api/order?${params.toString()}`, {
@@ -100,7 +105,7 @@ export function useOrders(limit = 100, options?: UseOrdersOptions): UseOrdersRes
         setStatus('error');
       }
     },
-    [limit, enabled, requireAuth, searchTerm, statusFilter, apiFetch, token]
+    [limit, enabled, requireAuth, searchTerm, statusFilter, apiFetch, token, riderId]
   );
 
   // Initial Load

@@ -120,7 +120,7 @@ function RiderPage(): JSX.Element {
             )}
             {!activeOrders.length && status === 'success' && (
               <p className="rounded-2xl border border-dashed border-emerald-200/70 p-4 text-sm text-slate-500 dark:border-emerald-900/60 dark:text-slate-300">
-                Nothing on your route right now. Pull to refresh when dispatch assigns more.
+                No orders assigned to you yet. Pull to refresh when dispatch assigns more.
               </p>
             )}
             <div className="space-y-4">

@@ -1,15 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Phone, MapPin, Truck, CheckCircle2, Clock, Ban, MessageCircle } from 'lucide-react';
+import { X, Phone, MapPin, Truck, CheckCircle2, Clock, Ban, MessageCircle, Bike } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatCurrency';
 import type { OrderRecord, OrderStatus } from '../../types';
 import { useApiClient } from '../../hooks/useApiClient';
 import { useAuth } from '../../context/AuthContext';
+import { useAdminUsers } from '../../hooks/useAdminUsers';
 
 interface OrderDetailsDrawerProps {
   order: OrderRecord;
   isOpen: boolean;
   onClose: () => void;
   onStatusChange: (orderId: string, nextStatus: OrderStatus) => Promise<void>;
+  onOrderUpdate?: () => void;
 }
 
 const STATUS_CONFIG: Record<OrderStatus, { color: string; icon: React.ElementType; label: string }> = {
@@ -28,12 +30,15 @@ const ORDER_STATUS_OPTIONS: Array<{ value: OrderStatus; label: string }> = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: OrderDetailsDrawerProps) {
+export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange, onOrderUpdate }: OrderDetailsDrawerProps) {
   const { apiFetch } = useApiClient();
   const { token } = useAuth();
+  const { users } = useAdminUsers();
   const [isUpdating, setIsUpdating] = useState(false);
   const [resolvedOrder, setResolvedOrder] = useState<OrderRecord>(order);
   const orderEtagsRef = useRef<Record<string, string>>({});
+
+  const riders = useMemo(() => users.filter((u) => u.role === 'rider' && u.status === 'active'), [users]);
 
   // Keep local state in sync with parent-provided order object
   useEffect(() => {
@@ -96,6 +101,37 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: O
     }
   };
 
+  const handleRiderUpdate = async (riderId: string) => {
+    setIsUpdating(true);
+    try {
+      const response = await apiFetch('/api/order', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: resolvedOrder.id,
+          riderId: riderId === 'unassigned' ? null : riderId,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to update rider');
+      }
+      
+      const updated = await response.json();
+      setResolvedOrder(prev => ({ ...prev, riderId: updated.riderId }));
+      onOrderUpdate?.();
+
+    } catch (error) {
+       console.error("Failed to assign rider", error);
+       alert(error instanceof Error ? error.message : "Failed to assign rider.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const whatsappLink = useMemo(() => {
     if (!resolvedOrder.customerPhone) return null;
     const digits = resolvedOrder.customerPhone.replace(/\D/g, '');
@@ -139,22 +175,43 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange }: O
                 <span className="font-semibold">{statusConfig.label}</span>
               </div>
               
-              <div className="mt-4">
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider opacity-70">
-                  Update Status
-                </label>
-                <select
-                  value={resolvedOrder.status}
-                  onChange={(e) => handleStatusUpdate(e.target.value as OrderStatus)}
-                  disabled={isUpdating}
-                  className="w-full rounded-lg border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                >
-                  {ORDER_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                 <div>
+                    <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider opacity-70">
+                      Status
+                    </label>
+                    <select
+                      value={resolvedOrder.status}
+                      onChange={(e) => handleStatusUpdate(e.target.value as OrderStatus)}
+                      disabled={isUpdating}
+                      className="w-full rounded-lg border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    >
+                      {ORDER_STATUS_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                 </div>
+
+                 <div>
+                    <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider opacity-70">
+                      Rider
+                    </label>
+                    <select
+                      value={resolvedOrder.riderId ?? 'unassigned'}
+                      onChange={(e) => handleRiderUpdate(e.target.value)}
+                      disabled={isUpdating}
+                      className="w-full rounded-lg border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    >
+                      <option value="unassigned">Unassigned</option>
+                      {riders.map((rider) => (
+                        <option key={rider.id} value={rider.id}>
+                          {rider.full_name ?? rider.display_name ?? rider.phone}
+                        </option>
+                      ))}
+                    </select>
+                 </div>
               </div>
             </div>
 

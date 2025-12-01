@@ -105,6 +105,7 @@ export interface OrderRecord {
   paymentMethod?: string;
   userId?: string;
   deliveryAddressId?: string;
+  riderId?: string | null;
 }
 
 export interface OrdersResponse {

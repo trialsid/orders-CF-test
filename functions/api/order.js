@@ -277,21 +277,51 @@ function normalizeStatusInput(status) {
   return undefined;
 }
 
-async function updateOrderStatus(env, orderId, nextStatus) {
+async function updateOrder(env, orderId, updates, authContext) {
   const db = getDatabase(env);
   if (!db) {
     return { error: "ORDERS_DB binding is not configured." };
   }
 
+  const setClauses = [];
+  const bindings = [];
+
+  if (updates.status !== undefined) {
+    setClauses.push("status = ?");
+    bindings.push(updates.status);
+  }
+
+  if (updates.riderId !== undefined) {
+    setClauses.push("rider_id = ?");
+    bindings.push(updates.riderId);
+  }
+
+  if (setClauses.length === 0) {
+     return {}; // Nothing to update
+  }
+
+  // Always update updated_at
+  setClauses.push("updated_at = datetime('now')");
+  
+  let query = `UPDATE orders SET ${setClauses.join(", ")} WHERE id = ?`;
+  bindings.push(orderId);
+
+  // Security: Riders can only update their own assigned orders
+  if (authContext.role === "rider") {
+    query += " AND rider_id = ?";
+    bindings.push(authContext.sub);
+  }
+
   try {
-    // Also update `updated_at` when status changes
-    const result = await db.prepare("UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ?").bind(nextStatus, orderId).run();
+    const result = await db.prepare(query).bind(...bindings).run();
     if (result.meta.changes === 0) {
-      return { error: "Order not found.", status: 404 };
+      // If it fails for a rider, it might exist but not be theirs. 
+      // We return 404 to mask existence, or we could handle it specifically.
+      return { error: "Order not found or access denied.", status: 404 };
     }
     return {};
   } catch (error) {
-    console.error("Failed to update order status", error);
+    console.error("Failed to update order", error);
     return { error: "Unable to update order right now." };
   }
 }
@@ -393,8 +423,9 @@ export async function onRequestGet({ request, env }) {
   const limit = Number.isFinite(limitParam) ? Math.min(Math.max(Math.floor(limitParam), 1), 1000) : 100;
   const search = normalizeString(url.searchParams.get("search"));
   const statusFilter = normalizeStatusInput(url.searchParams.get("status"));
+  const riderIdParam = normalizeString(url.searchParams.get("riderId"));
 
-  const isPrivileged = authContext.role === "admin" || authContext.role === "rider";
+  const isPrivileged = authContext.role === "admin"; // Only admin is truly global privileged
 
   // If requesting a specific order by ID, return early with a targeted fetch + per-order ETag.
   if (idParam) {
@@ -413,12 +444,16 @@ export async function onRequestGet({ request, env }) {
               payment_method,
               delivery_instructions,
               user_id,
-              delivery_address_id
+              delivery_address_id,
+              rider_id
        FROM orders WHERE id = ?`;
       const bindings = [idParam];
 
-      if (!isPrivileged) {
+      if (authContext.role === "customer") {
         query += " AND user_id = ?";
+        bindings.push(authContext.sub);
+      } else if (authContext.role === "rider") {
+        query += " AND rider_id = ?";
         bindings.push(authContext.sub);
       }
 
@@ -458,6 +493,7 @@ export async function onRequestGet({ request, env }) {
         deliveryInstructions: row.delivery_instructions ?? undefined,
         userId: row.user_id ?? undefined,
         deliveryAddressId: row.delivery_address_id ?? undefined,
+        riderId: row.rider_id ?? undefined,
       };
 
       return jsonResponse(
@@ -482,7 +518,10 @@ export async function onRequestGet({ request, env }) {
   // This costs 1 extra lightweight query on cache misses, but ensures correctness and allows 304s for hits.
   let etag = null;
   
-  if (!isPrivileged && !search && !statusFilter) {
+  // Note: ETag logic needs to be aware of role filtering to be correct.
+  // For simplicity, we only enable global ETag for customers currently, or strict admins without search.
+  // Riders might see a changing list, so we'll skip ETag for them for now or implement rider-specific ETag later.
+  if (!isPrivileged && authContext.role === 'customer' && !search && !statusFilter) {
     try {
       const meta = await db.prepare("SELECT COUNT(*) as count, MAX(updated_at) as last_modified FROM orders WHERE user_id = ?").bind(authContext.sub).first();
       const count = meta?.count || 0;
@@ -520,15 +559,24 @@ export async function onRequestGet({ request, env }) {
               payment_method,
               delivery_instructions,
               user_id,
-              delivery_address_id
+              delivery_address_id,
+              rider_id
        FROM orders`;
 
     const conditions = [];
     const bindings = [];
 
-    if (!isPrivileged) {
+    if (authContext.role === "customer") {
       conditions.push("user_id = ?");
       bindings.push(authContext.sub);
+    } else if (authContext.role === "rider") {
+      conditions.push("rider_id = ?");
+      bindings.push(authContext.sub);
+    } else if (authContext.role === "admin") {
+      if (riderIdParam) {
+        conditions.push("rider_id = ?");
+        bindings.push(riderIdParam);
+      }
     }
 
     if (statusFilter) {
@@ -567,6 +615,7 @@ export async function onRequestGet({ request, env }) {
       deliveryInstructions: row.delivery_instructions ?? undefined,
       userId: row.user_id ?? undefined,
       deliveryAddressId: row.delivery_address_id ?? undefined,
+      riderId: row.rider_id ?? undefined,
     }));
 
     // If we didn't generate a global ETag (e.g. because we are searching/filtering/privileged),
@@ -592,8 +641,9 @@ export async function onRequest({ request, env, ctx }) {
     case "POST":
       return onRequestPost({ request, env, ctx });
     case "PATCH":
+      let authContext;
       try {
-        await requireAuth(request, env, ["admin", "rider"]);
+        authContext = await requireAuth(request, env, ["admin", "rider"]);
       } catch (error) {
         const authResponse = handleAuthError(error);
         if (authResponse) {
@@ -615,21 +665,44 @@ export async function onRequest({ request, env, ctx }) {
 
       const orderId = normalizeString(payload.orderId);
       const status = normalizeStatusInput(payload.status);
+      const riderId = payload.riderId; // can be string or null
 
       if (!orderId) {
         return jsonResponse({ error: "Order ID is required." }, 400);
       }
 
-      if (!status) {
-        return jsonResponse({ error: "Status is invalid." }, 400);
+      // Check if trying to update riderId
+      if (riderId !== undefined) {
+         if (authContext.role !== "admin") {
+            return jsonResponse({ error: "Only admins can assign riders." }, 403);
+         }
+         
+         if (riderId !== null) {
+            const db = getDatabase(env);
+            if (!db) {
+                return jsonResponse({ error: "ORDERS_DB binding is not configured." }, 501);
+            }
+            const user = await db.prepare("SELECT id, role, status FROM users WHERE id = ?").bind(riderId).first();
+            if (!user || user.role !== "rider" || user.status !== "active") {
+               return jsonResponse({ error: "Invalid or inactive rider." }, 400);
+            }
+         }
       }
 
-      const result = await updateOrderStatus(env, orderId, status);
+      if (!status && riderId === undefined) {
+        return jsonResponse({ error: "Nothing to update." }, 400);
+      }
+
+      const updates = {};
+      if (status) updates.status = status;
+      if (riderId !== undefined) updates.riderId = riderId;
+
+      const result = await updateOrder(env, orderId, updates, authContext);
       if (result.error) {
         return jsonResponse({ error: result.error }, result.status ?? 500);
       }
 
-      return jsonResponse({ orderId, status });
+      return jsonResponse({ orderId, ...updates });
     case "GET":
       return onRequestGet({ request, env, ctx });
     default:
