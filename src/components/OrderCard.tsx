@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock3, Wallet, Package, ChevronRight, Truck, Eye } from 'lucide-react';
+import { Package, Truck, Eye, Clock3, Wallet } from 'lucide-react';
 import { OrderRecord } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
 import { StatusBadge } from './StatusBadge';
@@ -10,12 +10,21 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order }: OrderCardProps): JSX.Element {
-  const { t, locale } = useTranslations();
+  const { locale } = useTranslations();
 
   const orderDate = order.createdAt ? new Date(order.createdAt) : undefined;
   const formattedDate = orderDate
     ? new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(orderDate)
     : '';
+
+  // Friendly delivery slot display (falls back to raw string if not parseable as date)
+  const slotLabel = (() => {
+    if (!order.deliverySlot) return undefined;
+    const slotDate = new Date(order.deliverySlot);
+    return Number.isNaN(slotDate.getTime())
+      ? order.deliverySlot
+      : slotDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  })();
 
   // Sort items by lineTotal (descending) to find the "hero" item and for preview
   const sortedItems = [...order.items].sort((a, b) => b.lineTotal - a.lineTotal);
@@ -33,38 +42,56 @@ export function OrderCard({ order }: OrderCardProps): JSX.Element {
   const summaryText = `${mainItemName}${order.items.length > 1 ? ` + ${order.items.length - 1} more` : ''}`;
 
   return (
-    <article className="group relative overflow-hidden rounded-3xl border border-emerald-100/80 bg-white shadow-sm transition-all hover:shadow-md dark:border-emerald-900/60 dark:bg-slate-900/80">
+    <article className="group flex flex-col justify-between rounded-3xl border border-emerald-100/70 bg-white/95 p-4 shadow-md shadow-brand-900/10 transition hover:-translate-y-1 hover:shadow-lg dark:border-emerald-900/60 dark:bg-slate-900/70 sm:p-6">
       
-      {/* 1. Top Row: Context (Date, ID, Status) */}
-      <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 py-3 dark:border-slate-800 dark:bg-slate-900/50">
-        <div className="flex items-center gap-3">
-            <div className="flex flex-col">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+      {/* 1. Header: Date/ID & Status */}
+      <div className="flex items-start justify-between mb-2 sm:mb-4">
+        <div className="flex flex-col gap-1.5">
+             <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                     {formattedDate}
                 </span>
                 <span className="font-mono text-xs text-slate-400 dark:text-slate-500">
                     #{order.id.slice(0, 8)}
                 </span>
-            </div>
+             </div>
+             {/* Metadata Row: Slot & Payment */}
+             <div className="flex items-center gap-3 px-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                {slotLabel && (
+                    <div className="flex items-center gap-1">
+                        <Clock3 className="h-3 w-3 text-slate-400" />
+                        <span>{slotLabel}</span>
+                    </div>
+                )}
+                {order.paymentMethod && (
+                    <div className="flex items-center gap-1">
+                        <Wallet className="h-3 w-3 text-slate-400" />
+                        <span>{order.paymentMethod}</span>
+                    </div>
+                )}
+             </div>
         </div>
         <StatusBadge status={order.status} />
       </div>
 
-      {/* 2. Middle Row: Content (Visuals & Summary) */}
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-4">
-            {/* Left: Product Info */}
-            <div className="flex-1">
-                <h3 className="font-semibold text-slate-900 dark:text-slate-100 line-clamp-1">
+      {/* 2. Content: Title, Price, Thumbnails */}
+      <div className="flex-1 flex flex-col gap-1.5 sm:gap-2">
+           <div>
+                <h3 className="font-display text-lg font-semibold text-emerald-900 dark:text-brand-100 sm:text-xl line-clamp-1">
                     {summaryText}
                 </h3>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    {itemCount} {itemCount === 1 ? 'item' : 'items'} &bull; {formatCurrency(order.totalAmount)}
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {itemCount} {itemCount === 1 ? 'item' : 'items'}
                 </p>
-                
-                {/* Thumbnails (Simulated with icons since we might not have images on OrderItem yet, 
-                    but if we did, <img /> would go here) */}
-                <div className="mt-3 flex items-center -space-x-2 overflow-hidden py-1">
+           </div>
+           
+           <div className="mt-1 flex items-center justify-between sm:mt-2">
+               <div className="text-base font-semibold text-brand-700 dark:text-brand-300 sm:text-lg">
+                    {formatCurrency(order.totalAmount)}
+               </div>
+
+               {/* Thumbnails */}
+               <div className="flex items-center -space-x-2 overflow-hidden py-1">
                     {previewItems.map((item, idx) => (
                         <div 
                             key={item.id + idx} 
@@ -80,31 +107,13 @@ export function OrderCard({ order }: OrderCardProps): JSX.Element {
                         </div>
                     )}
                 </div>
-            </div>
-
-             {/* Right: Slot/Payment Info (Compact) */}
-             <div className="hidden flex-col items-end gap-1.5 sm:flex">
-                {order.deliverySlot && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                        <Clock3 className="h-3 w-3" />
-                        {order.deliverySlot}
-                    </span>
-                )}
-                 {order.paymentMethod && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                        <Wallet className="h-3 w-3" />
-                        {order.paymentMethod}
-                    </span>
-                )}
-             </div>
-        </div>
+           </div>
       </div>
 
-      {/* 3. Bottom Row: Smart Actions */}
-      <div className="flex items-center justify-between border-t border-slate-100 bg-white px-5 py-3 dark:border-slate-800 dark:bg-slate-900">
-         {/* Status Context Text (Optional, e.g. "Arriving Today") */}
+      {/* 3. Footer: Actions */}
+      <div className="mt-5 flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+         {/* Status Context Text */}
          <div className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
-            {/* Logic to show something relevant based on status could go here */}
             {order.status === 'outForDelivery' ? 'Arriving soon' : ''}
          </div>
 
@@ -122,15 +131,15 @@ export function OrderCard({ order }: OrderCardProps): JSX.Element {
              {['pending', 'confirmed', 'outForDelivery'].includes(order.status) ? (
                  <button
                     type="button"
-                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
+                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 sm:py-2.5"
                  >
-                    <Truck className="h-3.5 w-3.5" />
+                    <Truck className="h-4 w-4" />
                     Track
                  </button>
              ) : (
                 <button
                     type="button"
-                    className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-1 dark:bg-slate-700 dark:hover:bg-slate-600"
+                    className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-1 dark:bg-slate-700 dark:hover:bg-slate-600 sm:py-2.5"
                 >
                     Reorder
                 </button>
