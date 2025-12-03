@@ -4,6 +4,7 @@ import { OrderRecord } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
 import { StatusBadge } from './StatusBadge';
 import { useTranslations } from '../i18n/i18n';
+import { formatPaymentMethod } from '../utils/formatPayment';
 
 interface OrderCardProps {
   order: OrderRecord;
@@ -66,7 +67,7 @@ export function OrderCard({ order }: OrderCardProps): JSX.Element {
                 {order.paymentMethod && (
                     <div className="flex items-center gap-1">
                         <Wallet className="h-3 w-3 text-slate-400" />
-                        <span>{order.paymentMethod}</span>
+                        <span>{formatPaymentMethod(order.paymentMethod)}</span>
                     </div>
                 )}
              </div>

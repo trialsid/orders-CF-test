@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Phone, MapPin, Truck, CheckCircle2, Clock, Ban, MessageCircle } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatCurrency';
+import { formatPaymentMethod, formatPaymentCollectedMethod } from '../../utils/formatPayment';
 import type { OrderRecord, OrderStatus } from '../../types';
 import { useApiClient } from '../../hooks/useApiClient';
 import { useAuth } from '../../context/AuthContext';
@@ -332,11 +333,11 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange, onO
                   <p className="text-xs text-slate-500">Payment</p>
                   <div className="flex flex-col">
                     <span className="font-medium text-slate-900 dark:text-white">
-                        {resolvedOrder.paymentMethod}
+                        {formatPaymentMethod(resolvedOrder.paymentMethod)}
                     </span>
                     {resolvedOrder.paymentCollectedMethod && (
                         <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                            Collected: {resolvedOrder.paymentCollectedMethod}
+                            Collected: {formatPaymentCollectedMethod(resolvedOrder.paymentCollectedMethod)}
                         </span>
                     )}
                   </div>
