@@ -9,6 +9,8 @@ const STATUS_ALIASES = {
   "out_for_delivery": "outForDelivery",
   outfordelivery: "outForDelivery",
 };
+const ALLOWED_PAYMENT_METHODS = new Set(["pay_on_delivery", "pay_now"]);
+const ALLOWED_PAYMENT_COLLECTED_METHODS = new Set(["cash", "upi"]);
 
 function jsonResponse(payload, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(payload), {
@@ -46,6 +48,18 @@ function normalizeString(value) {
   }
   const trimmed = value.trim();
   return trimmed.length ? trimmed : undefined;
+}
+
+function normalizePaymentMethodValue(value) {
+  const normalized = normalizeString(value)?.toLowerCase();
+  if (!normalized) return undefined;
+  return ALLOWED_PAYMENT_METHODS.has(normalized) ? normalized : undefined;
+}
+
+function normalizePaymentCollectedValue(value) {
+  const normalized = normalizeString(value)?.toLowerCase();
+  if (!normalized) return undefined;
+  return ALLOWED_PAYMENT_COLLECTED_METHODS.has(normalized) ? normalized : undefined;
 }
 
 const FIELD_ERROR_MESSAGES = {
@@ -296,6 +310,11 @@ async function updateOrder(env, orderId, updates, authContext) {
     bindings.push(updates.riderId);
   }
 
+  if (updates.paymentCollectedMethod !== undefined) {
+    setClauses.push("payment_collected_method = ?");
+    bindings.push(updates.paymentCollectedMethod);
+  }
+
   if (setClauses.length === 0) {
      return {}; // Nothing to update
   }
@@ -343,6 +362,12 @@ export async function onRequestPost({ request, env }) {
   if (result.error) {
     return jsonResponse({ error: result.error }, 400);
   }
+
+  const normalizedPaymentMethod = normalizePaymentMethodValue(result.payment?.method ?? "pay_on_delivery");
+  if (!normalizedPaymentMethod) {
+    return jsonResponse({ error: "Unsupported payment method." }, 400);
+  }
+  result.payment.method = normalizedPaymentMethod;
 
   let userContext;
   try {
@@ -442,6 +467,7 @@ export async function onRequestGet({ request, env }) {
               customer_address,
               delivery_slot,
               payment_method,
+              payment_collected_method,
               delivery_instructions,
               user_id,
               delivery_address_id,
@@ -490,6 +516,7 @@ export async function onRequestGet({ request, env }) {
         updatedAt: row.updated_at ?? row.created_at,
         deliverySlot: row.delivery_slot ?? undefined,
         paymentMethod: row.payment_method ?? undefined,
+        paymentCollectedMethod: row.payment_collected_method ?? undefined,
         deliveryInstructions: row.delivery_instructions ?? undefined,
         userId: row.user_id ?? undefined,
         deliveryAddressId: row.delivery_address_id ?? undefined,
@@ -557,6 +584,7 @@ export async function onRequestGet({ request, env }) {
               customer_address,
               delivery_slot,
               payment_method,
+              payment_collected_method,
               delivery_instructions,
               user_id,
               delivery_address_id,
@@ -612,6 +640,7 @@ export async function onRequestGet({ request, env }) {
       updatedAt: row.updated_at ?? row.created_at,
       deliverySlot: row.delivery_slot ?? undefined,
       paymentMethod: row.payment_method ?? undefined,
+      paymentCollectedMethod: row.payment_collected_method ?? undefined,
       deliveryInstructions: row.delivery_instructions ?? undefined,
       userId: row.user_id ?? undefined,
       deliveryAddressId: row.delivery_address_id ?? undefined,
@@ -666,9 +695,15 @@ export async function onRequest({ request, env, ctx }) {
       const orderId = normalizeString(payload.orderId);
       const status = normalizeStatusInput(payload.status);
       const riderId = payload.riderId;
+      const paymentCollectedMethod = normalizePaymentCollectedValue(payload.paymentCollectedMethod);
 
       if (!orderId) {
         return jsonResponse({ error: "Order ID is required." }, 400);
+      }
+
+      const db = getDatabase(env);
+      if (!db) {
+        return jsonResponse({ error: "ORDERS_DB binding is not configured." }, 501);
       }
 
       // Check if trying to update riderId
@@ -682,10 +717,6 @@ export async function onRequest({ request, env, ctx }) {
          }
          
          if (riderId !== null) {
-            const db = getDatabase(env);
-            if (!db) {
-                return jsonResponse({ error: "ORDERS_DB binding is not configured." }, 501);
-            }
             const user = await db.prepare("SELECT id, role, status FROM users WHERE id = ?").bind(riderId).first();
             if (!user || user.role !== "rider" || user.status !== "active") {
                return jsonResponse({ error: "Invalid or inactive rider." }, 400);
@@ -693,13 +724,42 @@ export async function onRequest({ request, env, ctx }) {
          }
       }
 
-      if (!status && riderId === undefined) {
+      if (payload.paymentCollectedMethod !== undefined && !paymentCollectedMethod) {
+        return jsonResponse({ error: "Unsupported payment collection method." }, 400);
+      }
+
+      if (!status && riderId === undefined && paymentCollectedMethod === undefined) {
         return jsonResponse({ error: "Nothing to update." }, 400);
+      }
+
+      let currentPaymentMethod;
+      let currentPaymentCollectedMethod;
+
+      if (status === "delivered" && paymentCollectedMethod === undefined) {
+        let fetchQuery = "SELECT payment_method, payment_collected_method FROM orders WHERE id = ?";
+        const fetchBindings = [orderId];
+        if (authContext.role === "rider") {
+          fetchQuery += " AND rider_id = ?";
+          fetchBindings.push(authContext.sub);
+        }
+
+        const existing = await db.prepare(fetchQuery).bind(...fetchBindings).first();
+        if (!existing) {
+          return jsonResponse({ error: "Order not found or access denied." }, 404);
+        }
+
+        currentPaymentMethod = existing.payment_method;
+        currentPaymentCollectedMethod = existing.payment_collected_method;
+
+        if (!currentPaymentCollectedMethod && currentPaymentMethod === "pay_on_delivery") {
+          return jsonResponse({ error: "Payment collection method is required to complete delivery." }, 400);
+        }
       }
 
       const updates = {};
       if (status) updates.status = status;
       if (riderId !== undefined) updates.riderId = riderId;
+      if (paymentCollectedMethod !== undefined) updates.paymentCollectedMethod = paymentCollectedMethod;
 
       const result = await updateOrder(env, orderId, updates, authContext);
       if (result.error) {

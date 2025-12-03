@@ -7,7 +7,7 @@ import { formatCurrency } from '../utils/formatCurrency';
 interface DeliveryConfirmationModalProps {
   order: OrderRecord | null;
   isOpen: boolean;
-  onConfirm: () => void;
+  onConfirm: (method: string) => void;
   onCancel: () => void;
   isUpdating: boolean;
 }
@@ -20,10 +20,6 @@ export function DeliveryConfirmationModal({
   isUpdating,
 }: DeliveryConfirmationModalProps): JSX.Element {
   if (!order) return <></>;
-
-  const isCOD = order.paymentMethod?.toLowerCase().includes('cash') || order.paymentMethod === 'COD';
-  const isUPI = order.paymentMethod?.toLowerCase().includes('upi');
-  const isPrepaid = !isCOD && !isUPI; // Simplified assumption
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -70,64 +66,44 @@ export function DeliveryConfirmationModal({
                         <p className="text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
                             Collect Amount
                         </p>
-                        <div className={`text-4xl font-black tracking-tight ${isPrepaid ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                        <div className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">
                             {formatCurrency(order.totalAmount)}
                         </div>
                     </div>
 
-                    {/* 2. Payment Context Box */}
-                    <div className={`w-full rounded-2xl border p-4 text-center ${
-                        isCOD 
-                            ? 'border-red-100 bg-red-50 text-red-900 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-100'
-                            : isUPI
-                                ? 'border-purple-100 bg-purple-50 text-purple-900 dark:border-purple-900/50 dark:bg-purple-900/20 dark:text-purple-100'
-                                : 'border-emerald-100 bg-emerald-50 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-100'
-                    }`}>
-                        <div className="flex flex-col items-center gap-2">
-                             {isCOD && <Banknote className="h-8 w-8 text-red-600 dark:text-red-400" />}
-                             {isUPI && <QrCode className="h-8 w-8 text-purple-600 dark:text-purple-400" />}
-                             {isPrepaid && <CheckCircle className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />}
-                             
-                             <p className="font-bold text-lg">
-                                {isCOD && 'Collect Cash'}
-                                {isUPI && 'Scan UPI QR'}
-                                {isPrepaid && 'Already Paid'}
-                             </p>
-                             <p className="text-xs opacity-80 font-medium uppercase tracking-wide">
-                                {order.paymentMethod || 'Unknown Method'}
-                             </p>
-                        </div>
-                    </div>
-
-                    {/* 3. Customer Info Summary */}
-                     <div className="w-full text-center border-t border-slate-100 pt-4 mt-2 dark:border-slate-800">
+                    {/* 2. Payment Prompt */}
+                    <div className="w-full text-center">
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                            Customer: <span className="font-semibold text-slate-900 dark:text-slate-200">{order.customerName}</span>
+                            How did the customer pay?
                         </p>
-                     </div>
+                    </div>
                 </div>
 
-                <div className="mt-8">
+                <div className="mt-6 grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    className={`inline-flex w-full justify-center rounded-xl px-4 py-3.5 text-base font-bold text-white shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-all active:scale-[0.98] ${
-                         isCOD
-                            ? 'bg-slate-900 hover:bg-slate-800 shadow-slate-900/20 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200' 
-                            : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-900/20 focus-visible:ring-emerald-500'
-                    }`}
-                    onClick={onConfirm}
+                    className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-4 shadow-sm hover:bg-slate-50 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+                    onClick={() => onConfirm('cash')}
                     disabled={isUpdating}
                   >
-                    {isUpdating ? 'Completing...' : (
-                        <span className="flex items-center gap-2">
-                            <CheckCircle className="h-5 w-5" />
-                            {isPrepaid ? 'Handed Over & Complete' : 'Payment Received & Complete'}
-                        </span>
-                    )}
+                    <Banknote className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                    <span className="font-bold text-slate-900 dark:text-white">Cash</span>
                   </button>
                   <button
+                    type="button"
+                    className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-4 shadow-sm hover:bg-slate-50 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+                    onClick={() => onConfirm('upi')}
+                    disabled={isUpdating}
+                  >
+                    <QrCode className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                    <span className="font-bold text-slate-900 dark:text-white">UPI</span>
+                  </button>
+                </div>
+
+                <div className="mt-6">
+                  <button
                      type="button"
-                     className="mt-3 w-full rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                     className="w-full rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                      onClick={onCancel}
                      disabled={isUpdating}
                   >

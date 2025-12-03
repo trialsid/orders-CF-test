@@ -89,6 +89,16 @@ export interface SubmittedOrderItem {
 
 export type OrderStatus = 'pending' | 'confirmed' | 'outForDelivery' | 'delivered' | 'cancelled';
 
+export enum PaymentMethod {
+  PayOnDelivery = 'pay_on_delivery',
+  PayNow = 'pay_now'
+}
+
+export enum PaymentCollectedMethod {
+  Cash = 'cash',
+  UPI = 'upi'
+}
+
 export interface OrderRecord {
   id: string;
   customerName: string;
@@ -103,6 +113,7 @@ export interface OrderRecord {
   deliverySlot?: string;
   deliveryInstructions?: string;
   paymentMethod?: string;
+  paymentCollectedMethod?: string | null;
   userId?: string;
   deliveryAddressId?: string;
   riderId?: string | null;

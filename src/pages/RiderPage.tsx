@@ -95,10 +95,14 @@ function RiderPage(): JSX.Element {
   const stats = useMemo(() => {
     const totalDelivered = deliveredOrders.length;
     const cashCollected = deliveredOrders.reduce((sum, order) => {
-      const isCod = order.paymentMethod?.toLowerCase() === 'cod' || order.paymentMethod?.toLowerCase() === 'cash';
+      const isCod = order.paymentCollectedMethod === 'cash';
       return isCod ? sum + order.totalAmount : sum;
     }, 0);
-    return { totalDelivered, cashCollected };
+    const upiCollected = deliveredOrders.reduce((sum, order) => {
+      const isUpi = order.paymentCollectedMethod === 'upi';
+      return isUpi ? sum + order.totalAmount : sum;
+    }, 0);
+    return { totalDelivered, cashCollected, upiCollected };
   }, [deliveredOrders]);
 
   // 3. Helpers
@@ -130,13 +134,14 @@ function RiderPage(): JSX.Element {
     }
   };
 
-  const handleConfirmDelivery = async () => {
+  const handleConfirmDelivery = async (method: string) => {
     if (!confirmingOrder) return;
     
     setStatusError(undefined);
     setUpdating((prev) => ({ ...prev, [confirmingOrder.id]: true }));
     try {
-        await updateOrderStatusRequest(confirmingOrder.id, 'delivered', token, apiFetch);
+        // method comes from Modal as 'cash' or 'upi'
+        await updateOrderStatusRequest(confirmingOrder.id, 'delivered', token, apiFetch, method);
         refresh();
         setConfirmingOrder(null);
     } catch (updateError) {
@@ -314,13 +319,20 @@ function RiderPage(): JSX.Element {
           {currentTab === 'wallet' && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
                  {/* Stats Cards */}
-                 <div className="grid grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div className="rounded-3xl border border-emerald-100 bg-emerald-50/50 p-5 dark:border-emerald-900 dark:bg-emerald-900/20">
                         <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-800 dark:text-emerald-300">
                              <Banknote className="h-5 w-5" />
                         </div>
                         <p className="text-xs font-bold uppercase tracking-wider text-emerald-800/70 dark:text-emerald-200/70">Cash Collected</p>
                         <p className="mt-1 text-2xl font-bold text-emerald-900 dark:text-emerald-100">{formatCurrency(stats.cashCollected)}</p>
+                    </div>
+                    <div className="rounded-3xl border border-violet-100 bg-violet-50/50 p-5 dark:border-violet-900 dark:bg-violet-900/20">
+                        <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-violet-600 dark:bg-violet-800 dark:text-violet-300">
+                             <Wallet className="h-5 w-5" />
+                        </div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-violet-800/70 dark:text-violet-200/70">UPI Collected</p>
+                        <p className="mt-1 text-2xl font-bold text-violet-900 dark:text-violet-100">{formatCurrency(stats.upiCollected)}</p>
                     </div>
                     <div className="rounded-3xl border border-blue-100 bg-blue-50/50 p-5 dark:border-blue-900 dark:bg-blue-900/20">
                         <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300">

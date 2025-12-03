@@ -19,7 +19,15 @@ export function RiderOrderCard({ order, isPrimary, isUpdating, onAdvanceStatus, 
   const mapUrl = getMapsUrl(order.customerAddress);
   const callHref = getCallHref(order.customerPhone);
   const urgent = isUrgent(order);
-  const isCOD = order.paymentMethod?.toLowerCase().includes('cash') || order.paymentMethod === 'COD';
+  
+  const collectedMethod = order.paymentCollectedMethod;
+  const isCOD = collectedMethod === 'cash';
+  const isUPI = collectedMethod === 'upi';
+  // Future proofing: checking if intent was Pay Now
+  const isPrepaid = order.paymentMethod === 'pay_now'; 
+  
+  // If not collected yet and not prepaid, it's "Pay on Delivery" (Pending)
+  const isPendingPayment = !isCOD && !isUPI && !isPrepaid;
 
   // Format Items
   const itemCount = order.items.reduce((acc, item) => acc + item.quantity, 0);
@@ -78,9 +86,18 @@ export function RiderOrderCard({ order, isPrimary, isUpdating, onAdvanceStatus, 
          <div className="mt-1 flex items-end justify-between sm:mt-2">
              <div className="flex flex-col">
                  <div className="flex items-center gap-1.5 mb-0.5">
-                     {isCOD ? <Wallet className="h-3 w-3 text-red-500" /> : <CreditCard className="h-3 w-3 text-emerald-500" />}
-                     <span className={`text-[10px] font-bold uppercase tracking-wider ${isCOD ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                       {isCOD ? 'Cash' : 'Prepaid'}
+                     {isCOD && <Wallet className="h-3 w-3 text-red-500" />}
+                     {isUPI && <CreditCard className="h-3 w-3 text-blue-500" />}
+                     {isPrepaid && <CreditCard className="h-3 w-3 text-emerald-500" />}
+                     {isPendingPayment && <Wallet className="h-3 w-3 text-slate-400" />}
+                     
+                     <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                        isCOD ? 'text-red-600 dark:text-red-400' :
+                        isUPI ? 'text-blue-600 dark:text-blue-400' :
+                        isPrepaid ? 'text-emerald-600 dark:text-emerald-400' :
+                        'text-slate-500 dark:text-slate-400'
+                     }`}>
+                       {isCOD ? 'Cash' : isUPI ? 'UPI' : isPrepaid ? 'Prepaid' : 'Pay on Delivery'}
                      </span>
                  </div>
                  <div className="text-base font-semibold text-brand-700 dark:text-brand-300 sm:text-lg">

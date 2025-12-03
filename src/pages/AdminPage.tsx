@@ -234,10 +234,10 @@ function AdminPage(): JSX.Element {
     refreshConfig();
   };
 
-  const handleStatusChange = async (orderId: string, nextStatus: OrderStatus) => {
+  const handleStatusChange = async (orderId: string, nextStatus: OrderStatus, paymentCollectedMethod?: string) => {
     setStatusUpdateError(undefined);
     try {
-      await updateOrderStatusRequest(orderId, nextStatus, token, apiFetch);
+      await updateOrderStatusRequest(orderId, nextStatus, token, apiFetch, paymentCollectedMethod);
       await refresh(); // Refresh list to reflect changes
     } catch (updateError) {
       const message = updateError instanceof Error ? updateError.message : 'Unable to update order status right now.';
@@ -962,10 +962,14 @@ function AdminPage(): JSX.Element {
                 </div>
               </form>
                <div className="rounded-2xl border border-emerald-100/70 bg-brand-50/60 p-4 dark:border-emerald-900/60 dark:bg-brand-900/30">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Payments offered</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Customer Checkout Options</p>
                 <ul className="mt-3 space-y-1 text-sm text-emerald-900 dark:text-emerald-100">
-                  <li>Cash on delivery</li>
-                  <li>UPI on delivery</li>
+                  <li>On delivery</li>
+                </ul>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Rider Collection Methods</p>
+                <ul className="mt-3 space-y-1 text-sm text-emerald-900 dark:text-emerald-100">
+                  <li>Cash</li>
+                  <li>UPI</li>
                 </ul>
                 <p className="mt-2 text-xs text-brand-600/80 dark:text-brand-200/80">Expose future prepaid/credit options here.</p>
               </div>

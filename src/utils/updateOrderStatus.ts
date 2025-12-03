@@ -6,8 +6,9 @@ export async function updateOrderStatus(
   orderId: string,
   status: OrderStatus,
   token?: string | null,
-  fetchImpl: FetchLike = fetch
-): Promise<{ orderId: string; status: OrderStatus }> {
+  fetchImpl: FetchLike = fetch,
+  paymentCollectedMethod?: string
+): Promise<{ orderId: string; status: OrderStatus; paymentCollectedMethod?: string }> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
@@ -18,7 +19,7 @@ export async function updateOrderStatus(
   const response = await fetchImpl('/api/order', {
     method: 'PATCH',
     headers,
-    body: JSON.stringify({ orderId, status }),
+    body: JSON.stringify({ orderId, status, paymentCollectedMethod }),
     tokenOverride: token ?? undefined,
   } as RequestInit & { tokenOverride?: string | null });
 
@@ -27,5 +28,5 @@ export async function updateOrderStatus(
     throw new Error(payload.error || 'Unable to update order status.');
   }
 
-  return payload as { orderId: string; status: OrderStatus };
+  return payload as { orderId: string; status: OrderStatus; paymentCollectedMethod?: string };
 }

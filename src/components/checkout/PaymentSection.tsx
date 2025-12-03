@@ -68,28 +68,10 @@ export function PaymentSection({
         </label>
         <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">
           {t('checkout.forms.paymentLabel')}
-          <select
-            ref={registerField<HTMLSelectElement>('paymentMethod')}
-            value={form.paymentMethod}
-            onChange={handleChange('paymentMethod')}
-            onBlur={handleBlur('paymentMethod')}
-            autoComplete="off"
-            className={`mt-2 w-full appearance-none rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-emerald-800 dark:bg-slate-950 ${paymentError
-              ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200 dark:border-rose-600'
-              : 'border-emerald-200'
-              }`}
-            required
-            aria-invalid={Boolean(paymentError)}
-          >
-            <option value="" disabled>
-              {t('checkout.forms.paymentPlaceholder')}
-            </option>
-            <option value="Cash on delivery">{t('checkout.forms.paymentCashOnDelivery')}</option>
-            <option value="UPI on delivery">{t('checkout.forms.paymentUpi')}</option>
-          </select>
-          {paymentError && (
-            <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-300">{paymentError}</p>
-          )}
+          <div className="mt-2 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 shadow-sm dark:border-emerald-800 dark:bg-slate-900 dark:text-slate-400">
+            {t('checkout.forms.paymentOnDelivery')}
+          </div>
+          <input type="hidden" name="paymentMethod" value="pay_on_delivery" ref={registerField('paymentMethod')} />
         </label>
         <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-200">
           {t('checkout.forms.instructionsLabel')}

@@ -16,7 +16,7 @@ export const createEmptyCheckoutForm = () => ({
   postalCode: DEFAULT_POSTAL,
   landmark: "",
   slot: "",
-  paymentMethod: "",
+  paymentMethod: "pay_on_delivery",
   instructions: "",
 });
 

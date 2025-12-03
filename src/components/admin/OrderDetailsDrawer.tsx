@@ -10,7 +10,7 @@ interface OrderDetailsDrawerProps {
   order: OrderRecord;
   isOpen: boolean;
   onClose: () => void;
-  onStatusChange: (orderId: string, nextStatus: OrderStatus) => Promise<void>;
+  onStatusChange: (orderId: string, nextStatus: OrderStatus, paymentCollectedMethod?: string) => Promise<void>;
   onOrderUpdate?: () => void;
 }
 
@@ -95,7 +95,22 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange, onO
   const handleStatusUpdate = async (newStatus: OrderStatus) => {
     setIsUpdating(true);
     try {
-      await onStatusChange(resolvedOrder.id, newStatus);
+      let paymentCollectedMethod: string | undefined;
+      if (
+        newStatus === 'delivered' &&
+        resolvedOrder.paymentMethod === 'pay_on_delivery' &&
+        !resolvedOrder.paymentCollectedMethod
+      ) {
+        const choice = window.prompt('Select payment collection method (cash/upi):', 'cash');
+        const normalized = choice?.trim().toLowerCase();
+        if (normalized !== 'cash' && normalized !== 'upi') {
+          setIsUpdating(false);
+          return;
+        }
+        paymentCollectedMethod = normalized;
+      }
+
+      await onStatusChange(resolvedOrder.id, newStatus, paymentCollectedMethod);
     } finally {
       setIsUpdating(false);
     }
@@ -315,7 +330,16 @@ export function OrderDetailsDrawer({ order, isOpen, onClose, onStatusChange, onO
                 </div>
                 <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
                   <p className="text-xs text-slate-500">Payment</p>
-                  <p className="font-medium text-slate-900 dark:text-white">{resolvedOrder.paymentMethod}</p>
+                  <div className="flex flex-col">
+                    <span className="font-medium text-slate-900 dark:text-white">
+                        {resolvedOrder.paymentMethod}
+                    </span>
+                    {resolvedOrder.paymentCollectedMethod && (
+                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                            Collected: {resolvedOrder.paymentCollectedMethod}
+                        </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </section>

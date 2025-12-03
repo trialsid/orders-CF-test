@@ -13,7 +13,7 @@ const mockOrder: OrderRecord = {
     status: 'pending',
     createdAt: new Date().toISOString(),
     deliverySlot: '11:30 AM',
-    paymentMethod: 'Cash on delivery',
+    paymentMethod: 'pay_on_delivery',
     deliveryInstructions: 'Ring bell twice',
     items: [
         { id: '1', name: 'Tomatoes', quantity: 2, unitPrice: 40, lineTotal: 80 },
@@ -41,10 +41,10 @@ export const Default: Story = () => {
         return () => { window.fetch = originalFetch; };
     }, [order]);
 
-    const handleStatusChange = async (id: string, status: OrderStatus) => {
-        console.log('Changing status to', status);
+    const handleStatusChange = async (id: string, status: OrderStatus, paymentCollectedMethod?: string) => {
+        console.log('Changing status to', status, paymentCollectedMethod);
         await new Promise(r => setTimeout(r, 1000));
-        setOrder(prev => ({ ...prev, status }));
+        setOrder(prev => ({ ...prev, status, paymentCollectedMethod: paymentCollectedMethod ?? prev.paymentCollectedMethod }));
     };
 
     return (
@@ -62,7 +62,7 @@ export const Default: Story = () => {
 
 export const Delivered: Story = () => (
      <OrderDetailsDrawer 
-        order={{ ...mockOrder, status: 'delivered' }}
+        order={{ ...mockOrder, status: 'delivered', paymentCollectedMethod: 'cash' }}
         isOpen={true} 
         onClose={() => {}} 
         onStatusChange={async () => {}}
