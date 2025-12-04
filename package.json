@@ -10,7 +10,6 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "design": "ladle serve",
     "pages:dev": "npm run build && wrangler pages dev dist --ip 0.0.0.0",
     "pages:deploy": "npm run build && wrangler pages deploy dist",
     "pages:deploy:preview": "npm run build && wrangler pages deploy dist",
@@ -60,7 +59,6 @@
     "react-router-dom": "^7.9.5"
   },
   "devDependencies": {
-    "@ladle/react": "^5.1.1",
     "@types/node": "^22.9.0",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.0",
