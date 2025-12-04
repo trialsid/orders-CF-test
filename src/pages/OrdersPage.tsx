@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ShieldCheck, LayoutList, Table } from 'lucide-react';
+import React from 'react';
+import { ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useOrders } from '../hooks/useOrders';
 import { useTranslations } from '../i18n/i18n';
@@ -12,10 +12,9 @@ import { OrderCard } from '../components/OrderCard';
 function OrdersPage(): JSX.Element {
   const { t, locale } = useTranslations();
   const { user, token } = useAuth();
-  const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
 
   const isAuthenticated = Boolean(user && token);
-  const isAdmin = user?.role === 'admin';
+  const isPrivileged = user?.role === 'admin' || user?.role === 'rider';
 
   const { orders, status, error, refresh } = useOrders(25, { enabled: isAuthenticated, requireAuth: true });
 
@@ -32,34 +31,6 @@ function OrdersPage(): JSX.Element {
       actions={
         isAuthenticated ? (
           <div className="flex items-center gap-2">
-            {isAdmin && (
-              <div className="flex items-center rounded-full border border-emerald-200/70 bg-white p-1 shadow-sm dark:border-emerald-800 dark:bg-slate-900">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('list')}
-                  className={`rounded-full p-1.5 transition ${
-                    viewMode === 'list'
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-200'
-                      : 'text-slate-400 hover:text-emerald-600 dark:text-slate-500 dark:hover:text-emerald-400'
-                  }`}
-                  aria-label="List view"
-                >
-                  <LayoutList className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('table')}
-                  className={`rounded-full p-1.5 transition ${
-                    viewMode === 'table'
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-200'
-                      : 'text-slate-400 hover:text-emerald-600 dark:text-slate-500 dark:hover:text-emerald-400'
-                  }`}
-                  aria-label="Table view"
-                >
-                  <Table className="h-4 w-4" />
-                </button>
-              </div>
-            )}
             <button
               type="button"
               className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 hover:text-emerald-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
@@ -119,7 +90,7 @@ function OrdersPage(): JSX.Element {
             </div>
           )}
 
-          {hasOrders && viewMode === 'table' && isAdmin && (
+          {hasOrders && isPrivileged && (
             <div className="overflow-hidden rounded-3xl border border-emerald-100/60 bg-white/90 shadow-sm dark:border-emerald-900/60 dark:bg-slate-900/70">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
@@ -167,7 +138,7 @@ function OrdersPage(): JSX.Element {
             </div>
           )}
 
-          {hasOrders && viewMode === 'list' && (
+          {hasOrders && !isPrivileged && (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {orders.map((order) => (
                 <OrderCard key={order.id} order={order} />
