@@ -23,6 +23,7 @@ import { updateOrderStatus as updateOrderStatusRequest } from '../utils/updateOr
 import type { AdminConfig, OrderRecord, OrderStatus, User } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { OrderDetailsDrawer } from '../components/admin/OrderDetailsDrawer';
+import { OrderDetailsPanel } from '../components/admin/OrderDetailsPanel';
 import { ProductCatalog } from '../components/admin/ProductCatalog';
 import { useAdminUsers } from '../hooks/useAdminUsers';
 import { useApiClient } from '../hooks/useApiClient';
@@ -102,6 +103,18 @@ const resolveStatus = (status?: string): OrderStatus => (isOrderStatus(status) ?
 const getStatusLabel = (status: OrderStatus): string =>
   ORDER_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status;
 
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    if (media.matches !== matches) setMatches(media.matches);
+    const listener = () => setMatches(media.matches);
+    window.addEventListener('resize', listener);
+    return () => window.removeEventListener('resize', listener);
+  }, [matches, query]);
+  return matches;
+}
+
 type Tab = 'dashboard' | 'orders' | 'catalog' | 'settings' | 'users';
 
 function AdminPage(): JSX.Element {
@@ -117,6 +130,8 @@ function AdminPage(): JSX.Element {
     saveConfig,
     saving,
   } = useAdminConfig();
+
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -368,12 +383,17 @@ function AdminPage(): JSX.Element {
   const renderOrderRow = (order: OrderRecord, interactive = false) => {
     const statusKey = resolveStatus(order.status);
     const nextAction = NEXT_ACTION_COPY[statusKey];
+    const isSelected = selectedOrderId === order.id;
 
     return (
       <li
         key={order.id}
         onClick={interactive ? () => setSelectedOrderId(order.id) : undefined}
-        className={`rounded-2xl border border-emerald-100/70 bg-white/90 p-4 shadow-sm dark:border-emerald-900/60 dark:bg-slate-900/70 ${interactive ? 'cursor-pointer transition hover:border-emerald-300 hover:shadow-md' : ''}`}
+        className={`rounded-2xl border bg-white/90 p-4 shadow-sm transition-all dark:bg-slate-900/70 ${
+            isSelected 
+                ? 'border-brand-500 ring-1 ring-brand-500 ring-inset z-10' 
+                : 'border-emerald-100/70 hover:border-emerald-300 hover:shadow-md dark:border-emerald-900/60'
+        } ${interactive ? 'cursor-pointer' : ''}`}
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -633,9 +653,9 @@ function AdminPage(): JSX.Element {
 
         {/* Orders Tab */}
         {activeTab === 'orders' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-             <section className="min-w-0 rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60">
-              <header className="flex flex-col gap-4">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-6">
+             <section className={`flex-1 min-w-0 rounded-3xl border border-emerald-100/70 bg-white/90 p-4 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60 flex flex-col ${selectedOrderId && isDesktop ? 'lg:w-1/3 lg:flex-none' : ''}`}>
+              <header className="flex flex-col gap-4 mb-4 flex-shrink-0">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-200">Order Management</p>
@@ -687,60 +707,35 @@ function AdminPage(): JSX.Element {
                 </div>
               </header>
               
-              <div className="mt-6 overflow-hidden rounded-2xl border border-emerald-100/70 dark:border-emerald-900/60">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[800px] text-left text-sm">
-                    <thead className="bg-emerald-50/60 text-xs uppercase tracking-wide text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-200">
-                      <tr>
-                        <th className="px-4 py-3 font-semibold">Order ID</th>
-                        <th className="px-4 py-3 font-semibold">Date</th>
-                        <th className="px-4 py-3 font-semibold">Customer</th>
-                        <th className="px-4 py-3 font-semibold">Status</th>
-                        <th className="px-4 py-3 font-semibold">Slot</th>
-                        <th className="px-4 py-3 font-semibold text-right">Total</th>
-                        <th className="px-4 py-3 font-semibold text-center">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-emerald-50/60 dark:divide-emerald-900/40">
-                      {filteredOrders.length === 0 ? (
-                        <tr>
-                          <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
-                            No orders found matching your filters.
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredOrders.map((order) => (
-                          <tr 
-                            key={order.id} 
-                            className="group bg-white/70 transition-colors hover:bg-emerald-50/30 dark:bg-slate-950/40 dark:hover:bg-emerald-900/10"
-                          >
-                            <td className="px-4 py-3 font-mono text-xs font-medium text-slate-500">{order.id}</td>
-                            <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatDateTime(order.createdAt)}</td>
-                            <td className="px-4 py-3">
-                              <div className="font-semibold text-emerald-900 dark:text-emerald-100">{order.customerName}</div>
-                              <div className="text-xs text-slate-500">{order.customerPhone}</div>
-                            </td>
-                            <td className="px-4 py-3">
-                               <StatusBadge status={order.status} />
-                            </td>
-                            <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{order.deliverySlot}</td>
-                            <td className="px-4 py-3 text-right font-medium text-emerald-900 dark:text-emerald-100">{formatCurrency(order.totalAmount)}</td>
-                            <td className="px-4 py-3 text-center">
-                              <button
-                                onClick={() => setSelectedOrderId(order.id)}
-                                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-600 dark:hover:bg-slate-800 dark:hover:text-brand-400"
-                              >
-                                <ChevronRight className="h-5 w-5" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+              <div className="flex-1 overflow-y-auto pr-2 -mr-2">
+                  {filteredOrders.length === 0 ? (
+                    <div className="text-center py-12 text-slate-500">No orders found.</div>
+                  ) : (
+                    <ul className="space-y-3 pb-4">
+                        {filteredOrders.map(order => renderOrderRow(order, true))}
+                    </ul>
+                  )}
               </div>
             </section>
+
+            {/* Desktop Detail Panel */}
+            {isDesktop && selectedOrderId && (
+                <section className="flex-1 min-w-0 rounded-3xl border border-emerald-100/70 bg-white shadow-sm dark:border-emerald-900/60 dark:bg-slate-900 overflow-hidden flex flex-col animate-in slide-in-from-right-4 duration-300">
+                    {selectedOrder ? (
+                        <div className="h-full overflow-hidden">
+                             <OrderDetailsPanel 
+                                order={selectedOrder} 
+                                onStatusChange={handleStatusChange}
+                                onOrderUpdate={refresh}
+                                onClose={() => setSelectedOrderId(null)}
+                                className="h-full"
+                             />
+                        </div>
+                    ) : (
+                        <div className="flex-1 flex items-center justify-center text-slate-400">Select an order</div>
+                    )}
+                </section>
+            )}
           </div>
         )}
 
@@ -979,7 +974,7 @@ function AdminPage(): JSX.Element {
       </div>
 
       {/* Details Drawer */}
-      {selectedOrder && (
+      {!isDesktop && selectedOrder && (
         <OrderDetailsDrawer
           order={selectedOrder}
           isOpen={!!selectedOrder}
